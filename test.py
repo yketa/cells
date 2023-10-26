@@ -55,7 +55,7 @@ def update(iterations=100, dt=5e-3, A=5e-2):
 
 		# move cell centres
 
-		for vertex in m.cells._keys:
+		for vertex in m.cells:
 			fromPos = m.vertices[vertex].position.copy()
 
 			neighbours, _ = m.getNeighbourVertices(vertex, junction=False)

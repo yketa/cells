@@ -60,7 +60,15 @@ class MultiIntKeyDict(object):
 
 	def __contains__(self, key):
 
-		return (key in self._keys)
+		return self._keys.__contains__(key)
+
+	def __iter__(self):
+
+		return self._keys.__iter__()
+
+	def __next__(self):
+
+		return self._keys.__next__()
 
 	def add_key(self, existingKey, *newKeys):
 		"""
