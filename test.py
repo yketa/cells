@@ -1,4 +1,4 @@
-from cells.mesh import Mesh
+from cells.system import System
 
 import numpy as np
 
@@ -9,8 +9,9 @@ from matplotlib.colors import Normalize as ColorsNormalise
 from matplotlib.cm import ScalarMappable
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-m = Mesh()
+m = System()
 m.initRegularTriangularLattice(size=6)
+print(m.getVertexToNeighboursArea(0)); exit()
 
 cax = make_axes_locatable(m.ax).append_axes('right', size='5%', pad=0.05)
 cmap = plt.cm.PiYG
@@ -29,16 +30,7 @@ def update(iterations=100, dt=5e-3, A=5e-2):
 		for halfEdgeIndex in m.halfEdges:
 			if halfEdgeIndex in m.junctions:	# loop over junctions
 
-				fromIndex = m.halfEdges[halfEdgeIndex].fromIndex
-				toIndex = m.halfEdges[halfEdgeIndex].toIndex
-				disp = (
-					m.vertices[toIndex].position
-					- m.vertices[fromIndex].position)
-				for dim in range(2):                                            
-					if np.abs(disp[dim]) >= m.systemSize[dim]/2:             
-						disp[dim] = -np.sign(disp[dim])*(                       
-							m.systemSize[dim] - np.abs(disp[dim])) 
-				disp /= np.sqrt((disp**2).sum())	# normalised vector out of vertex
+				disp = m.getHalfEdgeVector(halfEdgeIndex, unit=True)	# normalised vector out of vertex
 
 				amp = np.cos(
 					m.junctions[halfEdgeIndex].w*m.time
@@ -58,8 +50,8 @@ def update(iterations=100, dt=5e-3, A=5e-2):
 		for vertex in m.cells:
 			fromPos = m.vertices[vertex].position.copy()
 
-			neighbours, _ = m.getNeighbourVertices(vertex, junction=False)
-			for neighbourVertexIndex in neighbours:
+			neighbours, _ = m.getNeighbours(vertex, junction=False)
+			for neighbourVertexIndex in range(neighbours):
 				toPos = m.vertices[neighbourVertexIndex].position
 
 				disp = m.wrapDiff(fromPos, toPos)
