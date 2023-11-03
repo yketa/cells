@@ -1,6 +1,28 @@
 """
 """
 
+class Counter:
+	"""
+	Return integers in order at each call.
+	"""
+
+	def __init__(self, initial=0):
+		"""
+		Parameters
+		----------
+		
+		initial : int
+			Starting point of the counter. (default: 0)
+		"""
+
+		assert type(initial) == int
+		self.counter = initial - 1
+
+	def __call__(self):
+
+		self.counter += 1
+		return self.counter
+
 class MultiIntKeyDict(object):
 	"""
 	Dictionary-like object in which multiple integer keys are associated to the
@@ -69,6 +91,10 @@ class MultiIntKeyDict(object):
 	def __next__(self):
 
 		return self._keys.__next__()
+
+	def values(self):
+
+		return self._data.values()
 
 	def add_key(self, existingKey, *newKeys):
 		"""
