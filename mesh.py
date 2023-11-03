@@ -2,6 +2,8 @@
 Objects to define the mesh with half-edge procedure.
 """
 
+from cells.tools import MultiIntKeyDict
+
 import numpy as np
 import math
 
@@ -25,7 +27,7 @@ class Vertex:
 		"""
 
 		self.index = index
-		self.position = position
+		self.position = np.copy(np.array(position))
 		self.halfEdgeIndex = halfEdgeIndex
 
 class HalfEdge:
@@ -169,7 +171,24 @@ class Mesh:
 
 		return self.wrapTo(fromVertexIndex, toVertexIndex, unit=unit)
 
-	def getNeighbourVertices(self, vertexIndex):
+	def getEdgeLength(self, halfEdgeIndex):
+		"""
+		Length of edge.
+
+		Parameters
+		----------
+		halfEdgeIndex : int
+			Index of the half-edge.
+
+		Returns
+		-------
+		edgeLength : float
+			Length of edge.
+		"""
+
+		return np.sqrt((self.getHalfEdgeVector(halfEdgeIndex)**2).sum())
+
+	def getNeighbourVertices(self, vertexIndex, angularSort=False):
 		"""
 		Indices of neighbouring vertices and half-edges towards them.
 
@@ -177,6 +196,8 @@ class Mesh:
 		----------
 		vertexIndex : int
 			Index of the vertex.
+		angularSort : bool
+			Sort neighbours in anticlockwise order. (default: False)
 
 		Returns
 		-------
@@ -212,6 +233,18 @@ class Mesh:
 			neighbourVerticesIndices += [toVertexIndex]
 			halfEdgesToNeighboursIndices += [halfEdgeIndex]
 
+		if angularSort:
+			edgeAngles = MultiIntKeyDict()
+			for vertexIndex, halfEdgeIndex in zip(
+				neighbourVerticesIndices, halfEdgesToNeighboursIndices):
+				edgeAngles[vertexIndex, halfEdgeIndex] = (
+					math.atan2(
+						*self.getHalfEdgeVector(vertexIndex, unit=True)[::-1]))
+			neighbourVerticesIndices = sorted(
+				neighbourVerticesIndices, key=lambda i: edgeAngles[i])			# sorted indices in anticlockwise order
+			halfEdgesToNeighboursIndices = sorted(
+				halfEdgesToNeighboursIndices, key=lambda i: edgeAngles[i])		# sorted indices in anticlockwise order
+
 		neighbourVerticesIndices = np.array(neighbourVerticesIndices,
 			dtype=int)
 		halfEdgesToNeighboursIndices = np.array(halfEdgesToNeighboursIndices,
@@ -220,7 +253,7 @@ class Mesh:
 
 	def getVertexToNeighboursArea(self, vertexIndex):
 		"""
-		Area encapsulated by the neighbours of a vertex.
+		Area encapsulated by the neighbours of a vertex (shoelace formula).
 
 		Parameters
 		----------
@@ -233,24 +266,20 @@ class Mesh:
 			Area encapsulated by neighbours.
 		"""
 
-		_, halfEdgeIndices = self.getNeighbourVertices(vertexIndex)
-		print(halfEdgeIndices)
+		_, halfEdgeIndices = self.getNeighbourVertices(vertexIndex,
+			angularSort=True)	# neighbours in anticlockwise order
 		numberNeighbours = halfEdgeIndices.size
 		assert numberNeighbours >= 3
-
-		# arrange edges in anticlockwise order
-		edgeAngles = {
-			index: math.atan2(*self.getHalfEdgeVector(index, unit=True)[::-1])	# angle of the edge
-			for index in halfEdgeIndices}
-		halfEdgeIndices = sorted(halfEdgeIndices, key=lambda i: edgeAngles[i])	# sorted indices in anticlockwise order
-		halfEdgeIndices += [halfEdgeIndices[0]]
 
 		# compute area
 		area = 0
 		for i in range(numberNeighbours):
 			area += np.cross(	# area of triangle
-				self.getHalfEdgeVector(halfEdgeIndices[i]),
-				self.getHalfEdgeVector(halfEdgeIndices[i + 1]))/2.
+				self.getHalfEdgeVector(
+					halfEdgeIndices[i%numberNeighbours]),
+				self.getHalfEdgeVector(
+					halfEdgeIndices[(i + 1)%numberNeighbours])
+				)/2.
 
 		return area
 
