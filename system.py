@@ -2,7 +2,8 @@
 Objects from simulation and plotting.
 """
 
-from cells.dict import MultiIntKeyDict as MIKD
+from cells.tools import MultiIntKeyDict as MIKD
+from cells.tools import Counter
 from cells.mesh import Vertex, HalfEdge, Mesh
 
 import numpy as np
@@ -26,6 +27,13 @@ class Cell:
 		"""
 
 		self.vertexIndex = vertexIndex
+
+		self.area = -1.				# area of cell
+		self.kA	= 0					# area stiffness
+		self.targetArea = 0.		# target area of cell
+		self.perimeter = -1.		# perimeter of cell
+		self.kP = 0					# perimeter stiffness
+		self.targetPerimeter = 0	# target perimeter of cell
 
 class Face:
 	"""
@@ -59,14 +67,12 @@ class Junction:
 
 		######
 		# TEST
-		self.w = np.random.randint(1, 4)
-		self.phi = np.random.uniform(0, 2*np.pi)
 		self.color = 'green'
 		######
 
 # SIMULATION OBJECT
 
-class System(Mesh):
+class VertexModel(Mesh):
 	"""
 	Physical system environment.
 	"""
@@ -97,7 +103,371 @@ class System(Mesh):
 		######
 		# TEST
 		self.time = 0
+		if hasattr(self, 'didT1'): del self.didT1
 		######
+
+	def getForces(self):
+		"""
+		Compute forces on vertices from vertex model.
+
+		Returns
+		-------
+		forces : {int: (2,) float numpy array}
+			Forces at each vertex.
+		"""
+
+		forces = {index: np.array([0, 0], dtype=float)	# initialise forces at each vertex
+			for index in self.vertices}
+
+		for cell in cells.values():	# loop over cells
+
+			cell.area = self.getVertexToNeighboursArea(				# update area
+				cell.vertexIndex)
+			cell.perimeter = self.getVertexToNeighboursPerimeter(	# update perimeter
+				cell.vertexIndex)
+
+			vertexIndices, _ = self.getNeighbourVertices(
+				cell.vertexIndex, angularSort=True)
+			numberVertices = len(vertexIndices)
+			for i, vertexIndex in enumerate(vertexIndices):	# loop over vertices of the cell
+
+				previousVertexIndex = vertexIndices[(i - 1)%numberVertices]
+				nextVertexIndex = vertexIndices[(i + 1)%numberVertices]
+
+				# area term
+
+				forces[vertexIndex] += (
+					-cell.kA*(cell.area - cell.targetArea)*(1./2.)*(
+						np.cross(
+							self.wrapTo(	# vector from cell to previous vertex
+								cell.vertexIndex, previousVertexIndex,
+								unit=False),
+							[0, 0, 1])
+						- np.cross(
+							self.wrapTo(	# vector from cell to next vertex
+								cell.vertexIndex, nextVertexIndex,
+								unit=False),
+							[0, 0, 1]))
+					)[:2]
+
+				# perimeter term
+
+				forces[vertexIndex] += (
+					-cell.kP*(cell.perimeter - cell.targetPerimeter)*(
+						self.wrapTo(	# vector from next vertex to vertex
+							nextVertexIndex, vertexIndex)
+						+ self.wrapTo(	# vector from previous vertex to vertex
+							previousVertexIndex, vertexIndex)))
+
+		return forces
+
+	def doT1(self, delta=1, epsilon=1):
+		"""
+		Check all junctions and perform T1s.
+
+		Parameters
+		----------
+		delta : float
+			Distance between vertices below which these should be merge.
+			(default: 1)
+		epsilon : float
+			Create two vertices at distance `delta' + `epsilon'. (default: 1)
+		"""
+
+		# identify small junctions
+
+		halfEdgeIndices = []
+		for junction in self.junctions.values():
+			if self.getEdgeLength(junction.halfEdgeIndex) < delta:
+				halfEdgeIndices += [junction.halfEdgeIndex]	# this way each junction appears through an unique half-edge
+
+		######
+		# TEST
+		if hasattr(self, 'didT1'):
+			return
+		elif self.time > 0.5 and not(hasattr(self, 'didT1')):
+			halfEdgeIndices = [self.junctions._data[7].halfEdgeIndex]
+			self.didT1 = True
+		else:
+			halfEdgeIndices = []	
+		######
+
+		# perform T1s
+
+		np.random.shuffle(halfEdgeIndices)	# do T1s in a random order
+		for mergeHalfEdgeIndex in halfEdgeIndices:
+
+			# identify half-edge to split to create new junction
+
+			fromMergeIndex = self.halfEdges[mergeHalfEdgeIndex].fromIndex	# (first) vertex to be merge into neighbour
+			toMergeIndex = self.halfEdges[mergeHalfEdgeIndex].toIndex		# (second) vertex towards which neighbour is merged
+
+			neighboursFromMerge, halfEdgesNeighboursFromMerge = (	# neighbours of first vertex and half-edges towards them
+				self.getNeighbourVertices(fromMergeIndex))
+			neighboursToMerge, halfEdgesNeighboursToMerge = (		# neighbours of second vertex and half-edges towards them
+				self.getNeighbourVertices(toMergeIndex))
+
+			createHalfEdgeIndex0 = np.random.choice(	# randomly pick a half-edge towards a cell centre neighbour of first vertex
+				[halfEdgeIndex
+					for vertexIndex, halfEdgeIndex in
+						zip(neighboursFromMerge, halfEdgesNeighboursFromMerge)
+					if vertexIndex in self.cells
+					and not(vertexIndex in neighboursToMerge)])
+			createHalfEdgeIndex1 = np.random.choice(	# randomly pick a half-edge towards a cell centre neighbour of second vertex
+				[halfEdgeIndex
+					for vertexIndex, halfEdgeIndex in
+						zip(neighboursToMerge, halfEdgesNeighboursToMerge)
+					if vertexIndex in self.cells
+					and not(vertexIndex in neighboursFromMerge)])
+
+			# merge vertices
+
+			self.mergeVertices(mergeHalfEdgeIndex)
+
+			# create new vertex
+
+			self.createJunction(createHalfEdgeIndex0, createHalfEdgeIndex1,
+				length=delta + epsilon)
+
+	def mergeVertices(self, halfEdgeIndex):
+		"""
+		Merge two vertices.
+
+		Parameters
+		----------
+		halfEdgeIntex : int
+			Index of half-edge linking two vertices to be merged.
+		"""
+
+		# identify vertices to merge
+
+		fromMergeIndex = self.halfEdges[halfEdgeIndex].fromIndex	# vertex to be merge into neighbour
+		toMergeIndex = self.halfEdges[halfEdgeIndex].toIndex		# vertex towards which neighbour is merged
+
+		# relabel half-edges origins and destinations
+
+		previousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex	# half-edge pointing to the vertex to be removed in the first face to be removed
+		endPreviousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].pairIndex	# half-edge pointing to the vertex to be removed in the second face to be removed
+		while True:													# loop through half-edge construction starting from first face to be removed until second face to removed
+			pairHalfEdgeIndex = (									# half-edge pointing from the vertex to be removed and to be relabelled
+				self.halfEdges[previousHalfEdgeIndex].pairIndex)
+			previousHalfEdgeIndex = (								# half-edge pointing to the vertex to be removed and to be relabelled
+				self.halfEdges[pairHalfEdgeIndex].previousIndex)
+			if previousHalfEdgeIndex != endPreviousHalfEdgeIndex:	# relabel half-edges
+				# half-edge coming from vertex to be removed
+				assert (
+					self.halfEdges[pairHalfEdgeIndex].fromIndex
+						== fromMergeIndex)
+				self.halfEdges[pairHalfEdgeIndex].fromIndex = toMergeIndex
+				# half-edge going to vertex to be removed
+				assert (
+					self.halfEdges[previousHalfEdgeIndex].toIndex
+						== fromMergeIndex)
+				self.halfEdges[previousHalfEdgeIndex].toIndex = toMergeIndex
+			else:													# all faces which the vertex to be removed belongs to have been explored and half-edges relabelled
+				break
+
+		# relabel half-edges pairs
+
+		fromHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex
+		fromHalfEdgeIndex = self.halfEdges[fromHalfEdgeIndex].pairIndex
+
+		toHalfEdgeIndex = self.halfEdges[halfEdgeIndex].nextIndex
+		toHalfEdgeIndex = self.halfEdges[toHalfEdgeIndex].pairIndex
+
+		self.halfEdges[fromHalfEdgeIndex].pairIndex = toHalfEdgeIndex
+		self.halfEdges[toHalfEdgeIndex].pairIndex = fromHalfEdgeIndex
+
+		fromHalfEdgeIndex = self.halfEdges[halfEdgeIndex].pairIndex
+		fromHalfEdgeIndex = self.halfEdges[fromHalfEdgeIndex].previousIndex
+		fromHalfEdgeIndex = self.halfEdges[fromHalfEdgeIndex].pairIndex
+
+		toHalfEdgeIndex = self.halfEdges[halfEdgeIndex].pairIndex
+		toHalfEdgeIndex = self.halfEdges[toHalfEdgeIndex].nextIndex
+		toHalfEdgeIndex = self.halfEdges[toHalfEdgeIndex].pairIndex
+
+		self.halfEdges[fromHalfEdgeIndex].pairIndex = toHalfEdgeIndex
+		self.halfEdges[toHalfEdgeIndex].pairIndex = fromHalfEdgeIndex
+
+		# move merge vertex
+
+		self.vertices[toMergeIndex].position += (	# move vertex to half point between two merged vertices
+			self.wrapTo(toMergeIndex, fromMergeIndex, unit=False)/2.)
+
+		# delete faces, junction, half-edges, and vertex
+
+		assert halfEdgeIndex == self.halfEdges[halfEdgeIndex].index	# index of half-edge from deleted vertex
+		pairHalfEdgeIndex = self.halfEdges[halfEdgeIndex].pairIndex	# index of half-edge to deleted vertex
+
+		# first face
+		previousIndex = self.halfEdges[halfEdgeIndex].previousIndex
+		nextIndex = self.halfEdges[halfEdgeIndex].nextIndex
+		del (															# delete face
+			self.faces[halfEdgeIndex],
+			self.faces[previousIndex],
+			self.faces[nextIndex])
+		del self.halfEdges[previousIndex], self.halfEdges[nextIndex]	# delete all half-edges but the one from the erased junction
+
+		# second face
+		previousIndex = self.halfEdges[pairHalfEdgeIndex].previousIndex
+		nextIndex = self.halfEdges[pairHalfEdgeIndex].nextIndex
+		del (															# deleta face
+			self.faces[pairHalfEdgeIndex],
+			self.faces[previousIndex],
+			self.faces[nextIndex])
+		del self.halfEdges[previousIndex], self.halfEdges[nextIndex]	# delete all half-edges but the one from the erased junction
+
+		del (	# delete junction
+			self.junctions[halfEdgeIndex],
+			self.junctions[pairHalfEdgeIndex])
+
+		del (	# delete half-edges in the erased junction
+			self.halfEdges[halfEdgeIndex],
+			self.halfEdges[pairHalfEdgeIndex])
+
+		del self.vertices[fromMergeIndex]	# delete vertex
+
+	def createJunction(self, halfEdgeIndex0, halfEdgeIndex1, length=1):
+		"""
+		Create a new vertex and junction.
+
+		Parameters
+		----------
+		halfEdgeIndex0 : int
+			Index of first half-edge going out of a vertex, and from whose pair
+			half-edge it will be separated after the introduction of a new
+			junction.
+		halfEdgeIndex1 : int
+			Index of second half-edge going out of the same vertex, and from
+			whose pair half-edge it will be separated after the introduction of
+			a new junction.
+		distance : float
+			Length to set for the new junction. (default: 1)
+		"""
+
+		# junctions cannot be split
+
+		assert not(halfEdgeIndex0 in self.junctions)
+		assert not(halfEdgeIndex1 in self.junctions)
+
+		# create new vertex
+
+		vertexIndex = self.halfEdges[halfEdgeIndex0].fromIndex
+		assert vertexIndex == self.halfEdges[halfEdgeIndex1].fromIndex	# check that both half-edges go out of the same vertex
+
+		newVertexIndex = max(self.vertices) + 1
+		self.vertices[newVertexIndex] = Vertex(
+			newVertexIndex,							# vertexIndex
+			self.vertices[vertexIndex].position,	# position
+			halfEdgeIndex1)							# halfEdgeIndex
+
+		# relabel origins and destinations of half of the half-edges
+
+		halfEdgeIndex = halfEdgeIndex1
+		while halfEdgeIndex != halfEdgeIndex0:
+
+			assert self.halfEdges[halfEdgeIndex].fromIndex == vertexIndex
+			self.halfEdges[halfEdgeIndex].fromIndex = newVertexIndex
+
+			previousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex
+			assert self.halfEdges[previousHalfEdgeIndex].toIndex == vertexIndex
+			self.halfEdges[previousHalfEdgeIndex].toIndex = newVertexIndex
+
+			halfEdgeIndex = self.halfEdges[previousHalfEdgeIndex].pairIndex
+
+		# create new half-edges, faces, and junctions
+
+		c = Counter(max(self.halfEdges) + 1)
+
+		newHalfEdgeIndex0, previousNewHalfEdgeIndex0, nextNewHalfEdgeIndex0 = (
+			c(), c(), c())
+		newHalfEdgeIndex1, previousNewHalfEdgeIndex1, nextNewHalfEdgeIndex1 = (
+			c(), c(), c())
+
+		# first face
+		self.halfEdges[newHalfEdgeIndex0] = HalfEdge(
+			newHalfEdgeIndex0,							# halfEdgeIndex
+			self.halfEdges[halfEdgeIndex0].toIndex,		# fromIndex
+			vertexIndex,								# toIndex
+			previousNewHalfEdgeIndex0,					# previousIndex
+			nextNewHalfEdgeIndex0,						# nextIndex
+			halfEdgeIndex0)								# pairIndex
+		self.halfEdges[previousNewHalfEdgeIndex0] = HalfEdge(
+			previousNewHalfEdgeIndex0,					# halfEdgeIndex
+			newVertexIndex,								# fromIndex
+			self.halfEdges[halfEdgeIndex0].toIndex,		# toIndex
+			nextNewHalfEdgeIndex0,						# previousIndex
+			newHalfEdgeIndex0,							# nextIndex
+			self.halfEdges[halfEdgeIndex0].pairIndex)	# pairIndex
+		self.halfEdges[nextNewHalfEdgeIndex0] = HalfEdge(
+			nextNewHalfEdgeIndex0,						# halfEdgeIndex
+			vertexIndex,								# fromIndex
+			newVertexIndex,								# toIndex
+			newHalfEdgeIndex0,							# previousIndex
+			previousNewHalfEdgeIndex0,					# nextIndex
+			nextNewHalfEdgeIndex1)						# pairIndex
+		self.faces[
+			newHalfEdgeIndex0, previousNewHalfEdgeIndex0, nextNewHalfEdgeIndex0
+			] = Face(newHalfEdgeIndex0)					# create new face
+		self.halfEdges[self.halfEdges[halfEdgeIndex0].pairIndex].pairIndex = (
+			previousNewHalfEdgeIndex0)					# relabel pair of old pair of halfEdgeIndex0
+		self.halfEdges[halfEdgeIndex0].pairIndex = (
+			newHalfEdgeIndex0)							# relabel pair of halfEdgeIndex0
+
+		# second face
+		self.halfEdges[newHalfEdgeIndex1] = HalfEdge(
+			newHalfEdgeIndex1,							# halfEdgeIndex
+			self.halfEdges[halfEdgeIndex1].toIndex,		# fromIndex
+			newVertexIndex,								# toIndex
+			previousNewHalfEdgeIndex1,					# previousIndex
+			nextNewHalfEdgeIndex1,						# nextIndex
+			halfEdgeIndex1)								# pairIndex
+		self.halfEdges[previousNewHalfEdgeIndex1] = HalfEdge(
+			previousNewHalfEdgeIndex1,					# halfEdgeIndex
+			vertexIndex,								# fromIndex
+			self.halfEdges[halfEdgeIndex1].toIndex,		# toIndex
+			nextNewHalfEdgeIndex1,						# previousIndex
+			newHalfEdgeIndex1,							# nextIndex
+			self.halfEdges[halfEdgeIndex1].pairIndex)	# pairIndex
+		self.halfEdges[nextNewHalfEdgeIndex1] = HalfEdge(
+			nextNewHalfEdgeIndex1,						# halfEdgeIndex
+			newVertexIndex,								# fromIndex
+			vertexIndex,								# toIndex
+			newHalfEdgeIndex1,							# previousIndex
+			previousNewHalfEdgeIndex1,					# nextIndex
+			nextNewHalfEdgeIndex0)						# pairIndex
+		self.faces[
+			newHalfEdgeIndex1, previousNewHalfEdgeIndex1, nextNewHalfEdgeIndex1
+			] = Face(newHalfEdgeIndex1)					# create new face
+		self.halfEdges[self.halfEdges[halfEdgeIndex1].pairIndex].pairIndex = (
+			previousNewHalfEdgeIndex1)					# relabel pair of old pair of halfEdgeIndex1
+		self.halfEdges[halfEdgeIndex1].pairIndex = (
+			newHalfEdgeIndex1)							# relabel pair of halfEdgeIndex1
+
+		# create junction
+
+		self.junctions[nextNewHalfEdgeIndex0, nextNewHalfEdgeIndex1] = (
+			Junction(nextNewHalfEdgeIndex0))	# halfEdgeIndex
+
+		# move vertices apart in the direction of neighbours' barycentre
+
+		neighboursVertex, _ = self.getNeighbourVertices(vertexIndex)
+		toNeighbours = np.array([0, 0], dtype=float)			# vector in the direction of neighbours' barycentre
+		for neighbour in neighboursVertex:
+			toNeighbours += self.wrapTo(
+				vertexIndex, neighbour, unit=False)
+		toNeighbours /= np.sqrt((toNeighbours**2).sum())		# normalise vector
+		neighboursNewVertex, _ = self.getNeighbourVertices(newVertexIndex)
+		toNewNeighbours = np.array([0, 0], dtype=float)			# vector in the direction of neighbours' barycentre
+		for neighbour in neighboursNewVertex:
+			toNewNeighbours += self.wrapTo(
+				newVertexIndex, neighbour, unit=False)
+		toNewNeighbours /= np.sqrt((toNewNeighbours**2).sum())	# normalise vector
+
+		assert (toNeighbours != toNewNeighbours).all()				# vectors to neighbours' barycentres have to be different
+		diff = np.sqrt(((toNeighbours - toNewNeighbours)**2).sum())	# norm of the difference between unitary vectors in the directions of neighbours' barycentre
+		self.vertices[vertexIndex].position += toNeighbours*length/diff
+		self.vertices[newVertexIndex].position += toNewNeighbours*length/diff
 
 	def getNeighbours(self, vertexIndex, junction=False):
 		"""
@@ -126,7 +496,7 @@ class System(Mesh):
 		for vertexIndex, halfEdgeIndex in zip(
 			neighbourVerticesIndices, halfEdgesToNeighboursIndices):
 			# check if the half-edge is a junction
-			if not(junction) or halfEdgeIndex in self.junctions:
+			if not(junction) or (halfEdgeIndex in self.junctions):
 				neighboursIndices += [vertexIndex]
 			if halfEdgeIndex in self.junctions:
 				junctions += [self.junctions[halfEdgeIndex]]
@@ -137,6 +507,9 @@ class System(Mesh):
 	def initRegularTriangularLattice(self, size=6, junctionLength=1):
 		"""
 		Initialises a regular triangular lattice.
+
+		NOTE: This only sets the geometry of the system and not physical
+		      parameters.
 
 		Parameters
 		----------
@@ -257,10 +630,12 @@ class System(Mesh):
 						6*A + 4)	# halfEdgeIndex
 
 		# for plots
-		self.fig, self.ax = plt.subplots()
+		if not(hasattr(self, 'fig')) or not(hasattr(self, 'ax')):
+			self.fig, self.ax = plt.subplots()
 
 	def plot(self):
 		"""
+		Update plot of system.
 		"""
 
 		assert hasattr(self, 'fig') and hasattr(self, 'ax')
