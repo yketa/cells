@@ -142,34 +142,34 @@ class VertexModel(Mesh):
             Create two vertices at distance `delta' + `epsilon'. (default: 1)
         """
 
-# 		# get forces
-# 
-# 		forces = self.getForces()
-# 
-# 		# integrate
-# 
-# 		for vertexIndex in forces:
-# 			self.vertices[vertexIndex].position += forces[vertexIndex]*dt	# Euler integration
-# 			self.vertices[vertexIndex].position = self.wrap(				# wrap w.r.t. periodic boundary conditions
-# 				self.vertices[vertexIndex].position)
-# 		for vertexIndex in self.sPVertices:
-# 			self.sPVertices[vertexIndex].theta += np.sqrt(
-# 				2*self.sPVertices[vertexIndex].Dr*dt)*np.random.normal(0, 1)
-# 
-# 		# move cell centres
-# 
-# 		for vertex in self.cells:
-# 			fromPos = self.vertices[vertex].position.copy()
-# 
-# 			neighbours, _ = self.getNeighbours(vertex, junction=False)
-# 			for neighbourVertexIndex in neighbours:
-# 				toPos = self.vertices[neighbourVertexIndex].position
-# 
-# 				disp = self.wrapDiff(fromPos, toPos)
-# 				self.vertices[vertex].position += disp/len(neighbours)
-# 
-# 			self.vertices[vertex].position = self.wrap(
-# 				self.vertices[vertex].position)
+        # get forces
+
+        forces = self.getForces()
+
+        # integrate
+
+        for vertexIndex in forces:
+            self.vertices[vertexIndex].position += forces[vertexIndex]*dt	# Euler integration
+            self.vertices[vertexIndex].position = self.wrap(				# wrap w.r.t. periodic boundary conditions
+                self.vertices[vertexIndex].position)
+        for vertexIndex in self.sPVertices:
+            self.sPVertices[vertexIndex].theta += np.sqrt(
+                2*self.sPVertices[vertexIndex].Dr*dt)*np.random.normal(0, 1)
+
+        # move cell centres
+
+        for vertex in self.cells:
+            fromPos = self.vertices[vertex].position.copy()
+
+            neighbours, _ = self.getNeighbours(vertex, junction=False)
+            for neighbourVertexIndex in neighbours:
+                toPos = self.vertices[neighbourVertexIndex].position
+
+                disp = self.wrapDiff(fromPos, toPos)
+                self.vertices[vertex].position += disp/len(neighbours)
+
+            self.vertices[vertex].position = self.wrap(
+                self.vertices[vertex].position)
 
         # perform T1s
 
@@ -178,13 +178,6 @@ class VertexModel(Mesh):
         # update time
 
         self.time += dt
-        ######
-        # TEST
-        if self.time > 0.5:
-            self.reset()
-            del self.didT1
-            self.initRegularTriangularLattice()
-        ######
 
     def getForces(self):
         """
@@ -266,15 +259,6 @@ class VertexModel(Mesh):
 
         halfEdgeIndices = []
         for junction in self.junctions.values():
-            ######
-            # TEST
-            if hasattr(self, 'didT1') or self.time <= 0.25:
-                return
-            else:
-                self.didT1 = True
-                halfEdgeIndices = [list(self.junctions.values())[6].halfEdgeIndex]
-                break
-            ######
             if self.getEdgeLength(junction.halfEdgeIndex) < delta:
                 halfEdgeIndices += [junction.halfEdgeIndex]	# this way each junction appears through an unique half-edge
 

@@ -20,11 +20,7 @@ scalarMap = ScalarMappable(norm, cmap)
 
 def update(iterations=100, dt=1e-3, A=5e-2):
 
-# 	for vertexIndex in m.vertices:
-# 		assert vertexIndex == m.halfEdges[m.vertices[vertexIndex].halfEdgeIndex].fromIndex
-
     for iteration in range(iterations):
-
         m.integrate(dt=dt, delta=0.5, epsilon=0.1)
 
     # plot
