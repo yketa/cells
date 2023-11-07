@@ -23,14 +23,14 @@ def update(iterations=100, dt=1e-3, A=5e-2):
 # 	for vertexIndex in m.vertices:
 # 		assert vertexIndex == m.halfEdges[m.vertices[vertexIndex].halfEdgeIndex].fromIndex
 
-	for iteration in range(iterations):
+    for iteration in range(iterations):
 
-		m.integrate(dt=dt, delta=0.5, epsilon=0.1)
+        m.integrate(dt=dt, delta=0.5, epsilon=0.1)
 
-	# plot
+    # plot
 
-	m.plot()
-	m.fig.suptitle('t=%s' % m.time)
+    m.plot()
+    m.fig.suptitle('t=%s' % m.time)
 
 anim = animation.FuncAnimation(m.fig, update, repeat=True, interval=0)
 plt.show()
