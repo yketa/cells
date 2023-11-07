@@ -18,57 +18,19 @@ norm = ColorsNormalise(-1, 1)
 colormap = mpl.colorbar.ColorbarBase(cax, cmap, norm, orientation='vertical')
 scalarMap = ScalarMappable(norm, cmap)
 
-def update(iterations=100, dt=5e-3, A=5e-2):
+def update(iterations=100, dt=1e-3, A=5e-2):
+
+# 	for vertexIndex in m.vertices:
+# 		assert vertexIndex == m.halfEdges[m.vertices[vertexIndex].halfEdgeIndex].fromIndex
 
 	for iteration in range(iterations):
 
-# 		# compute forces
-# 
-# 		forces = {vertex: np.array([0., 0.]) for vertex in m.vertices}
-# 
-# 		for halfEdgeIndex in m.halfEdges:
-# 			if halfEdgeIndex in m.junctions:	# loop over junctions
-# 
-# 				disp = m.getHalfEdgeVector(halfEdgeIndex, unit=True)	# normalised vector out of vertex
-# 
-# 				amp = np.cos(
-# 					m.junctions[halfEdgeIndex].w*m.time
-# 					+ m.junctions[halfEdgeIndex].phi)
-# 				forces[fromIndex] += A*disp*amp
-# 				m.junctions[halfEdgeIndex].color = scalarMap.to_rgba(amp)
-# 
-# 		# integrate positions
-# 
-# 		for vertex in m.vertices:
-# 
-# 			m.vertices[vertex].position += forces[vertex]*dt
-# 			m.vertices[vertex].position = m.wrap(m.vertices[vertex].position)
-# 
-# 		# move cell centres
-# 
-# 		for vertex in m.cells:
-# 			fromPos = m.vertices[vertex].position.copy()
-# 
-# 			neighbours, _ = m.getNeighbours(vertex, junction=False)
-# 			for neighbourVertexIndex in range(neighbours):
-# 				toPos = m.vertices[neighbourVertexIndex].position
-# 
-# 				disp = m.wrapDiff(fromPos, toPos)
-# 				m.vertices[vertex].position += disp/len(neighbours)
-# 
-# 			m.vertices[vertex].position = m.wrap(m.vertices[vertex].position)
-
-		# update time
-
-		m.time += dt
-		m.doT1(delta=0, epsilon=0.5)
+		m.integrate(dt=dt, delta=0.5, epsilon=0.1)
 
 	# plot
 
 	m.plot()
 	m.fig.suptitle('t=%s' % m.time)
-
-	if m.time > 1: m.initRegularTriangularLattice(size=6)
 
 anim = animation.FuncAnimation(m.fig, update, repeat=True, interval=0)
 plt.show()

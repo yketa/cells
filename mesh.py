@@ -73,9 +73,9 @@ class Mesh:
 		"""
 		"""
 
-		self.vertices = {}
-		self.helfEdges = {}
-		self.systemSize = [0, 0]
+		self.vertices = dict()
+		self.helfEdges = dict()
+		self.systemSize = np.array([0, 0])
 
 	def wrap(self, position):
 		"""
@@ -239,7 +239,8 @@ class Mesh:
 				neighbourVerticesIndices, halfEdgesToNeighboursIndices):
 				edgeAngles[vertexIndex, halfEdgeIndex] = (
 					math.atan2(
-						*self.getHalfEdgeVector(vertexIndex, unit=True)[::-1]))
+						*self.getHalfEdgeVector(halfEdgeIndex, unit=True)[::-1]
+						))
 			neighbourVerticesIndices = sorted(
 				neighbourVerticesIndices, key=lambda i: edgeAngles[i])			# sorted indices in anticlockwise order
 			halfEdgesToNeighboursIndices = sorted(
@@ -282,4 +283,96 @@ class Mesh:
 				)/2.
 
 		return area
+
+	def getVertexToNeighboursPerimeter(self, vertexIndex):
+		"""
+		Perimeter encapsulated by the neighbours of a vertex.
+
+		Parameters
+		----------
+		vertexIndex : int
+			Index of vertex.
+
+		Returns
+		-------
+		perimeter : float
+			Perimeter encapsulated by neighbours.
+		"""
+
+		vertexIndices, _ = self.getNeighbourVertices(vertexIndex,
+			angularSort=True)	# neighbours in anticlockwise order
+		numberNeighbours = vertexIndices.size
+		assert numberNeighbours >= 3
+
+		# compute perimeter
+		perimeter = 0
+		for i in range(numberNeighbours):
+			perimeter += np.sqrt(
+				(self.wrapTo(	# difference vector between neighbouring vertices
+					vertexIndices[i%numberNeighbours],
+					vertexIndices[(i + 1)%numberNeighbours],
+					unit=False)**2).sum())
+
+		return perimeter
+
+	def checkMesh(self):
+		"""
+		Check that the vertices and half-edges define a planar mesh, with
+		anticlockwise triangles.
+		"""
+
+		vertices = list(self.vertices)		# list of vertices
+		halfEdges = list(self.halfEdges)	# list of half-edges
+
+		for halfEdgeIndex in self.halfEdges:	# loop over all half-edges
+
+			if not(halfEdgeIndex in halfEdges): continue
+
+			nextHalfEdgeIndex = self.halfEdges[halfEdgeIndex].nextIndex
+			previousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex
+
+			triangle = (	# three half-edges forming a triangle
+				halfEdgeIndex,
+				self.halfEdges[halfEdgeIndex].nextIndex,
+				self.halfEdges[halfEdgeIndex].previousIndex)
+
+			for i, halfEdge in enumerate(triangle):
+
+				fromVertex = self.halfEdges[halfEdge].fromIndex
+				toVertex = self.halfEdges[halfEdge].toIndex
+
+				if fromVertex in vertices:		# looping over all half-edges should encounter all vertices
+
+					halfEdgeBis = self.vertices[fromVertex].halfEdgeIndex
+					assert self.halfEdges[halfEdgeBis].fromIndex == fromVertex	# check consistency with identifying half-edge
+
+					vertices.remove(fromVertex)
+
+				assert np.cross(												# check that the triangle has anticlockwise orientation
+					self.getHalfEdgeVector(triangle[(i + 0)%3]),
+					self.getHalfEdgeVector(triangle[(i + 1)%3])) > 0
+
+				pairHalfEdgeIndex = self.halfEdges[halfEdge].pairIndex
+				assert halfEdge == (	# check the indexing of pair
+					self.halfEdges[pairHalfEdgeIndex].pairIndex)
+				assert toVertex == (
+					self.halfEdges[pairHalfEdgeIndex].fromIndex)
+				assert fromVertex == (
+					self.halfEdges[pairHalfEdgeIndex].toIndex)
+
+				assert halfEdge == (	# check the indexing of previous
+					self.halfEdges[triangle[(i + 1)%3]].previousIndex)
+				assert toVertex == (
+					self.halfEdges[triangle[(i + 1)%3]].fromIndex)
+
+				assert halfEdge == (	# check the indexing of next
+					self.halfEdges[triangle[(i - 1)%3]].nextIndex)
+				assert fromVertex == (
+					self.halfEdges[triangle[(i - 1)%3]].toIndex)
+
+				halfEdges.remove(halfEdge)
+
+		assert len(vertices) == 0
+		assert len(halfEdges) == 0
+		print('OK mesh construction')
 

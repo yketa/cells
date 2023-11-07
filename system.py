@@ -7,10 +7,30 @@ from cells.tools import Counter
 from cells.mesh import Vertex, HalfEdge, Mesh
 
 import numpy as np
+import math
 
 import matplotlib.pyplot as plt
 
 # PHYSICS OBJECT
+
+class SPVertex:
+	"""
+	Physical self-propelled vertex.
+	"""
+
+	def __init__(self, vertexIndex):
+		"""
+		Parameters
+		----------
+		vertexIndex : int
+			Unique index for the cell identical to index of vertex.
+		"""
+
+		self.vertexIndex = vertexIndex
+
+		self.v0 = 10								# self-propulsion velocity
+		self.Dr = 1								# rotational diffusion constant
+		self.theta = 2*np.pi*np.random.random()	# direction of self-propulsion
 
 class Cell:
 	"""
@@ -29,11 +49,11 @@ class Cell:
 		self.vertexIndex = vertexIndex
 
 		self.area = -1.				# area of cell
-		self.kA	= 0					# area stiffness
-		self.targetArea = 0.		# target area of cell
+		self.kA	= 1					# area stiffness
+		self.targetArea = 1.		# target area of cell
 		self.perimeter = -1.		# perimeter of cell
-		self.kP = 0					# perimeter stiffness
-		self.targetPerimeter = 0	# target perimeter of cell
+		self.kP = 1					# perimeter stiffness
+		self.targetPerimeter = 1	# target perimeter of cell
 
 class Face:
 	"""
@@ -84,6 +104,8 @@ class VertexModel(Mesh):
 		super().__init__()
 		self.reset()
 
+		self.time = 0
+
 	def reset(self):
 		"""
 		"""
@@ -92,7 +114,9 @@ class VertexModel(Mesh):
 		self.vertices = dict()
 		if hasattr(self, 'halfEdges'): del self.halfEdges
 		self.halfEdges = dict()
-		if hasattr(self, 'cells'): del  self.cells
+		if hasattr(self, 'sPVertices'): del self.sPVertices
+		self.sPVertices = MIKD()
+		if hasattr(self, 'cells'): del self.cells
 		self.cells = MIKD()
 		if hasattr(self, 'faces'): del self.faces
 		self.faces = MIKD()
@@ -100,10 +124,66 @@ class VertexModel(Mesh):
 		self.junctions = MIKD()
 		if hasattr(self, 'systemSize'): del self.systemSize
 
+		self.time = 0
+
+	def integrate(self, dt=0, delta=0.1, epsilon=0.1):
+		"""
+		Integrate one time step of self-propelled vertex model and check for
+		and perform T1s.
+
+		Parameters
+		----------
+		dt : float
+			Integration time step. (default: 0)
+		delta : float
+			Distance between vertices below which these should be merge.
+			(default: 1)
+		epsilon : float
+			Create two vertices at distance `delta' + `epsilon'. (default: 1)
+		"""
+
+# 		# get forces
+# 
+# 		forces = self.getForces()
+# 
+# 		# integrate
+# 
+# 		for vertexIndex in forces:
+# 			self.vertices[vertexIndex].position += forces[vertexIndex]*dt	# Euler integration
+# 			self.vertices[vertexIndex].position = self.wrap(				# wrap w.r.t. periodic boundary conditions
+# 				self.vertices[vertexIndex].position)
+# 		for vertexIndex in self.sPVertices:
+# 			self.sPVertices[vertexIndex].theta += np.sqrt(
+# 				2*self.sPVertices[vertexIndex].Dr*dt)*np.random.normal(0, 1)
+# 
+# 		# move cell centres
+# 
+# 		for vertex in self.cells:
+# 			fromPos = self.vertices[vertex].position.copy()
+# 
+# 			neighbours, _ = self.getNeighbours(vertex, junction=False)
+# 			for neighbourVertexIndex in neighbours:
+# 				toPos = self.vertices[neighbourVertexIndex].position
+# 
+# 				disp = self.wrapDiff(fromPos, toPos)
+# 				self.vertices[vertex].position += disp/len(neighbours)
+# 
+# 			self.vertices[vertex].position = self.wrap(
+# 				self.vertices[vertex].position)
+
+		# perform T1s
+
+		self.doT1(delta=delta, epsilon=epsilon)
+
+		# update time
+
+		self.time += dt
 		######
 		# TEST
-		self.time = 0
-		if hasattr(self, 'didT1'): del self.didT1
+		if self.time > 0.5:
+			self.reset()
+			del self.didT1
+			self.initRegularTriangularLattice()
 		######
 
 	def getForces(self):
@@ -119,7 +199,7 @@ class VertexModel(Mesh):
 		forces = {index: np.array([0, 0], dtype=float)	# initialise forces at each vertex
 			for index in self.vertices}
 
-		for cell in cells.values():	# loop over cells
+		for cell in self.cells.values():	# loop over cells
 
 			cell.area = self.getVertexToNeighboursArea(				# update area
 				cell.vertexIndex)
@@ -130,13 +210,14 @@ class VertexModel(Mesh):
 				cell.vertexIndex, angularSort=True)
 			numberVertices = len(vertexIndices)
 			for i, vertexIndex in enumerate(vertexIndices):	# loop over vertices of the cell
+				assert not(vertexIndex in self.cells)
 
 				previousVertexIndex = vertexIndices[(i - 1)%numberVertices]
 				nextVertexIndex = vertexIndices[(i + 1)%numberVertices]
 
 				# area term
 
-				forces[vertexIndex] += (
+				areaTerm = (
 					-cell.kA*(cell.area - cell.targetArea)*(1./2.)*(
 						np.cross(
 							self.wrapTo(	# vector from cell to previous vertex
@@ -149,6 +230,8 @@ class VertexModel(Mesh):
 								unit=False),
 							[0, 0, 1]))
 					)[:2]
+				forces[vertexIndex] += areaTerm
+				forces[cell.vertexIndex] -= areaTerm	# enforce Newton's third law with cell centres
 
 				# perimeter term
 
@@ -158,6 +241,11 @@ class VertexModel(Mesh):
 							nextVertexIndex, vertexIndex)
 						+ self.wrapTo(	# vector from previous vertex to vertex
 							previousVertexIndex, vertexIndex)))
+
+		for sPVertex in self.sPVertices.values():	# loop over self-propelled vertices
+
+			forces[sPVertex.vertexIndex] += sPVertex.v0*np.array(	# self-propulsion force
+				[np.cos(sPVertex.theta), np.sin(sPVertex.theta)])
 
 		return forces
 
@@ -178,24 +266,23 @@ class VertexModel(Mesh):
 
 		halfEdgeIndices = []
 		for junction in self.junctions.values():
+			######
+			# TEST
+			if hasattr(self, 'didT1') or self.time <= 0.25:
+				return
+			else:
+				self.didT1 = True
+				halfEdgeIndices = [list(self.junctions.values())[6].halfEdgeIndex]
+				break
+			######
 			if self.getEdgeLength(junction.halfEdgeIndex) < delta:
 				halfEdgeIndices += [junction.halfEdgeIndex]	# this way each junction appears through an unique half-edge
-
-		######
-		# TEST
-		if hasattr(self, 'didT1'):
-			return
-		elif self.time > 0.5 and not(hasattr(self, 'didT1')):
-			halfEdgeIndices = [self.junctions._data[7].halfEdgeIndex]
-			self.didT1 = True
-		else:
-			halfEdgeIndices = []	
-		######
 
 		# perform T1s
 
 		np.random.shuffle(halfEdgeIndices)	# do T1s in a random order
 		for mergeHalfEdgeIndex in halfEdgeIndices:
+			print('merge:', mergeHalfEdgeIndex)
 
 			# identify half-edge to split to create new junction
 
@@ -220,6 +307,9 @@ class VertexModel(Mesh):
 					if vertexIndex in self.cells
 					and not(vertexIndex in neighboursFromMerge)])
 
+			angle = np.pi/2. + (	# create new junction orthogonal to the deleted junction
+				math.atan2(*self.getHalfEdgeVector(mergeHalfEdgeIndex)[::-1]))
+
 			# merge vertices
 
 			self.mergeVertices(mergeHalfEdgeIndex)
@@ -227,7 +317,9 @@ class VertexModel(Mesh):
 			# create new vertex
 
 			self.createJunction(createHalfEdgeIndex0, createHalfEdgeIndex1,
-				length=delta + epsilon)
+				length=delta + epsilon, angle=angle)
+
+		self.checkMesh()
 
 	def mergeVertices(self, halfEdgeIndex):
 		"""
@@ -237,6 +329,11 @@ class VertexModel(Mesh):
 		----------
 		halfEdgeIntex : int
 			Index of half-edge linking two vertices to be merged.
+
+		Returns
+		-------
+		fromMergeIndex : int
+			Merged vertex index.
 		"""
 
 		# identify vertices to merge
@@ -248,26 +345,54 @@ class VertexModel(Mesh):
 
 		previousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex	# half-edge pointing to the vertex to be removed in the first face to be removed
 		endPreviousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].pairIndex	# half-edge pointing to the vertex to be removed in the second face to be removed
+
 		while True:													# loop through half-edge construction starting from first face to be removed until second face to removed
+
 			pairHalfEdgeIndex = (									# half-edge pointing from the vertex to be removed and to be relabelled
 				self.halfEdges[previousHalfEdgeIndex].pairIndex)
-			previousHalfEdgeIndex = (								# half-edge pointing to the vertex to be removed and to be relabelled
-				self.halfEdges[pairHalfEdgeIndex].previousIndex)
-			if previousHalfEdgeIndex != endPreviousHalfEdgeIndex:	# relabel half-edges
-				# half-edge coming from vertex to be removed
-				assert (
-					self.halfEdges[pairHalfEdgeIndex].fromIndex
-						== fromMergeIndex)
-				self.halfEdges[pairHalfEdgeIndex].fromIndex = toMergeIndex
-				# half-edge going to vertex to be removed
-				assert (
-					self.halfEdges[previousHalfEdgeIndex].toIndex
-						== fromMergeIndex)
-				self.halfEdges[previousHalfEdgeIndex].toIndex = toMergeIndex
-			else:													# all faces which the vertex to be removed belongs to have been explored and half-edges relabelled
+
+			# half-edge coming from vertex to be removed
+			assert (
+				self.halfEdges[pairHalfEdgeIndex].fromIndex
+					== fromMergeIndex)
+			self.halfEdges[pairHalfEdgeIndex].fromIndex = toMergeIndex
+
+			# half-edge going to vertex to be removed
+			assert (
+				self.halfEdges[previousHalfEdgeIndex].toIndex
+					== fromMergeIndex)
+			self.halfEdges[previousHalfEdgeIndex].toIndex = toMergeIndex
+
+			if previousHalfEdgeIndex == endPreviousHalfEdgeIndex:	# all faces which the vertex to be removed belongs to have been explored and half-edges relabelled
+				assert pairHalfEdgeIndex == halfEdgeIndex
 				break
 
-		# relabel half-edges pairs
+			previousHalfEdgeIndex = (								# half-edge pointing to the vertex to be removed and to be relabelled
+				self.halfEdges[pairHalfEdgeIndex].previousIndex)
+
+		# reassign identifying half-edges of points belonging to faces to be removed
+
+		previousHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex	# half-edge pointing to the vertex to be removed in the first face to be removed
+		pairHalfEdgeIndex = self.halfEdges[previousHalfEdgeIndex].pairIndex # half-edge pointing from the vertex to be removed
+
+		assert self.halfEdges[pairHalfEdgeIndex].fromIndex == toMergeIndex
+		self.vertices[toMergeIndex].halfEdgeIndex = (
+			self.halfEdges[pairHalfEdgeIndex].fromIndex)
+
+		nextHalfEdgeIndex = self.halfEdges[halfEdgeIndex].nextIndex		# half-edge pointing from the merge vertex in the first face to be removed
+		pairHalfEdgeIndex = self.halfEdges[nextHalfEdgeIndex].pairIndex # half-edge pointing to the merge vertex
+		thirdVertexIndex = self.halfEdges[pairHalfEdgeIndex].fromIndex  # index of third vertex in the first face to be removed
+
+		self.vertices[thirdVertexIndex].halfEdgeIndex = pairHalfEdgeIndex
+
+		pairHalfEdgeIndex = self.halfEdges[halfEdgeIndex].pairIndex		# half-edge pointing to the vertex to be removed in the second face to be removed
+		nextHalfEdgeIndex = self.halfEdges[pairHalfEdgeIndex].nextIndex # half-edge pointing from the vertex to be removed in the second face to be removed
+		pairHalfEdgeIndex = self.halfEdges[nextHalfEdgeIndex].pairIndex # half-edge pointing to the vertex to be removed
+		thirdVertexIndex = self.halfEdges[pairHalfEdgeIndex].fromIndex  # index of third vertex in the second face to be removed
+
+		self.vertices[thirdVertexIndex].halfEdgeIndex = pairHalfEdgeIndex
+
+		# relabel half-edges pairs and delete/merge junctions
 
 		fromHalfEdgeIndex = self.halfEdges[halfEdgeIndex].previousIndex
 		fromHalfEdgeIndex = self.halfEdges[fromHalfEdgeIndex].pairIndex
@@ -302,20 +427,22 @@ class VertexModel(Mesh):
 		# first face
 		previousIndex = self.halfEdges[halfEdgeIndex].previousIndex
 		nextIndex = self.halfEdges[halfEdgeIndex].nextIndex
-		del (															# delete face
+		del (																# delete face
 			self.faces[halfEdgeIndex],
 			self.faces[previousIndex],
 			self.faces[nextIndex])
-		del self.halfEdges[previousIndex], self.halfEdges[nextIndex]	# delete all half-edges but the one from the erased junction
+		del self.halfEdges[previousIndex], self.halfEdges[nextIndex]		# delete all half-edges but the one from the erased junction
+		print('del1', previousIndex, nextIndex)
 
 		# second face
 		previousIndex = self.halfEdges[pairHalfEdgeIndex].previousIndex
 		nextIndex = self.halfEdges[pairHalfEdgeIndex].nextIndex
-		del (															# deleta face
+		del (																# deleta face
 			self.faces[pairHalfEdgeIndex],
 			self.faces[previousIndex],
 			self.faces[nextIndex])
-		del self.halfEdges[previousIndex], self.halfEdges[nextIndex]	# delete all half-edges but the one from the erased junction
+		del self.halfEdges[previousIndex], self.halfEdges[nextIndex]		# delete all half-edges but the one from the erased junction
+		print('del2:', previousIndex, nextIndex)
 
 		del (	# delete junction
 			self.junctions[halfEdgeIndex],
@@ -324,10 +451,15 @@ class VertexModel(Mesh):
 		del (	# delete half-edges in the erased junction
 			self.halfEdges[halfEdgeIndex],
 			self.halfEdges[pairHalfEdgeIndex])
+		print('del3:', halfEdgeIndex, pairHalfEdgeIndex)
 
 		del self.vertices[fromMergeIndex]	# delete vertex
+		del self.sPVertices[fromMergeIndex]	# delete self-propelled vertex
 
-	def createJunction(self, halfEdgeIndex0, halfEdgeIndex1, length=1):
+		return fromMergeIndex
+
+	def createJunction(self, halfEdgeIndex0, halfEdgeIndex1, length=1,
+		angle=None):
 		"""
 		Create a new vertex and junction.
 
@@ -343,6 +475,17 @@ class VertexModel(Mesh):
 			a new junction.
 		distance : float
 			Length to set for the new junction. (default: 1)
+		angle : float or None
+			Angle of the new junction with respect to the horizontal axis.
+			(default: None)
+			NOTE: if angle == None then the new vertices are displaced from the
+			      original vertex position in an average direction of
+			      neighbours.
+
+		Returns
+		-------
+		newVertexIndex : int
+			New vertex index.
 		"""
 
 		# junctions cannot be split
@@ -354,12 +497,15 @@ class VertexModel(Mesh):
 
 		vertexIndex = self.halfEdges[halfEdgeIndex0].fromIndex
 		assert vertexIndex == self.halfEdges[halfEdgeIndex1].fromIndex	# check that both half-edges go out of the same vertex
+		self.vertices[vertexIndex].halfEdgeIndex = halfEdgeIndex0		# re-assign identifying half-edge to `halfEdgeIndex0' which will remain attached to `vertexIndex'
 
 		newVertexIndex = max(self.vertices) + 1
 		self.vertices[newVertexIndex] = Vertex(
 			newVertexIndex,							# vertexIndex
 			self.vertices[vertexIndex].position,	# position
 			halfEdgeIndex1)							# halfEdgeIndex
+		self.sPVertices[newVertexIndex] = SPVertex(
+			newVertexIndex)							# vertexIndex
 
 		# relabel origins and destinations of half of the half-edges
 
@@ -451,23 +597,49 @@ class VertexModel(Mesh):
 
 		# move vertices apart in the direction of neighbours' barycentre
 
-		neighboursVertex, _ = self.getNeighbourVertices(vertexIndex)
-		toNeighbours = np.array([0, 0], dtype=float)			# vector in the direction of neighbours' barycentre
-		for neighbour in neighboursVertex:
-			toNeighbours += self.wrapTo(
-				vertexIndex, neighbour, unit=False)
-		toNeighbours /= np.sqrt((toNeighbours**2).sum())		# normalise vector
-		neighboursNewVertex, _ = self.getNeighbourVertices(newVertexIndex)
-		toNewNeighbours = np.array([0, 0], dtype=float)			# vector in the direction of neighbours' barycentre
-		for neighbour in neighboursNewVertex:
-			toNewNeighbours += self.wrapTo(
-				newVertexIndex, neighbour, unit=False)
-		toNewNeighbours /= np.sqrt((toNewNeighbours**2).sum())	# normalise vector
 
-		assert (toNeighbours != toNewNeighbours).all()				# vectors to neighbours' barycentres have to be different
-		diff = np.sqrt(((toNeighbours - toNewNeighbours)**2).sum())	# norm of the difference between unitary vectors in the directions of neighbours' barycentre
-		self.vertices[vertexIndex].position += toNeighbours*length/diff
-		self.vertices[newVertexIndex].position += toNewNeighbours*length/diff
+		if type(angle) == type(None):
+
+			neighboursVertex, _ = self.getNeighbourVertices(vertexIndex)
+			toNeighbours = np.array([0, 0], dtype=float)			# vector in the direction of neighbours' barycentre
+			for neighbour in neighboursVertex:
+				toNeighbours += self.wrapTo(
+					vertexIndex, neighbour, unit=False)
+			toNeighbours /= np.sqrt((toNeighbours**2).sum())		# normalise vector
+
+			neighboursNewVertex, _ = self.getNeighbourVertices(newVertexIndex)
+			toNewNeighbours = np.array([0, 0], dtype=float)			# vector in the direction of neighbours' barycentre
+			for neighbour in neighboursNewVertex:
+				toNewNeighbours += self.wrapTo(
+					newVertexIndex, neighbour, unit=False)
+			toNewNeighbours /= np.sqrt((toNewNeighbours**2).sum())	# normalise vector
+
+			assert (toNeighbours != toNewNeighbours).all()	# vectors to neighbours' barycentres have to be different
+			assert np.cross(								# check that the created face has anticlockwise orientation
+				self.getHalfEdgeVector(newHalfEdgeIndex0),
+				toNewNeighbours - toNeighbours) > 0
+
+			diff = np.sqrt(((toNeighbours - toNewNeighbours)**2).sum())	# norm of the difference between unitary vectors in the directions of neighbours' barycentre
+			self.vertices[vertexIndex].position += (
+				toNeighbours*length/diff)
+			self.vertices[newVertexIndex].position += (
+				toNewNeighbours*length/diff)
+
+		else:
+
+			direction = lambda _: np.array([np.cos(_), np.sin(_)])	# unit vector of angle `_'
+
+			if np.cross(
+				self.getHalfEdgeVector(newHalfEdgeIndex0),
+				direction(angle)) < 0:
+				angle += np.pi	# enforces that the newly created face has anticlockwise orientation
+
+			self.vertices[vertexIndex].position -= (
+				direction(angle)*length/2.)
+			self.vertices[newVertexIndex].position += (
+				direction(angle)*length/2.)
+
+		return newVertexIndex
 
 	def getNeighbours(self, vertexIndex, junction=False):
 		"""
@@ -546,9 +718,11 @@ class VertexModel(Mesh):
 				self.vertices[vertexIndex].position = self.wrap(	# wrap coordinate around periodic boundary condition
 					self.vertices[vertexIndex].position)
 
-				# create cell
+				# create cell or self-propelled vertex
 				if (line - column)%3 == 0:	# condition for vertex to be a cell centre
 					self.cells[vertexIndex] = Cell(vertexIndex)
+				else:						# then it is a self-propelled vertex
+					self.sPVertices[vertexIndex] = SPVertex(vertexIndex)
 
 				# vertex indices for half-edge construction
 				A = getIndex(line, column)
@@ -628,6 +802,8 @@ class VertexModel(Mesh):
 				if ((C//size - C%size)%3 != 0) and ((A//size - A%size)%3 != 0):
 					self.junctions[6*A + 4, 6*A + 5] = Junction(
 						6*A + 4)	# halfEdgeIndex
+
+		self.checkMesh()	# check mesh construction
 
 		# for plots
 		if not(hasattr(self, 'fig')) or not(hasattr(self, 'ax')):
