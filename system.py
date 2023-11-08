@@ -28,8 +28,8 @@ class SPVertex:
 
         self.vertexIndex = vertexIndex
 
-        self.v0 = 10								# self-propulsion velocity
-        self.Dr = 1								# rotational diffusion constant
+        self.v0 = 1e-1							# self-propulsion velocity
+        self.Dr = 1e-2							# rotational diffusion constant
         self.theta = 2*np.pi*np.random.random()	# direction of self-propulsion
 
 class Cell:
@@ -48,12 +48,12 @@ class Cell:
 
         self.vertexIndex = vertexIndex
 
-        self.area = -1.				# area of cell
-        self.kA	= 1					# area stiffness
-        self.targetArea = 1.		# target area of cell
-        self.perimeter = -1.		# perimeter of cell
-        self.kP = 1					# perimeter stiffness
-        self.targetPerimeter = 1	# target perimeter of cell
+        self.area = -1.			# area of cell
+        self.kA	= 1.			# area stiffness
+        self.A0 = None          # target area of cell (will be set in VertexModel.initRegularTriangularLattice)
+        self.perimeter = -1.	# perimeter of cell
+        self.kP = 1.			# perimeter stiffness
+        self.p0 = 3.81	        # dimensionless target perimeter of cell
 
 class Face:
     """
@@ -189,7 +189,7 @@ class VertexModel(Mesh):
             Forces at each vertex.
         """
 
-        forces = {index: np.array([0, 0], dtype=float)	# initialise forces at each vertex
+        forces = {index: np.array([0, 0], dtype=float)	# nitialise forces at each vertex
             for index in self.vertices}
 
         for cell in self.cells.values():	# loop over cells
@@ -211,7 +211,7 @@ class VertexModel(Mesh):
                 # area term
 
                 areaTerm = (
-                    -cell.kA*(cell.area - cell.targetArea)*(1./2.)*(
+                    -cell.kA*(cell.area - cell.A0)*(1./2.)*(
                         np.cross(
                             self.wrapTo(	# vector from cell to previous vertex
                                 cell.vertexIndex, previousVertexIndex,
@@ -229,7 +229,7 @@ class VertexModel(Mesh):
                 # perimeter term
 
                 forces[vertexIndex] += (
-                    -cell.kP*(cell.perimeter - cell.targetPerimeter)*(
+                    -cell.kP*(cell.perimeter - cell.p0*np.sqrt(cell.A0))*(
                         self.wrapTo(	# vector from next vertex to vertex
                             nextVertexIndex, vertexIndex)
                         + self.wrapTo(	# vector from previous vertex to vertex
@@ -303,7 +303,7 @@ class VertexModel(Mesh):
             self.createJunction(createHalfEdgeIndex0, createHalfEdgeIndex1,
                 length=delta + epsilon, angle=angle)
 
-        self.checkMesh()
+        if len(halfEdgeIndices) > 0: self.checkMesh()
 
     def mergeVertices(self, halfEdgeIndex):
         """
@@ -703,9 +703,11 @@ class VertexModel(Mesh):
                     self.vertices[vertexIndex].position)
 
                 # create cell or self-propelled vertex
-                if (line - column)%3 == 0:	# condition for vertex to be a cell centre
+                if (line - column)%3 == 0:	                            # condition for vertex to be a cell centre
                     self.cells[vertexIndex] = Cell(vertexIndex)
-                else:						# then it is a self-propelled vertex
+                    self.cells[vertexIndex].A0 = (junctionLength**2)*(  # target area is the area of the regular hexagon
+                        (3./2.)/np.tan(2*np.pi/12))
+                else:						                            # then it is a self-propelled vertex
                     self.sPVertices[vertexIndex] = SPVertex(vertexIndex)
 
                 # vertex indices for half-edge construction
