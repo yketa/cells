@@ -97,7 +97,7 @@ to the same value.
         ProxyBis operator[] (std::vector<long int> keys)    // set from vector or initialiser list of indices
             { return ProxyBis(*this, keys); }
 
-        bool in(long int& key) { return (keys.find(key) != keys.end()); }
+        bool in(long int& key) { return (keys.find(key) != keys.end()); }   // is key in the dictionary
 
         // REMOVE
 
