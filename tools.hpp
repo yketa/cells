@@ -4,6 +4,34 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <assert.h>
+#include <string>
+#include <algorithm>
+
+/*
+ * FUNCTIONS
+ *
+ */
+
+template<class T> int sign(T const& val)                                        // sign function (https://stackoverflow.com/questions/1903954)
+    { return (T(0) < val) - (val < T(0)); }
+
+double const cross2(std::vector<double> const& a, std::vector<double> const& b) // cross product of 2D vector
+    { return a[0]*b[1] - a[1]*b[0]; }
+
+template<class T> void eraseInVec(std::vector<T> vec, T const& val) {           // remove ONE occurence of value in vector (https://stackoverflow.com/questions/3385229)
+    typename std::vector<T>::iterator position =
+        std::find(vec.begin(), vec.end(), val);
+    if (position != vec.end()) { vec.erase(position); } // if element was found
+}
+
+template<class T> bool const inVec(std::vector<T> const& vec, T const& val)     // is value in vector
+    { return std::find(vec.begin(), vec.end(), val) == vec.end(); }
+
+/*
+ * CLASSES
+ *
+ */
 
 class Counter;
 template<class T> class MultiIntKeyDict;
@@ -13,6 +41,10 @@ class Counter {
 Return integers in order at each call.
 */
 
+    private:
+
+        long int counter;
+
     public:
 
         Counter(long int const& initial=0) : counter(initial - 1) {}    // initialise counter
@@ -21,10 +53,6 @@ Return integers in order at each call.
             { counter = current; return *this; }
         long int operator()()                       // increment and return counter
             { counter++; return counter; }
-
-    private:
-
-        long int counter;
 
 };
 
@@ -55,13 +83,12 @@ to the same value.
                 Proxy(MultiIntKeyDict& mikd_, long int& key_)
                     : mikd(&mikd_), key(key_) {}
                 void operator=(T value) {   // lvalue assignment: set value
-                    if (!mikd->in(key)) {                       // if key is not in dictionary
-                        (mikd->keys)[key] = mikd->maxIndex();   // create new index for new key
-                    }
+                    mikd->erase(key);                           // delete entry corresponding to key
+                    (mikd->keys)[key] = mikd->maxIndex();       // create new index for key
                     (mikd->data)[(mikd->keys)[key]] = value;    // set value
                 }
                 operator T() const {        // rvalue assignment: return value
-                    if (!mikd->in(key)) { std::cerr << "Error" << std::endl; }
+                    assert(mikd->in(key));                      // check that key is in dictionary
                     return (mikd->data)[(mikd->keys)[key]];
                 }
         };
@@ -97,7 +124,7 @@ to the same value.
         ProxyBis operator[] (std::vector<long int> keys)    // set from vector or initialiser list of indices
             { return ProxyBis(*this, keys); }
 
-        bool in(long int& key) { return (keys.find(key) != keys.end()); }   // is key in the dictionary
+        bool in(long int const& key) { return (keys.find(key) != keys.end()); } // is key in the dictionary?
 
         // REMOVE
 
@@ -128,12 +155,12 @@ to the same value.
 
         // OUTPUT
 
-        void print() {
-            std::cout << "[KEYS]" << std::endl;
+        void print(std::string comment="") {
+            std::cout << "[KEYS] " << comment << std::endl;
             for (auto it=keys.begin(); it != keys.end(); it++) {
                 std::cout << it->first << ": " << it->second << std::endl;
             }
-            std::cout << "[DATA]" << std::endl;
+            std::cout << "[DATA] " << comment << std::endl;
             for (auto it=data.begin(); it != data.end(); it++) {
                 std::cout << it->first << ": " << it->second << std::endl;
             }
