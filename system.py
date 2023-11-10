@@ -230,10 +230,10 @@ class VertexModel(Mesh):
 
                 forces[vertexIndex] += (
                     -cell.kP*(cell.perimeter - cell.p0*np.sqrt(cell.A0))*(
-                        self.wrapTo(	# vector from next vertex to vertex
-                            nextVertexIndex, vertexIndex)
-                        + self.wrapTo(	# vector from previous vertex to vertex
-                            previousVertexIndex, vertexIndex)))
+                        self.wrapTo(	# unit vector from next vertex to vertex
+                            nextVertexIndex, vertexIndex, unit=True)
+                        + self.wrapTo(	# unit vector from previous vertex to vertex
+                            previousVertexIndex, vertexIndex, unit=True)))
 
         for sPVertex in self.sPVertices.values():	# loop over self-propelled vertices
 
@@ -663,9 +663,6 @@ class VertexModel(Mesh):
     def initRegularTriangularLattice(self, size=6, junctionLength=1):
         """
         Initialises a regular triangular lattice.
-
-        NOTE: This only sets the geometry of the system and not physical
-              parameters.
 
         Parameters
         ----------
