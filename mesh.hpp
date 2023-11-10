@@ -20,6 +20,7 @@ Individual nodes of the two-dimensional mesh.
     private:
 
         long int const index;
+
         double position[2];
         long int halfEdgeIndex;
 
@@ -33,16 +34,16 @@ Individual nodes of the two-dimensional mesh.
         /*
         Parameters
         ----------
-        index :
+        index_ :
             Unique index for the vertex.
-        position :
+        position_ :
             Position of the vertex.
-        halfEdgeIndex:
+        halfEdgeIndex_ :
             Index of a single halfedge going out of this vertex (the
             association needs not to be bijective).
         */
 
-        long int const& getIndex() { return index; }
+        long int const getIndex() { return index; }
         double* getPosition() { return position; }
         long int* getHalfEdgeIndex() { return &halfEdgeIndex; }
 
@@ -56,6 +57,7 @@ Directed arrow between vertices (Vertex) of the two-dimensional mesh.
     private:
 
         long int const index;
+
         long int fromIndex;
         long int toIndex;
         long int previousIndex;
@@ -73,19 +75,19 @@ Directed arrow between vertices (Vertex) of the two-dimensional mesh.
         /*
         Parameters
         ----------
-        index :
+        index_ :
             Unique index for the half-edge.
-        fromIndex :
+        fromIndex_ :
             Index of the origin vertex.
-        toIndex :
+        toIndex_ :
             Index of the destination vertex.
-        previousIndex :
+        previousIndex_ :
             Index of the associated `previous' half-edge going towards the
             origin of this half-edge. (default: -1)
-        nextIndex :
+        nextIndex_ :
             Index of the associated `next' half-edge going outwards from the
             destination of this half-edge. (default: -1)
-        pairIndex :
+        pairIndex_ :
             Index of the associated `pair' half-edge going from the destination
             to the origin of this half-edge. (default: -1)
         */
@@ -104,7 +106,7 @@ class Mesh {
 Two-dimensional ensembles of vertices and edges.
 */
 
-    private:
+    protected:
 
         std::map<long int, Vertex> vertices;
         std::map<long int, HalfEdge> halfEdges;
@@ -131,7 +133,7 @@ Two-dimensional ensembles of vertices and edges.
             Pointer to unwrapped position to wrap.
         */
 
-        std::vector<double> wrapDiff(
+        std::vector<double> const wrapDiff(
             double* const& fromPos, double* const& toPos);
         /*
         Wrap difference vector with respect to periodic boundary conditions.
@@ -142,9 +144,14 @@ Two-dimensional ensembles of vertices and edges.
             Pointer to initial point position.
         toPos :
             Pointer to final point position.
+
+        Returns
+        -------
+        disp :
+            (2,) difference vector.
         */
 
-        std::vector<double> wrapTo(
+        std::vector<double> const wrapTo(
             long int const& fromVertexIndex, long int const& toVertexIndex,
             bool const& unit=false);
         /*
@@ -159,10 +166,15 @@ Two-dimensional ensembles of vertices and edges.
             Index of destination vertex.
         unit :
             Return unitary vector.
+
+        Returns
+        -------
+        fromTo :
+            (2,) vector between vertices.
         */
 
-        std::vector<double> getHalfEdgeVector(long int const& halfEdgeIndex,
-            bool const& unit=false);
+        std::vector<double> const getHalfEdgeVector(
+            long int const& halfEdgeIndex, bool const& unit=false);
         /*
         Vector going from the origin to the destination of a half-edge.
 
@@ -172,6 +184,11 @@ Two-dimensional ensembles of vertices and edges.
             Index of the half-edge.
         unit :
             Return unitary vector.
+
+        Returns
+        -------
+        halfEdgeVector :
+            (2,) vector corresponding to half-edge.
         */
 
         double const getEdgeLength(long int const& halfEdgeIndex);
@@ -182,9 +199,14 @@ Two-dimensional ensembles of vertices and edges.
         ----------
         halfEdgeIndex :
             Index of the half-edge.
+
+        Returns
+        -------
+        edgeLength :
+            Length of edge.
         */
 
-        std::vector<std::vector<long int>> getNeighbourVertices(
+        std::vector<std::vector<long int>> const getNeighbourVertices(
             long int const& vertexIndex);
         /*
         Indices of neighbouring vertices and indices of half-edges towards
@@ -197,6 +219,14 @@ Two-dimensional ensembles of vertices and edges.
         ----------
         vertexIndex : int
             Index of the vertex.
+
+
+        Returns
+        -------
+        neighbourVerticesIndices :
+            Indices of vertices neighbouring this vertex.
+        halfEdgesToNeighboursIndices :
+            Indices of half-edges from this vertex towards neighbour vertices.
         */
 
         double const getVertexToNeighboursArea(
@@ -208,6 +238,11 @@ Two-dimensional ensembles of vertices and edges.
         ----------
         vertexIndex :
             Index of vertex.
+
+        Returns
+        -------
+        area :
+            Area encapsulated by neighbours.
         */
 
         double const getVertexToNeighboursPerimeter(
@@ -219,6 +254,11 @@ Two-dimensional ensembles of vertices and edges.
         ----------
         vertexIndex :
             Index of vertex.
+
+        Returns
+        -------
+        perimeter :
+            Perimeter encapsulated by neighbours.
         */
 
         void checkMesh();
