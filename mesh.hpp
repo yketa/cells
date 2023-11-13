@@ -69,9 +69,12 @@ Directed arrow between vertices (Vertex) of the two-dimensional mesh.
         HalfEdge() : index(-1) {}
         HalfEdge(long int const& index_,
             long int const& fromIndex_, long int const& toIndex_,
-            long int const& previousIndex_=-1,
-            long int const& nextIndex_=-1,
-            long int const& pairIndex_=-1);
+            long int const& previousIndex_=-1, long int const& nextIndex_=-1,
+            long int const& pairIndex_=-1)
+            : index(index_),
+                fromIndex(fromIndex_), toIndex(toIndex_),
+                previousIndex(previousIndex_), nextIndex(nextIndex_),
+                pairIndex(pairIndex_) {}
         /*
         Parameters
         ----------
@@ -114,7 +117,7 @@ Two-dimensional ensembles of vertices and edges.
 
     public:
 
-        Mesh();
+        Mesh() {}
 
         Vertex* getVertex(long int const& index)
             { return &(vertices[index]); }

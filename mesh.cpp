@@ -112,9 +112,9 @@ double const Mesh::getVertexToNeighboursArea(
     for (long int i=0; i < numberNeighbours; i++) {
         area += cross2( // area of triangle
             getHalfEdgeVector(
-                halfEdgeIndices[pmod(i + 0, numberNeighbours)]),
+                halfEdgeIndices[pmod<long int>(i + 0, numberNeighbours)]),
             getHalfEdgeVector(
-                halfEdgeIndices[pmod(i + 1, numberNeighbours)]))
+                halfEdgeIndices[pmod<long int>(i + 1, numberNeighbours)]))
             /2.;
     }
 
@@ -134,8 +134,8 @@ double const Mesh::getVertexToNeighboursPerimeter(
     std::vector<double> diff;
     for (long int i=0; i < numberNeighbours; i++) {
         diff = wrapTo(
-            vertexIndices[pmod(i + 0, numberNeighbours)],
-            vertexIndices[pmod(i + 1, numberNeighbours)],
+            vertexIndices[pmod<long int>(i + 0, numberNeighbours)],
+            vertexIndices[pmod<long int>(i + 1, numberNeighbours)],
             false);
         perimeter += std::sqrt(diff[0]*diff[0] + diff[1]*diff[1]);
     }
@@ -182,8 +182,8 @@ void Mesh::checkMesh() {
             }
 
             assert(cross2(          // check that the triangle has anticlockwise orientation
-                getHalfEdgeVector(triangle[pmod(i + 0, 3)]),
-                getHalfEdgeVector(triangle[pmod(i + 1, 3)])) > 0);
+                getHalfEdgeVector(triangle[pmod<int>(i + 0, 3)]),
+                getHalfEdgeVector(triangle[pmod<int>(i + 1, 3)])) > 0);
 
             pairHalfEdgeIndex = *halfEdges[triangle[i]].getPairIndex();
             assert(triangle[i] ==   // check the indexing of pair
@@ -194,14 +194,14 @@ void Mesh::checkMesh() {
                 *halfEdges[pairHalfEdgeIndex].getToIndex());
 
             assert(triangle[i] ==   // check the indexing of previous
-                *halfEdges[triangle[pmod(i + 1, 3)]].getPreviousIndex());
+                *halfEdges[triangle[pmod<int>(i + 1, 3)]].getPreviousIndex());
             assert(toVertex ==
-                *halfEdges[triangle[pmod(i + 1, 3)]].getFromIndex());
+                *halfEdges[triangle[pmod<int>(i + 1, 3)]].getFromIndex());
 
             assert(triangle[i] ==   // check the indexing of next
-                *halfEdges[triangle[pmod(i - 1, 3)]].getNextIndex());
+                *halfEdges[triangle[pmod<int>(i - 1, 3)]].getNextIndex());
             assert(fromVertex ==
-                *halfEdges[triangle[pmod(i - 1, 3)]].getToIndex());
+                *halfEdges[triangle[pmod<int>(i - 1, 3)]].getToIndex());
 
             eraseInVec<long int>(halfEdgeIndices, triangle[i]);
         }

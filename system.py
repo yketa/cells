@@ -360,8 +360,7 @@ class VertexModel(Mesh):
         pairHalfEdgeIndex = self.halfEdges[previousHalfEdgeIndex].pairIndex # half-edge pointing from the vertex to be removed
 
         assert self.halfEdges[pairHalfEdgeIndex].fromIndex == toMergeIndex
-        self.vertices[toMergeIndex].halfEdgeIndex = (
-            self.halfEdges[pairHalfEdgeIndex].fromIndex)
+        self.vertices[toMergeIndex].halfEdgeIndex = pairHalfEdgeIndex
 
         nextHalfEdgeIndex = self.halfEdges[halfEdgeIndex].nextIndex		# half-edge pointing from the merge vertex in the first face to be removed
         pairHalfEdgeIndex = self.halfEdges[nextHalfEdgeIndex].pairIndex # half-edge pointing to the merge vertex
