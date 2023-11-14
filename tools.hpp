@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 #include <math.h>
 #include <iostream>
 #include <assert.h>
@@ -17,19 +18,19 @@
 template<class T> int const sign(T const& val)                                  // sign function (https://stackoverflow.com/questions/1903954)
     { return (T(0) < val) - (val < T(0)); }                                     
                                                                                 
-template<class T, class TT> long int const pmod(T const& i, TT const& n)        // positive modulo i%n (https://stackoverflow.com/questions/14997165)
-    { return (i%n + n)%n; }                                                     
-template<class T> long int const pmod(T const &i, T const& n)                   
-    { return pmod<T, T>(i, n); }                                                
-                                                                                
-template<class T> void eraseInVec(std::vector<T> vec, T const& val) {           // remove ONE occurence of value in vector (https://stackoverflow.com/questions/3385229)
+template<class T> T const pmod(T const& i, T const& n)                          // positive modulo (remainder) i%n (https://stackoverflow.com/questions/14997165)
+    { return std::fmod(std::fmod(i, n) + n, n); }
+template<class T> long int const qpmod(T const& i, T const& n)                  // quotient `i/n' associated to remainder `i%n = pmod(i, n)'
+    { return (i - pmod<T>(i, n))/n; }
+
+template<class T> void eraseInVec(std::vector<T>& vec, T const& val) {          // remove ONE occurence of value in vector (https://stackoverflow.com/questions/3385229)
     typename std::vector<T>::iterator position =                                
         std::find(vec.begin(), vec.end(), val);                                 
     if (position != vec.end()) { vec.erase(position); } // if element was found 
 }                                                                               
                                                                                 
 template<class T> bool const inVec(std::vector<T> const& vec, T const& val)     // is value in vector
-    { return std::find(vec.begin(), vec.end(), val) == vec.end(); }             
+    { return std::find(vec.begin(), vec.end(), val) != vec.end(); }             
                                                                                 
 template<class T, class TT> T const maxKey(std::map<T, TT> const& map)          // return max key of map (https://stackoverflow.com/questions/1660195)
     { return map.rbegin()->first; }                                             
@@ -128,7 +129,7 @@ to the same value.
                 void operator=(T const& value) {    // lvalue assignment: set values
                     if (keys.size() >= 1) {
                         Proxy(*mikd, keys.at(0)) = value;   // set first one
-                        for (long int i=1; i < keys.size(); i++) {
+                        for (long int i=1; i < (int) keys.size(); i++) {
                             mikd->erase(keys.at(i));        // delete others (if existing)
                             (mikd->keys)[keys.at(i)] =      // then set identical to first one
                                 (mikd->keys)[keys.at(0)];

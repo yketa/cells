@@ -90,9 +90,9 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
             assert(!cells.in(neighbourVertexIndex));
 
             previousNeighbourVertexIndex =
-                neighbourVerticesIndices[pmod<int>(i - 1, numberNeighbours)];
+                neighbourVerticesIndices[pmod(i - 1, numberNeighbours)];
             nextNeighbourVertexIndex =
-                neighbourVerticesIndices[pmod<int>(i + 1, numberNeighbours)];
+                neighbourVerticesIndices[pmod(i + 1, numberNeighbours)];
 
             // area term
 
@@ -186,7 +186,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         halfEdgesNeighboursToMerge = neighbours[1];
 
         numberNeighbours = neighboursFromMerge.size();
-        assert(numberNeighbours == halfEdgesNeighboursFromMerge.size());
+        assert(numberNeighbours == (int) halfEdgesNeighboursFromMerge.size());
         halfEdgeToCellsIndices.clear();
         for (int i=0; i < numberNeighbours; i++) {
             vertexIndex = neighboursFromMerge[i];
@@ -201,7 +201,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         createHalfEdgeIndex0 = random.pick(halfEdgeToCellsIndices);    // randomly pick one
 
         numberNeighbours = neighboursToMerge.size();
-        assert(numberNeighbours == halfEdgesNeighboursToMerge.size());
+        assert(numberNeighbours == (int) halfEdgesNeighboursToMerge.size());
         halfEdgeToCellsIndices.clear();
         for (int i=0; i < numberNeighbours; i++) {
             vertexIndex = neighboursToMerge[i];
@@ -367,7 +367,7 @@ long int const VertexModel::createJunction(
 
     long int const vertexIndex = *halfEdges[halfEdgeIndex0].getFromIndex();
     assert(vertexIndex == *halfEdges[halfEdgeIndex1].getFromIndex());   // check that both half-edges go out of the same vertex
-    *vertices[vertexIndex].getHalfEdgeIndex();                          // re-assign identifying half-edge to `halfEdgeIndex0' which will remain attached to `vertexIndex'
+    *vertices[vertexIndex].getHalfEdgeIndex() = halfEdgeIndex0;         // re-assign identifying half-edge to `halfEdgeIndex0' which will remain attached to `vertexIndex'
 
     long int const newVertexIndex = maxKey(vertices);
     vertices.emplace(newVertexIndex, Vertex(
@@ -496,14 +496,14 @@ void VertexModel::initRegularTriangularLattice(
 
     assert(size%6 == 0);
 
-    reset();                                                                    // reset vertices, junctions, and cells
+    reset();                                                // reset vertices, junctions, and cells
     systemSize[0] = size*junctionLength;                    // length of the periodic box in the x-direction
     systemSize[1] = size*junctionLength*std::sqrt(3.)/2.;   // length of the periodic box in the y-direction
 
-    auto getIndex = [&size](int const& line, int const& column) {
-        int const col = pmod<int>((column + (line/size)*(size/2)), size);   // the system is periodic along an inclined vertical axis
-        int const lin = pmod<int>(line, size);                              // the system is periodic along the horizontal axis
-        return (long int const) line*size + column;
+    auto getIndex = [&size](long int const& line, long int const& column) {
+        int const col = pmod((column + qpmod(line, size)*(size/2)), size);  // the system is periodic along an inclined vertical axis
+        int const lin = pmod(line, size);                                   // the system is periodic along the horizontal axis
+        return (long int const) lin*size + col;
     };
 
     // loop over vertices

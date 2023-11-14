@@ -164,8 +164,17 @@ class VertexModel : public Mesh {
 
     public:
 
-        VertexModel(int const& seed=0) : random(seed) {}
+        VertexModel(long int const& seed=0) : random(seed) {}
 
+        std::map<long int, Vertex> const getVertices() { return vertices; }
+        std::map<long int, HalfEdge> const getHalfEdges() { return halfEdges; }
+        MultiIntKeyDict<SPVertex> const getSPVertices() { return sPVertices; }
+        MultiIntKeyDict<Cell> const getCells() { return cells; }
+        MultiIntKeyDict<Face> const getFaces() { return faces; }
+        MultiIntKeyDict<Junction> const getJunctions() { return junctions; }
+
+        double const getTime() { return time; }
+        
         void reset() {
         /*
         Clear all data.

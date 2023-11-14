@@ -119,12 +119,7 @@ Two-dimensional ensembles of vertices and edges.
 
         Mesh() {}
 
-        Vertex* getVertex(long int const& index)
-            { return &(vertices[index]); }
-        HalfEdge* getHalfEdge(long int const& index)
-            { return &(halfEdges[index]); }
-        double* getPosition()
-            { return systemSize; }
+        double* getSystemSize() { return systemSize; }
 
         void wrap(double* position);
         /*

@@ -3,3 +3,5 @@ __pycache__
 test
 test.*pp
 *.o
+*.so
+old
