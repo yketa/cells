@@ -8,7 +8,7 @@ MPIFLAGS=
 all: test
 
 clean:
-	rm *.o
+	rm *.o *.so
 
 # object files
 

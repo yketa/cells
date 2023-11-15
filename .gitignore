@@ -5,3 +5,4 @@ test.*pp
 *.o
 *.so
 old
+sync.sh
