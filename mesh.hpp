@@ -119,8 +119,6 @@ Two-dimensional ensembles of vertices and edges.
 
         Mesh() {}
 
-        double* getSystemSize() { return systemSize; }
-
         void wrap(double* position);
         /*
         Wrap position with respect to periodic boundary conditions.
