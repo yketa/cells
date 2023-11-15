@@ -5,7 +5,7 @@ CFLAGS=-std=gnu++20 -O3 -Wall
 LDFLAGS=
 MPIFLAGS=
 
-all: test
+all: bind.so
 
 clean:
 	rm *.o *.so
