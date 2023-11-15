@@ -16,7 +16,7 @@ class Junction;
 class VertexModel;
 
 /*
- * PHYSICS OBJECTS
+ *  PHYSICS OBJECTS
  *
  */
 
@@ -146,7 +146,7 @@ Physical link between two vertices.
 };
 
 /*
- * SIMULATION OBJECTS
+ *  SIMULATION OBJECTS
  *
  */
 

@@ -74,6 +74,7 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
     long int neighbourVertexIndex;
     long int previousNeighbourVertexIndex, nextNeighbourVertexIndex;
     std::vector<double> fromTo(0), fromToBis(0);
+    std::vector<double> crossFromTo(0), crossFromToBis(0);
     double areaTerm;
     for (Cell* cell : cells.getValues()) {          // loop over cells
         cellVertexIndex = cell->getVertexIndex();
@@ -83,7 +84,7 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
         *cell->getPerimeter() = // update perimeter
             getVertexToNeighboursPerimeter(cellVertexIndex);
 
-        neighbourVerticesIndices = getNeighbourVertices(cellVertexIndex)[0];
+        neighbourVerticesIndices = getNeighbourVertices(cellVertexIndex)[0];    // indices of neighbours of cell centre (i.e. cell corners) are in anticlockwise order
         numberNeighbours = neighbourVerticesIndices.size();
         for (int i=0; i < numberNeighbours; i++) {  // loop over vertices in the cell
             neighbourVertexIndex = neighbourVerticesIndices[i];
@@ -99,14 +100,16 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
             fromTo =    // vector from cell to previous vertex
                 wrapTo(cellVertexIndex, previousNeighbourVertexIndex,
                     false);
+            crossFromTo = cross2z(fromTo);
             fromToBis = // vector from cell to next vertex
                 wrapTo(cellVertexIndex, nextNeighbourVertexIndex,
                     false);
+            crossFromToBis = cross2z(fromToBis);
             for (int dim=0; dim < 2; dim++) {
 
                 areaTerm =
-                    -cell->getkA()*(*cell->getArea() - cell->getA0())*(1./2.)*(
-                        cross2z(fromTo)[dim] - cross2z(fromToBis)[dim]);
+                    (cell->getkA()/2.)*(*cell->getArea() - cell->getA0())*(
+                        crossFromTo[dim] - crossFromToBis[dim]);
 
                 forces[neighbourVertexIndex][dim] += areaTerm;
                 forces[cellVertexIndex][dim] -= areaTerm;   // enforce Newton's third law w/ cell centrs
@@ -114,16 +117,16 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
 
             // perimeter term
 
-            fromTo =    // unit vector from next vertex to vertex
-                wrapTo(nextNeighbourVertexIndex, neighbourVertexIndex,
+            fromTo =    // unit vector from vertex to previous vertex
+                wrapTo(neighbourVertexIndex, previousNeighbourVertexIndex,
                     true);
-            fromToBis = // unit vector from previous vertex to vertex
-                wrapTo(previousNeighbourVertexIndex, neighbourVertexIndex,
+            fromToBis = // unit vector from vertex to next vertex
+                wrapTo(neighbourVertexIndex, nextNeighbourVertexIndex,
                     true);
             for (int dim=0; dim < 2; dim++) {
 
                 forces[neighbourVertexIndex][dim] +=
-                    -cell->getkP()*(*cell->getPerimeter() - cell->getP0())*(
+                    cell->getkP()*(*cell->getPerimeter() - cell->getP0())*(
                         fromTo[dim] + fromToBis[dim]);
             }
         }
@@ -369,7 +372,7 @@ long int const VertexModel::createJunction(
     assert(vertexIndex == *halfEdges[halfEdgeIndex1].getFromIndex());   // check that both half-edges go out of the same vertex
     *vertices[vertexIndex].getHalfEdgeIndex() = halfEdgeIndex0;         // re-assign identifying half-edge to `halfEdgeIndex0' which will remain attached to `vertexIndex'
 
-    long int const newVertexIndex = maxKey(vertices);
+    long int const newVertexIndex = maxKey(vertices) + 1;
     vertices.emplace(newVertexIndex, Vertex(
         // vertices is std::map so add with std::map::emplace
         newVertexIndex,                         // vertexIndex
@@ -528,14 +531,15 @@ void VertexModel::initRegularTriangularLattice(
             if ((line - column)%3 == 0) {   // condition for vertex to be a cell centre...
                 cells[vertexIndex] = {
                     // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
-                    vertexIndex,                    // vertexIndex
-                    (junctionLength*junctionLength) //A0
+                    vertexIndex,                            // vertexIndex
+                    (junctionLength*junctionLength)         //A0
                         *(3./2.)/std::tan(std::numbers::pi/6)};
             }
             else {                          // ... or a self-propelled vertex
                 sPVertices[vertexIndex] = {
                     // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
-                    vertexIndex};
+                    vertexIndex,                            // vertexIndex
+                    2*std::numbers::pi*random.random01()};  // theta
             }
 
             // vertex indices for half-edge construction
