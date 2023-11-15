@@ -8,10 +8,77 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include <pybind11/stl.h>   // https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html
 
 #include <string>
+#include <vector>
+#include <map>
 
 #include "mesh.hpp"
 #include "system.hpp"
 #include "tools.hpp"
+
+std::vector<std::vector<double>> getLinesHalfEdge(VertexModel& vm) {
+/*
+Return vector [[x0, x0'], [y0, y0'], ..., [xN-1, xN-1'], [yN-1, yN-1']] where
+the line (xi, yi) -- (xi', yi') corresponds to the i-th half-edge in `vm'.
+This is aimed as speeding plotting.
+*/
+
+    std::vector<std::vector<double>> lines(0);
+
+    std::map<long int, Vertex> vertices = vm.getVertices();
+    std::map<long int, HalfEdge> halfEdges = vm.getHalfEdges();
+
+    for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over all vertices
+        vm.wrap((it->second).getPosition());    // wrap position with respect to periodic boundary conditions
+    }
+
+    double* fromPos;
+    std::vector<double> disp;
+    for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {  // loop over all half-edges
+        fromPos = vertices[*(it->second).getFromIndex()].getPosition(); // position of origin vertex
+        disp = vm.getHalfEdgeVector(it->first, false);                  // displacement to destination vertex
+        lines.push_back({fromPos[0], fromPos[0] + disp[0]});            // x-coordinates of line
+        lines.push_back({fromPos[1], fromPos[1] + disp[1]});            // y-coordinates of line
+    }
+
+    return lines;
+}
+
+std::vector<std::vector<double>> getLinesJunction(VertexModel& vm) {
+/*
+Return vector [[x0, x0'], [y0, y0'], ..., [xN-1, xN-1'], [yN-1, yN-1']] where
+the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
+This is aimed as speeding plotting.
+*/
+
+    std::vector<std::vector<double>> lines(0);
+
+    std::map<long int, Vertex> vertices = vm.getVertices();
+    std::map<long int, HalfEdge> halfEdges = vm.getHalfEdges();
+    MultiIntKeyDict<Junction> junctions = vm.getJunctions();
+
+    for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over all vertices
+        vm.wrap((it->second).getPosition());    // wrap position with respect to periodic boundary conditions
+    }
+
+    double* fromPos;
+    std::vector<double> disp;
+    std::vector<long int> halfEdgeIndices;
+    for (auto it=junctions.begin(); it != junctions.end(); ++it) {  // loop over all junctions
+        halfEdgeIndices.clear();
+        halfEdgeIndices.push_back(
+            *it);
+        halfEdgeIndices.push_back(
+            *halfEdges[halfEdgeIndices[0]].getPairIndex());
+        for (long int index : halfEdgeIndices) {
+            fromPos = vertices[*halfEdges[index].getFromIndex()].getPosition(); // position of origin vertex
+            disp = vm.getHalfEdgeVector(index, false);                          // displacement to destination vertex
+            lines.push_back({fromPos[0], fromPos[0] + disp[0]});                // x-coordinates of line
+            lines.push_back({fromPos[1], fromPos[1] + disp[1]});                // y-coordinates of line
+        }
+    }
+
+    return lines;
+}
 
 /*
 declare class template
@@ -39,10 +106,15 @@ template<class T> void declare_MultiIntKeyDict_class(
             [](MultiIntKeyDict<T>& self) {
                 return pybind11::make_iterator(self.begin(), self.end());
             },
-            pybind11::keep_alive<0, 1>());
+            pybind11::keep_alive<0, 1>())
+        .def("__len__",
+            &MultiIntKeyDict<T>::size);
 }
 
 PYBIND11_MODULE(bind, m) {
+
+    m.def("getLinesHalfEdge", &getLinesHalfEdge);
+    m.def("getLinesJunction", &getLinesJunction);
 
     /*
      *  [tools.hpp]
@@ -137,8 +209,12 @@ PYBIND11_MODULE(bind, m) {
 
     pybind11::class_<VertexModel, Mesh>(m, "VertexModel")
         // constructor
-        .def(pybind11::init<long int const&>(),
-            pybind11::arg("seed")=0)
+        .def(pybind11::init
+            <long int const&, double const&, double const&, double const&>(),
+            pybind11::arg("seed")=0,
+            pybind11::arg("v0")=1e-1,
+            pybind11::arg("Dr")=1e-1,
+            pybind11::arg("p0")=3.81)
         // attributes
         .def_property_readonly("systemSize",
             [](VertexModel& self) {

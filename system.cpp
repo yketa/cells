@@ -51,6 +51,7 @@ void VertexModel::integrate(double const& dt,
                 cellPosition[dim] += disp[dim]/numberNeighbours;
             }
         }
+        wrap(vertices[vertexIndex].getPosition());  // wrap with respect to boundary conditions
     }
 
     // perform T1s
@@ -135,14 +136,24 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
     // self-propelled vertices
 
     long int vertexIndex;
-    for (SPVertex* sPVertex : sPVertices.getValues()) {
+    double sp; std::vector<double> meanSP(2, 0);
+    long int const nSPVertices = sPVertices.size();
+    for (SPVertex* sPVertex : sPVertices.getValues()) { // loop over self-propelled vertices
         vertexIndex = sPVertex->getVertexIndex();
 
         for (int dim=0; dim < 2; dim++) {
 
-            forces[vertexIndex][dim] +=
-                sPVertex->getv0()
-                    *std::cos(*sPVertex->gettheta() - dim*std::numbers::pi/2);
+            sp = sPVertex->getv0()
+                *std::cos(*sPVertex->gettheta() - dim*std::numbers::pi/2);
+            forces[vertexIndex][dim] += sp;             // add self-propulsion force
+            meanSP[dim] += sp/nSPVertices;              // compute average self-propulsion force
+        }
+    }
+
+    for (SPVertex* sPVertex : sPVertices.getValues()) {
+        vertexIndex = sPVertex->getVertexIndex();
+        for (int dim=0; dim < 2; dim++) {
+            forces[vertexIndex][dim] -= meanSP[dim];    // remove average self-propulsion force
         }
     }
 
@@ -532,14 +543,17 @@ void VertexModel::initRegularTriangularLattice(
                 cells[vertexIndex] = {
                     // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
                     vertexIndex,                            // vertexIndex
-                    (junctionLength*junctionLength)         //A0
-                        *(3./2.)/std::tan(std::numbers::pi/6)};
+                    (junctionLength*junctionLength)         // A0
+                        *(3./2.)/std::tan(std::numbers::pi/6.),
+                    p0};                                    // p0
             }
             else {                          // ... or a self-propelled vertex
                 sPVertices[vertexIndex] = {
                     // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
                     vertexIndex,                            // vertexIndex
-                    2*std::numbers::pi*random.random01()};  // theta
+                    2*std::numbers::pi*random.random01(),   // theta
+                    v0,                                     // v0
+                    Dr};                                    // Dr
             }
 
             // vertex indices for half-edge construction

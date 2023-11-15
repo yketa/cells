@@ -3,6 +3,7 @@ Objects from simulation and plotting.
 """
 
 from cells.bind import VertexModel as VM
+from cells.bind import getLinesHalfEdge, getLinesJunction
 
 import numpy as np
 import math
@@ -16,8 +17,18 @@ class VertexModel(VM):
     Physical system environment.
     """
 
-    def __init__(self):
+    def __init__(self, seed=0, v0=1e-1, Dr=1e-1, p0=3.81):
         """
+        Parameters
+        ----------
+        seed : int
+            Random number generator seed. (default: 0)
+        v0 : float
+            Vertex self-propulsion velocity. (default: 1e-1)
+        Dr : float
+            Vertex propulsion rotational diffusion constant. (default: 1e-1)
+        p0 : float
+            Dimensionless target perimeter of cell. (default: 3.81)
         """
 
         super().__init__()
@@ -36,29 +47,8 @@ class VertexModel(VM):
         self.ax.set_ylim([0, self.systemSize[1]])
         self.ax.set_aspect('equal')
 
-        for vertexIndex in self.vertices:
-            color = ['blue', 'red'][vertexIndex in self.cells]
-            self.ax.scatter(*self.wrap(self.vertices[vertexIndex].position),
-                color=color, s=100)
-
-        for halfEdgeIndex in self.halfEdges:
-
-            color, lw = 'black', 1
-            if halfEdgeIndex in self.junctions:
-                color, lw = 'green', 3
-
-            # indices of the vertices linked by the half-edge
-            fromVertexIndex = self.halfEdges[halfEdgeIndex].fromIndex
-            toVertexIndex = self.halfEdges[halfEdgeIndex].toIndex
-            # positions of the vertices
-            fromPos = self.wrap(self.vertices[fromVertexIndex].position)
-            toPos = self.wrap(self.vertices[toVertexIndex].position)
-            disp = self.wrapDiff(fromPos, toPos)
-
-            self.ax.plot(
-                [fromPos[0], fromPos[0] + disp[0]],
-                [fromPos[1], fromPos[1] + disp[1]],
-                color=color, lw=lw)
+        self.ax.plot(*getLinesHalfEdge(self), color='blue', lw=1)   # all half-edges
+        self.ax.plot(*getLinesJunction(self), color='red', lw=3)    # all junctions
 
         plt.pause(0.001)
         self.fig.canvas.draw()

@@ -205,6 +205,7 @@ to the same value.
 
         bool in(long int const& key) { return (keys.find(key) != keys.end()); } // is key in the dictionary?
 
+        std::size_t size() { return data.size(); }                              // number of values
         std::vector<T*> getValues() {                                           // vector of pointers to stored values
             std::vector<T*> values(0);
             for (auto it=data.begin(); it != data.end(); ++it) {

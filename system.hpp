@@ -28,15 +28,16 @@ Physical self-propelled vertex.
     private:
 
         long int const vertexIndex;
-        double const v0 = 1e-1; // self-propulsion velocity
-        double const Dr = 1e-2; // rotational diffusion constant
-        double theta;           // angle of self-propulsion
+        double const v0 = 0;    // self-propulsion velocity
+        double const Dr = 0;    // rotational diffusion constant
+        double theta = 0;       // angle of self-propulsion
 
     public:
 
         SPVertex() : vertexIndex(-1) {}
-        SPVertex(long int const& vertexIndex_, double const& theta_=0)
-            : vertexIndex(vertexIndex_), theta(theta_) {}
+        SPVertex(long int const& vertexIndex_, double const& theta_=0,
+            double const& v0_=1e-1, double const& Dr_=1e-1)
+            : vertexIndex(vertexIndex_), v0(v0_), Dr(Dr_), theta(theta_) {}
         /*
         Parameters
         ----------
@@ -45,6 +46,10 @@ Physical self-propelled vertex.
             vertex.
         theta_ :
             Initial self-propulsion direction.
+        v0_ :
+            Self-propulsion velocity.
+        Dr_ :
+            Rotational diffusion constant.
         */
 
         long int const getVertexIndex() { return vertexIndex; }
@@ -65,17 +70,19 @@ mesh.
         long int const vertexIndex;
 
         double area = -1;       // area of cell
-        double const kA = 1;    // area stiffness
-        double const A0;        // target area of cell
+        double const kA = 0;    // area stiffness
+        double const A0 = 0;    // target area of cell
         double perimeter = -1;  // perimeter of cell
-        double const kP = 1;    // perimeter stiffness
-        double const p0 = 3.81; // dimensionless target perimeter of cell
+        double const kP = 0;    // perimeter stiffness
+        double const p0 = 0;    // dimensionless target perimeter of cell
 
     public:
 
-        Cell() : vertexIndex(-1), A0(-1) {}
-        Cell(long int const& vertexIndex_, double const& A0_)
-            : vertexIndex(vertexIndex_), A0(A0_) {}
+        Cell() : vertexIndex(-1) {}
+        Cell(long int const& vertexIndex_,
+            double const& A0_, double const& p0_=3.81,
+            double const& kA_=1, double const& kP_=1)
+            : vertexIndex(vertexIndex_), kA(kA_), A0(A0_), kP(kP_), p0(p0_) {}
         /*
         Parameters
         ----------
@@ -83,6 +90,12 @@ mesh.
             Unique index for the cell identical to index of vertex.
         A0_ :
             Target area of cell.
+        p0_ :
+            Dimensionless target perimeter of cell.
+        kA_ :
+            Area stiffness.
+        kP_ :
+            Perimeter stiffness.
         */
 
         long int const getVertexIndex() { return vertexIndex; }
@@ -159,12 +172,31 @@ class VertexModel : public Mesh {
         MultiIntKeyDict<Face> faces;
         MultiIntKeyDict<Junction> junctions;
 
+        double const v0;    // vertex self-propulsion velocity
+        double const Dr;    // vertex propulsion rotational diffusion constant
+        double const p0;    // dimensionless target perimeter of cell
+
         Random random;
         double time = 0;
 
     public:
 
-        VertexModel(long int const& seed=0) : random(seed) {}
+        VertexModel(long int const& seed=0,
+            double const& v0_=1e-1, double const& Dr_=1e-1,
+            double const& p0_=3.81)
+            : v0(v0_), Dr(Dr_), p0(p0_), random(seed) {}
+        /*
+        Parameters
+        ----------
+        seed :
+            Random number generator seed.
+        v0_ :
+            Vertex self-propulsion velocity.
+        Dr_ :
+            Vertex propulsion rotational diffusion constant.
+        p0_ :
+            Dimensionless target perimeter of cell.
+        */
 
         std::map<long int, Vertex> const getVertices() { return vertices; }
         std::map<long int, HalfEdge> const getHalfEdges() { return halfEdges; }
@@ -173,8 +205,10 @@ class VertexModel : public Mesh {
         MultiIntKeyDict<Face> const getFaces() { return faces; }
         MultiIntKeyDict<Junction> const getJunctions() { return junctions; }
 
+        double* getSystemSize() { return systemSize; }
+
         double const getTime() { return time; }
-        
+
         void reset() {
         /*
         Clear all data.
