@@ -176,15 +176,17 @@ class VertexModel : public Mesh {
         double const Dr;    // vertex propulsion rotational diffusion constant
         double const p0;    // dimensionless target perimeter of cell
 
-        Random random;
+        long int const seed;    // random number generator seed
+        Random random;      	// random number generator
+
         double time = 0;
 
     public:
 
-        VertexModel(long int const& seed=0,
+        VertexModel(long int const& seed_=0,
             double const& v0_=1e-1, double const& Dr_=1e-1,
             double const& p0_=3.81)
-            : v0(v0_), Dr(Dr_), p0(p0_), random(seed) {}
+            : v0(v0_), Dr(Dr_), p0(p0_), seed(seed_), random(seed) {}
         /*
         Parameters
         ----------
@@ -205,7 +207,12 @@ class VertexModel : public Mesh {
         MultiIntKeyDict<Face> const getFaces() { return faces; }
         MultiIntKeyDict<Junction> const getJunctions() { return junctions; }
 
+        double const getv0() { return v0; }
+        double const getDr() { return Dr; }
+        double const getp0() { return p0; }
         double* getSystemSize() { return systemSize; }
+
+        long int const getSeed() { return seed; }
 
         double const getTime() { return time; }
 

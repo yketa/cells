@@ -216,10 +216,6 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("Dr")=1e-1,
             pybind11::arg("p0")=3.81)
         // attributes
-        .def_property_readonly("systemSize",
-            [](VertexModel& self) {
-                return pybind11::array_t<double>({2}, self.getSystemSize());
-            })
         .def_property_readonly("vertices",
             &VertexModel::getVertices)
         .def_property_readonly("halfEdges",
@@ -232,6 +228,18 @@ PYBIND11_MODULE(bind, m) {
             &VertexModel::getFaces)
         .def_property_readonly("junctions",
             &VertexModel::getJunctions)
+        .def_property_readonly("v0",
+            &VertexModel::getv0)
+        .def_property_readonly("Dr",
+            &VertexModel::getDr)
+        .def_property_readonly("p0",
+            &VertexModel::getp0)
+        .def_property_readonly("systemSize",
+            [](VertexModel& self) {
+                return pybind11::array_t<double>({2}, self.getSystemSize());
+            })
+        .def_property_readonly("seed",
+            &VertexModel::getSeed)
         .def_property_readonly("time",
             &VertexModel::getTime)
         // methods
