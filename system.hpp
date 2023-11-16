@@ -180,6 +180,7 @@ class VertexModel : public Mesh {
         Random random;      	// random number generator
 
         double time = 0;
+        long int nT1 = 0;   // number of T1s
 
     public:
 
@@ -215,6 +216,7 @@ class VertexModel : public Mesh {
         long int const getSeed() { return seed; }
 
         double const getTime() { return time; }
+        long int const getnT1() { return nT1; }
 
         void reset() {
         /*
@@ -228,6 +230,7 @@ class VertexModel : public Mesh {
             faces.clear();
             junctions.clear();
             time = 0;
+            nT1 = 0;
         }
 
         void integrate(double const& dt=0,

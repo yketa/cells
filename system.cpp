@@ -76,7 +76,6 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
     long int previousNeighbourVertexIndex, nextNeighbourVertexIndex;
     std::vector<double> fromTo(0), fromToBis(0);
     std::vector<double> crossFromTo(0), crossFromToBis(0);
-    double areaTerm;
     for (Cell* cell : cells.getValues()) {          // loop over cells
         cellVertexIndex = cell->getVertexIndex();
 
@@ -108,12 +107,9 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
             crossFromToBis = cross2z(fromToBis);
             for (int dim=0; dim < 2; dim++) {
 
-                areaTerm =
+                forces[neighbourVertexIndex][dim] +=
                     (cell->getkA()/2.)*(*cell->getArea() - cell->getA0())*(
                         crossFromTo[dim] - crossFromToBis[dim]);
-
-                forces[neighbourVertexIndex][dim] += areaTerm;
-                forces[cellVertexIndex][dim] -= areaTerm;   // enforce Newton's third law w/ cell centrs
             }
 
             // perimeter term
@@ -183,8 +179,9 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
     long int vertexIndex;
     long int createHalfEdgeIndex0, createHalfEdgeIndex1;
     double angle;
+    if (halfEdgeIndices.size() > 0) { std::cerr << "to merge: "; }
     for (long int mergeHalfEdgeIndex : halfEdgeIndices) {
-        std::cout << "merge: " << mergeHalfEdgeIndex << std::endl;
+        std::cerr << mergeHalfEdgeIndex << " "; nT1++;
 
         // identify half-edge to split to create new junction
 
@@ -241,8 +238,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         createJunction(createHalfEdgeIndex0, createHalfEdgeIndex1,
             angle, delta + epsilon);
     }
-
-    if (halfEdgeIndices.size() > 0) { checkMesh(); }
+    if (halfEdgeIndices.size() > 0) { std::cerr << std::endl; checkMesh(); }
 }
 
 long int const VertexModel::mergeVertices(long int const& halfEdgeIndex) {

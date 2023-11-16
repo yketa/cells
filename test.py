@@ -1,15 +1,10 @@
-from cells.system import VertexModel
+from cells.system import ModelSystem
 
 import numpy as np
 
 from argparse import ArgumentParser
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-from matplotlib.colors import Normalize as ColorsNormalise
-from matplotlib.cm import ScalarMappable
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # PARAMETERS
 
@@ -40,15 +35,8 @@ args = parser.parse_args()
 
 # INITIALISATION
 
-m = VertexModel(args.seed, args.v0, args.Dr, args.p0)
+m = ModelSystem(args.seed, args.v0, args.Dr, args.p0)
 m.initRegularTriangularLattice(size=args.n)
-
-# cax = make_axes_locatable(m.ax).append_axes('right', size='5%', pad=0.05)
-# cmap = plt.cm.PiYG
-# norm = ColorsNormalise(-1, 1)
-# colormap = mpl.colorbar.ColorbarBase(cax,
-#     cmap=cmap, norm=norm, orientation='vertical')
-# scalarMap = ScalarMappable(norm, cmap)
 
 # RUN
 
@@ -60,5 +48,4 @@ while True:
         args.iterations, dt=args.dt, delta=args.delta, epsilon=args.epsilon)
     # plot
     m.plot()
-    m.fig.suptitle('t=%.3f' % m.time)
 
