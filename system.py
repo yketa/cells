@@ -31,7 +31,7 @@ class VertexModel(VM):
             Dimensionless target perimeter of cell. (default: 3.81)
         """
 
-        super().__init__()
+        super().__init__(seed, v0, Dr, p0)
         self.fig, self.ax = plt.subplots()
 
     def plot(self):
