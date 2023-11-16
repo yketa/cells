@@ -50,6 +50,6 @@ class VertexModel(VM):
         self.ax.plot(*getLinesHalfEdge(self), color='blue', lw=1)   # all half-edges
         self.ax.plot(*getLinesJunction(self), color='red', lw=3)    # all junctions
 
-        plt.pause(0.001)
-        self.fig.canvas.draw()
+        self.fig.canvas.draw_idle()
+        self.fig.canvas.start_event_loop(0.001)
 
