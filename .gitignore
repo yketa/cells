@@ -1,8 +1,17 @@
 __pycache__
-**/.*.swp
+.*.swp
 test
 test.*pp
 *.o
 *.so
 old
 sync.sh
+# latexmk files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*Notes.bib
+*.out
