@@ -20,7 +20,7 @@ template<class T> int const sign(T const& val)                                  
 
 template<class T> T const pmod(T const& i, T const& n)                          // positive modulo (remainder) i%n (https://stackoverflow.com/questions/14997165)
     { return std::fmod(std::fmod(i, n) + n, n); }
-template<class T> long int const qpmod(T const& i, T const& n)                  // quotient `i/n' associated to remainder `i%n = pmod(i, n)'
+template<class T> long int const qpmod(T const& i, T const& n)                  // quotient `i/n' associated to positive remainder `i%n = pmod(i, n)'
     { return (i - pmod<T>(i, n))/n; }
 
 template<class T> void eraseInVec(std::vector<T>& vec, T const& val) {          // remove ONE occurence of value in vector (https://stackoverflow.com/questions/3385229)

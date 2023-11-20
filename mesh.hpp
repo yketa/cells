@@ -121,7 +121,8 @@ Two-dimensional ensembles of vertices and edges.
 
         void wrap(double* position);
         /*
-        Wrap position with respect to periodic boundary conditions.
+        Wrap position to positive values with respect to periodic boundary
+        conditions.
 
         Parameters
         ----------

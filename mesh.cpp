@@ -17,11 +17,7 @@ std::vector<double> const Mesh::wrapDiff(
 
     std::vector<double> disp(2, 0);
     for (int dim=0; dim < 2; dim++) {
-        disp[dim] = toPos[dim] - fromPos[dim];
-        if (std::abs(disp[dim]) >= systemSize[dim]/2) {
-            disp[dim] = -sign(disp[dim])
-                *(systemSize[dim] - std::abs(disp[dim]));
-        }
+        disp[dim] = std::remainder(toPos[dim] - fromPos[dim], systemSize[dim]);
     }
     return disp;
 }
