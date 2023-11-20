@@ -189,7 +189,7 @@ We will assume (i) that cells are always convex so that the mesh remains planar,
 % https://tex.stackexchange.com/a/63569
 \draw[green, ultra thick, dashed, ->] let \p{A}=(A), \p{C}=(C) in (C) -- ++({\y{C} - \y{A}}, {-(\x{C} - \x{A})}) node[midway, above, yshift=5pt]{\large $(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z$};
 \draw[green, ultra thick, dashed, ->] let \p{A}=(A), \p{G}=(G) in (G) -- ++({\y{G} - \y{A}}, {-(\x{G} - \x{A})}) node[midway, right, yshift=0pt]{\large $(\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z$};
-\draw[blue, ultra thick, ->] let \p{C}=(C), \p{G}=(G) in (B) -- ++({-(\y{C} - \y{G})}, {(\x{C} - \x{G})}) node[midway, above left, xshift=17.5pt, yshift=5pt]{\large $(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu - 1}) \times \hat{\boldsymbol{e}}_z$};
+\draw[blue, ultra thick, ->] let \p{C}=(C), \p{G}=(G) in (B) -- ++({-(\y{C} - \y{G})}, {(\x{C} - \x{G})}) node[midway, above left, xshift=17.5pt, yshift=5pt]{\large $(\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu + 1}) \times \hat{\boldsymbol{e}}_z$};
 
 \end{tikzpicture}
 \caption{Vertex representation of a single cell. By convention, cell centres are denoted by latin indices, and cell corners are denotes by greek indices. We denote $\Omega_i$ the ensemble of cell corners $\mu$ of the cell whose centre is $i$. By convention, $\mu + 1$ (respectively $\mu - 1$) denotes the next cell corner of $i$ after $\mu$ in anticlockwise (respectively clockwise) order.}
@@ -199,8 +199,9 @@ We will assume (i) that cells are always convex so that the mesh remains planar,
 We introduce for each cell $i$ a reference perimeter $P^0_i$ and a reference area $A^0_i$, and for each of its cell corner $\mu \in \Omega_i$ a force whose effect is to bring the cell's perimeter $P_i$ and area $A_i$ to their reference quantities. A possible force derives from the following potential energy \cite{farhadifar2007influence,fletcher2014vertex,sknepnek2023generating}
 \begin{equation}
 E_{\mathrm{VM}} = \sum_{\text{cells } i} \left[\frac{1}{2} K_i (A_i - A_i^0)^2 + \frac{1}{2} \Gamma_i (P_i - P_i^0)^2\right],
+\label{eq:evm}
 \end{equation}
-where $K_i$ and $\Gamma_i$ are respectively area and perimeter elastic constants. The cell's perimeter can be written
+where $K_i$ and $\Gamma_i$ are respectively area and perimeter elastic constants. We denote $\boldsymbol{r}_{\mu}$, $\boldsymbol{r}_i$ the position of vertices $\mu, i$. The cell's perimeter can be written
 \begin{equation}
 P_i = \sum_{\mu \in \Omega_i} |\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|,
 \end{equation}
@@ -224,18 +225,21 @@ as well as
 to write \eqref{eq:fmugrade} in its full form
 \begin{equation}
 \begin{aligned}
-\boldsymbol{F}_{\mathrm{VM},\mu} &= - \sum_{\text{cells i}, \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) \left[(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z - (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z\right]\\
-&\qquad\qquad\qquad\qquad+ \Gamma_i (P_i - P^0_i) \left[\frac{\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}|} + \frac{\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}|}\right]\bigg]\\
-&= \sum_{\text{cells i}, \mu \in \Omega_i} \bigg[- \frac{1}{2} K_i (A_i - A^0_i) {\color{blue} \underbrace{(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu - 1}) \times \hat{\boldsymbol{e}}_z}_{\text{towards cell exterior}}} - \Gamma_i (P_i - P^0_i) \bigg[{\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}} + {\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}}\bigg]\bigg],
+\boldsymbol{F}_{\mathrm{VM},\mu} &= - \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) \left[(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z - (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z\right]\\
+&\qquad\qquad\qquad\qquad+ \Gamma_i (P_i - P^0_i) \left[\frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|} + \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|}\right]\bigg]\\
+&= \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) {\color{blue} \underbrace{(\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu + 1}) \times \hat{\boldsymbol{e}}_z}_{\text{towards cell interior}}} + \Gamma_i (P_i - P^0_i) \bigg[{\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}} + {\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}}\bigg]\bigg],
 \end{aligned}
 \end{equation}
-where underbraced vectors are represented in Fig.~\ref{fig:fmu}.
+where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworthy that, with potential \eqref{eq:evm}, the force acting on each cell centre is zero
+\begin{equation}
+\boldsymbol{F}_{\mathrm{VM}, i} = - \nabla_i E_{\mathrm{VM}} = - \frac{1}{2} K_i (A_i - A^0_i) \sum_{\mu \in \Omega_i} (\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}) \times \hat{\boldsymbol{e}}_z = 0.
+\end{equation}
 
 \section{Half-edge procedure}
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[scale=\scale]
+\begin{tikzpicture}[scale=0.8*\scale]
 
 % vertices
 
