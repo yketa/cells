@@ -1,0 +1,113 @@
+% before T1
+
+\coordinate (A'') at (0, 2);
+\coordinate (B'') at ($(A'') + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
+\coordinate (C'') at ($(A'') + ({3*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
+\coordinate (D'') at ($(A'') + ({3*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
+\coordinate (E'') at ($(A'') + ({4*cos(3*60 - 90)}, {4*sin(3*60 - 90)})$);
+\coordinate (F'') at ($(A'') + ({3*cos(4*60 - 90)}, {4*sin(4*60 - 90)})$);
+\coordinate (G'') at ($(A'') + ({3*cos(5*60 - 90)}, {4*sin(5*60 - 90)})$);
+
+\coordinate (H'') at (0, -7);
+\coordinate (I'') at ($(H'') + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
+\coordinate (J'') at ($(H'') + ({3*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
+\coordinate (K'') at ($(H'') + ({3*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
+\coordinate (L'') at ($(H'') + ({4*cos(3*60 - 90)}, {4*sin(3*60 - 90)})$);
+\coordinate (M'') at ($(H'') + ({3*cos(4*60 - 90)}, {4*sin(4*60 - 90)})$);
+\coordinate (N'') at ($(H'') + ({3*cos(5*60 - 90)}, {4*sin(5*60 - 90)})$);
+
+\coordinate (Z') at (-0.5, -2.5);
+\coordinate (Z'') at (0.5, -2.5);
+
+\coordinate (P'') at ($(B'') + (-8, 1)$);
+\coordinate (Q'') at ($(L'') + (-8, -1)$);
+
+\coordinate (R'') at ($(B'') + (8, 1)$);
+\coordinate (S'') at ($(L'') + (8, -1)$);
+
+\draw (Z') -- (Z'') -- (C'') -- (D'') -- (E'') -- (F'') -- (G'') -- cycle;
+\fill[opacity=0.5, purple] (Z') -- (Z'') -- (C'') -- (D'') -- (E'') -- (F'') -- (G'') -- cycle;
+
+\draw (I'') -- (J'') -- (K'') -- (Z'') -- (Z') -- (M'') -- (N'') -- cycle;
+\fill[opacity=0.5, green] (I'') -- (J'') -- (K'') -- (Z'') -- (Z') -- (M'') -- (N'') -- cycle;
+
+\draw (Z') -- (G'') -- (P'') -- (Q'') -- (M'') -- cycle;
+\fill[opacity=0.5, blue] (Z') -- (G'') -- (P'') -- (Q'') -- (M'') -- cycle;
+
+\draw (K'') -- (S'') -- (R'') -- (C'') -- (Z'') -- cycle;
+\fill[opacity=0.5, yellow] (K'') -- (S'') -- (R'') -- (C'') -- (Z'') -- cycle;
+
+% 4-vertex
+
+\coordinate (A') at (25, 2);
+\coordinate (B') at ($(A') + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
+\coordinate (C') at ($(A') + ({3*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
+\coordinate (D') at ($(A') + ({3*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
+\coordinate (E') at ($(A') + ({4*cos(3*60 - 90)}, {4*sin(3*60 - 90)})$);
+\coordinate (F') at ($(A') + ({3*cos(4*60 - 90)}, {4*sin(4*60 - 90)})$);
+\coordinate (G') at ($(A') + ({3*cos(5*60 - 90)}, {4*sin(5*60 - 90)})$);
+
+\coordinate (H') at (25, -7);
+\coordinate (I') at ($(H') + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
+\coordinate (J') at ($(H') + ({3*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
+\coordinate (K') at ($(H') + ({3*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
+\coordinate (L') at ($(H') + ({4*cos(3*60 - 90)}, {4*sin(3*60 - 90)})$);
+\coordinate (M') at ($(H') + ({3*cos(4*60 - 90)}, {4*sin(4*60 - 90)})$);
+\coordinate (N') at ($(H') + ({3*cos(5*60 - 90)}, {4*sin(5*60 - 90)})$);
+
+\coordinate (Z) at ($(B')!0.5!(L')$);
+
+\coordinate (P') at ($(B') + (-8, 1)$);
+\coordinate (Q') at ($(L') + (-8, -1)$);
+
+\coordinate (R') at ($(B') + (8, 1)$);
+\coordinate (S') at ($(L') + (8, -1)$);
+
+\draw (Z) -- (C') -- (D') -- (E') -- (F') -- (G') -- cycle;
+\fill[opacity=0.5, purple] (Z) -- (C') -- (D') -- (E') -- (F') -- (G') -- cycle;
+
+\draw (I') -- (J') -- (K') -- (Z) -- (M') -- (N') -- cycle;
+\fill[opacity=0.5, green] (I') -- (J') -- (K') -- (Z) -- (M') -- (N') -- cycle;
+
+\draw (Z) -- (G') -- (P') -- (Q') -- (M') -- cycle;
+\fill[opacity=0.5, blue] (Z) -- (G') -- (P') -- (Q') -- (M') -- cycle;
+
+\draw (K') -- (S') -- (R') -- (C') -- (Z) -- cycle;
+\fill[opacity=0.5, yellow] (K') -- (S') -- (R') -- (C') -- (Z) -- cycle;
+
+% after T1
+
+\coordinate (A) at (50, 2);
+\coordinate (B) at ($(A) + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
+\coordinate (C) at ($(A) + ({3*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
+\coordinate (D) at ($(A) + ({3*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
+\coordinate (E) at ($(A) + ({4*cos(3*60 - 90)}, {4*sin(3*60 - 90)})$);
+\coordinate (F) at ($(A) + ({3*cos(4*60 - 90)}, {4*sin(4*60 - 90)})$);
+\coordinate (G) at ($(A) + ({3*cos(5*60 - 90)}, {4*sin(5*60 - 90)})$);
+\draw (B) -- (C) -- (D) -- (E) -- (F) -- (G) -- cycle;
+\fill[opacity=0.5, purple] (B) -- (C) -- (D) -- (E) -- (F) -- (G) -- cycle;
+
+\coordinate (H) at (50, -7);
+\coordinate (I) at ($(H) + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
+\coordinate (J) at ($(H) + ({3*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
+\coordinate (K) at ($(H) + ({3*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
+\coordinate (L) at ($(H) + ({4*cos(3*60 - 90)}, {4*sin(3*60 - 90)})$);
+\coordinate (M) at ($(H) + ({3*cos(4*60 - 90)}, {4*sin(4*60 - 90)})$);
+\coordinate (N) at ($(H) + ({3*cos(5*60 - 90)}, {4*sin(5*60 - 90)})$);
+\draw (I) -- (J) -- (K) -- (L) -- (M) -- (N) -- cycle;
+\fill[opacity=0.5, green] (I) -- (J) -- (K) -- (L) -- (M) -- (N) -- cycle;
+
+\coordinate (P) at ($(B) + (-8, 1)$);
+\coordinate (Q) at ($(L) + (-8, -1)$);
+\draw (L) -- (B) -- (G) -- (P) -- (Q) -- (M) -- cycle;
+\fill[opacity=0.5, blue] (L) -- (B) -- (G) -- (P) -- (Q) -- (M) -- cycle;
+
+\coordinate (R) at ($(B) + (8, 1)$);
+\coordinate (S) at ($(L) + (8, -1)$);
+\draw (K) -- (S) -- (R) -- (C) -- (B) -- (L) -- cycle;
+\fill[opacity=0.5, yellow] (K) -- (S) -- (R) -- (C) -- (B) -- (L) -- cycle;
+
+% arrows
+
+\draw[->] (10, -2.5) -- ++(5, 0);
+\draw[->] (35, -2.5) -- ++(5, 0);

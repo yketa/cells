@@ -1,0 +1,100 @@
+% FIRST CELL
+% cell centre
+\coordinate (A) at (0, 0);
+\draw[thick] (A) circle (0.2);
+% cell corners
+\coordinate (B) at ($(A) + ({2*cos(30 + 0*60)}, {2*sin(30 + 0*60)})$);
+\draw[fill=black] (B) circle (0.2);
+\coordinate (C) at ($(A) + ({2*cos(30 + 1*60)}, {2*sin(30 + 1*60)})$);
+\draw[fill=black] (C) circle (0.2);
+\coordinate (D) at ($(A) + ({2*cos(30 + 2*60)}, {2*sin(30 + 2*60)})$);
+\draw[fill=black] (D) circle (0.2);
+\coordinate (E) at ($(A) + ({2*cos(30 + 3*60)}, {2*sin(30 + 3*60)})$);
+\draw[fill=black] (E) circle (0.2);
+\coordinate (F) at ($(A) + ({2*cos(30 + 4*60)}, {2*sin(30 + 4*60)})$);
+\draw[fill=black] (F) circle (0.2);
+\coordinate (G) at ($(A) + ({2*cos(30 + 5*60)}, {2*sin(30 + 5*60)})$);
+\draw[fill=black] (G) circle (0.2);
+% junctions
+\draw[ultra thick] (B) -- (C) -- (D) -- (E) -- (F) -- (G) -- (B);
+% inner edges
+\draw[dashed] (A) -- (B);
+\draw[dashed] (A) -- (C);
+\draw[dashed] (A) -- (D);
+\draw[dashed] (A) -- (E);
+\draw[dashed] (A) -- (F);
+\draw[dashed] (A) -- (G);
+% fill
+\fill[opacity=0.5, pink] (B) -- (C) -- (D) -- (E) -- (F) -- (G) -- (B);
+
+% SECOND CELL
+% cell centre
+\coordinate (H) at ($(B) + ({2*cos(30)}, {-2*sin(30)})$);
+\draw[thick] (H) circle (0.2);
+% cell corners
+\coordinate (I) at ($(H) + (0, 2)$);
+\coordinate (J) at ($(H) + (0, -2)$);
+% juntions
+\draw[ultra thick] (B) -- (I);
+\draw[ultra thick] (G) -- (J);
+% inner edges
+\draw[dashed] (H) -- (B);
+\draw[dashed] (H) -- (G);
+
+% THIRD CELL
+% cell centre
+\coordinate (K) at ($(D) + ({-2*cos(30)}, {-2*sin(30)})$);
+\draw[thick] (K) circle (0.2);
+% cell corners
+\coordinate (L) at ($(K) + (0, 2)$);
+\coordinate (M) at ($(K) + (0, -2)$);
+% juntions
+\draw[ultra thick] (D) -- (L);
+\draw[ultra thick] (E) -- (M);
+% inner edges
+\draw[dashed] (K) -- (D);
+\draw[dashed] (K) -- (E);
+
+% ADDITIONAL POINTS
+\coordinate (N) at ($(C) + (0, 1)$);
+\draw[ultra thick] (C) -- (N);
+\coordinate (O) at ($(F) + (0, -1)$);
+\draw[ultra thick] (F) -- (O);
+
+% ADDITIONAL CELL CENTRES
+% cell centre
+\coordinate (P) at ($(B) + (0, 2)$);
+\draw[thick] (P) circle (0.2);
+% inner edges
+\draw[dashed] (P) -- (B);
+\draw[dashed] (P) -- (C);
+% cell centre
+\coordinate (Q) at ($(D) + (0, 2)$);
+\draw[thick] (Q) circle (0.2);
+% inner edges
+\draw[dashed] (Q) -- (C);
+\draw[dashed] (Q) -- (D);
+% cell centre
+\coordinate (R) at ($(E) + (0, -2)$);
+\draw[thick] (R) circle (0.2);
+% inner edges
+\draw[dashed] (R) -- (E);
+\draw[dashed] (R) -- (F);
+% cell centre
+\coordinate (S) at ($(G) + (0, -2)$);
+\draw[thick] (S) circle (0.2);
+% inner edges
+\draw[dashed] (S) -- (F);
+\draw[dashed] (S) -- (G);
+
+% LEGEND
+\draw[fill=black] (5, 1.5) circle (0.15);
+\draw[thick] (6, 1.5) circle (0.15);
+\draw (8, 1.5) node[]{vertices};
+\draw[thick] (5.5, 0.5) circle (0.15);
+\draw (8, 0.5) node[]{cell centres};
+\draw[ultra thick] (4.6, -0.5) -- ++(0.8, 0);
+\draw[dashed] (5.6, -0.5) -- ++(0.8, 0);
+\draw (8, -0.5) node[]{edges};
+\draw[ultra thick] (5.1, -1.5) -- ++ (0.8, 0);
+\draw (8, -1.5) node[]{junctions};
