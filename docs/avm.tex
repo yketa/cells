@@ -1,8 +1,32 @@
-\documentclass[aps,superscriptaddress,notitlepage]{revtex4-1}
+\documentclass[aps, superscriptaddress, notitlepage]{revtex4-1}
 
 \usepackage{amsmath,amsfonts,amssymb,graphicx,hyperref,listings,xcolor,float}
-\usepackage[ddmmyyyy,24hr]{datetime}
+\usepackage[ddmmyyyy, 24hr]{datetime}
 
+% tikz
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usetikzlibrary{arrows.meta,arrows}
+
+% (pseudo-)algorithms
+% https://tex.stackexchange.com/questions/70181
+\usepackage{algcompatible,newfloat,etoolbox}
+\AtEndEnvironment{algorithm}{\noindent\hrulefill\par\nobreak\vskip-5pt}
+\DeclareFloatingEnvironment[fileext=loa, listname=List of Algorithms, name=ALG., placement=tbhp]{algorithm}
+% https://tex.stackexchange.com/questions/353132
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
+% https://tex.stackexchange.com/questions/180212
+\algrenewcommand{\algorithmiccomment}[2][.6\linewidth]{\leavevmode\hfill\makebox[#1][l]{\triangleright~#2}}
+% https://tex.stackexchange.com/questions/184827
+\providecommand{\LINECOMMENT}[2][.6\linewidth]{\STATEx\algorithmiccomment[#1]{#2}}
+% algorithm macros
+\providecommand\RETURN{\STATE\textbf{return}~}
+\providecommand\ASSERT{\STATE\textbf{assert}~}
+
+% colours
+% seaborn `colorblind' palette
+% https://seaborn.pydata.org/tutorial/color_palettes.html
 \definecolor{purple}{HTML}{CC78BC}
 \definecolor{green}{HTML}{029E73}
 \definecolor{blue}{HTML}{0173B2}
@@ -14,10 +38,20 @@
 \definecolor{pink}{HTML}{FBAFE4}
 \definecolor{lightyellow}{HTML}{ECE133}
 
-\usepackage{tikz}
-\usetikzlibrary{calc}
-\usetikzlibrary{arrows.meta,arrows}
+% header/footer
+% https://tex.stackexchange.com/questions/117402
+\usepackage{fancyhdr} 
+\cfoot{\thepage}
+\pagestyle{fancy}
+% https://tex.stackexchange.com/questions/40172
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead{}
+
+%%%%% MACROS
+
 \def\scale{0.8}
+
+%%%%% DOCUMENT
 
 \begin{document}
 
@@ -138,14 +172,54 @@
 \draw (8, -1.5) node[]{junctions};
 
 \end{tikzpicture}
-\caption{Schematic of a cell (highlighted in pink) in the vertex model. A \textit{cell centre} is enclosed by \textit{cell corners} (or \textit{vertices}). These are linked between themselves by \textit{junctions}.}
+\caption{Schematic of a cell (highlighted in pink) in the vertex model.}
+\label{fig:schematic}
 \end{figure}
 
-We will assume (i) that cells are always convex so that the mesh remains planar, and (ii) that no edge joins two cell centres. The ensemble of the vertices and the edges that link them constitutes the \textit{geometric mesh}. The specification of the cell centres and the junctions between non-cell-centres defines the \textit{physical mesh}.
+A \textit{cell centre} is enclosed by \textit{cell corners} (or \textit{vertices}). These are linked between themselves by \textit{junctions}. We will assume (i) that cells are always convex so that the mesh remains planar, and (ii) that no edge joins two cell centres. The ensemble of the vertices and the edges that link them constitutes the \textit{geometric mesh}. The specification of the cell centres and the junctions between non-cell-centres defines the \textit{physical mesh}.
 
 \section{Cell potential energy}
 
-\begin{figure}[H]
+We introduce for each cell $i$ a reference perimeter $P^0_i$ and a reference area $A^0_i$, and for each of its cell corner $\mu \in \Omega_i$ a force whose effect is to bring the cell's perimeter $P_i$ and area $A_i$ to their reference quantities. A possible force derives from the following potential energy \cite{farhadifar2007influence,fletcher2014vertex,bi2016motilitydriven,sknepnek2023generating}
+\begin{equation}
+E_{\mathrm{VM}} = \sum_{\text{cells } i} \left[\frac{1}{2} K_i (A_i - A_i^0)^2 + \frac{1}{2} \Gamma_i (P_i - P_i^0)^2\right],
+\label{eq:evm}
+\end{equation}
+where $K_i$ and $\Gamma_i$ are respectively area and perimeter elastic constants. We denote $\boldsymbol{r}_{\mu}$, $\boldsymbol{r}_i$ the position of vertices $\mu, i$. The cell's perimeter can be written
+\begin{equation}
+P_i = \sum_{\mu \in \Omega_i} |\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|,
+\end{equation}
+and the cell's area can be computed with the shoelace formula
+\begin{equation}
+A_i = \sum_{\mu \in \Omega_i} \frac{1}{2} [(\boldsymbol{r}_{\mu} - \boldsymbol{r}_{i}) \times (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{i})] \cdot \hat{\boldsymbol{e}}_z.
+\end{equation}
+Note that, by convention of ordering of cell corners, each term in this sum \textit{must be} positive. With these notations, we thus write the force acting on vertex $\mu$
+\begin{equation}
+\boldsymbol{F}_{\mathrm{VM},\mu} = -\nabla_{\mu} E_{\mathrm{VM}},
+\label{eq:fmugrade}
+\end{equation}
+where $\nabla_{\mu} \equiv \partial/\partial \boldsymbol{r}_{\mu}$. We compute
+\begin{equation}
+\nabla_{\mu} \left(|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|\right) = \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|},
+\end{equation}
+as well as
+\begin{equation}
+\nabla_{\mu} \left([(\boldsymbol{r}_{\mu} - \boldsymbol{r}_i) \times (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i)] \cdot \hat{\boldsymbol{e}}_z\right) = (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z
+\end{equation}
+to write \eqref{eq:fmugrade} in its full form
+\begin{equation}
+\begin{aligned}
+\boldsymbol{F}_{\mathrm{VM},\mu} &= - \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) \left[(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z - (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z\right]\\
+&\qquad\qquad\qquad\qquad+ \Gamma_i (P_i - P^0_i) \left[\frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|} + \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|}\right]\bigg]\\
+&= \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) {\color{blue} \underbrace{(\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu + 1}) \times \hat{\boldsymbol{e}}_z}_{\text{towards cell interior}}} + \Gamma_i (P_i - P^0_i) \bigg[{\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}} + {\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}}\bigg]\bigg],
+\end{aligned}
+\end{equation}
+where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworthy that, with potential \eqref{eq:evm}, the force acting on each cell centre is zero
+\begin{equation}
+\boldsymbol{F}_{\mathrm{VM}, i} = - \nabla_i E_{\mathrm{VM}} = - \frac{1}{2} K_i (A_i - A^0_i) \sum_{\mu \in \Omega_i} (\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}) \times \hat{\boldsymbol{e}}_z = 0.
+\end{equation}
+
+\begin{figure}[!t]
 \centering
 \begin{tikzpicture}[scale=\scale]
 
@@ -196,48 +270,17 @@ We will assume (i) that cells are always convex so that the mesh remains planar,
 \label{fig:fmu}
 \end{figure}
 
-We introduce for each cell $i$ a reference perimeter $P^0_i$ and a reference area $A^0_i$, and for each of its cell corner $\mu \in \Omega_i$ a force whose effect is to bring the cell's perimeter $P_i$ and area $A_i$ to their reference quantities. A possible force derives from the following potential energy \cite{farhadifar2007influence,fletcher2014vertex,sknepnek2023generating}
-\begin{equation}
-E_{\mathrm{VM}} = \sum_{\text{cells } i} \left[\frac{1}{2} K_i (A_i - A_i^0)^2 + \frac{1}{2} \Gamma_i (P_i - P_i^0)^2\right],
-\label{eq:evm}
-\end{equation}
-where $K_i$ and $\Gamma_i$ are respectively area and perimeter elastic constants. We denote $\boldsymbol{r}_{\mu}$, $\boldsymbol{r}_i$ the position of vertices $\mu, i$. The cell's perimeter can be written
-\begin{equation}
-P_i = \sum_{\mu \in \Omega_i} |\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|,
-\end{equation}
-and the cell's area can be computed with the shoelace formula
-\begin{equation}
-A_i = \sum_{\mu \in \Omega_i} \frac{1}{2} [(\boldsymbol{r}_{\mu} - \boldsymbol{r}_{i}) \times (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{i})] \cdot \hat{\boldsymbol{e}}_z.
-\end{equation}
-Note that, by convention of ordering of cell corners, each term in this sum \textit{must be} positive. With these notations, we thus write the force acting on vertex $\mu$
-\begin{equation}
-\boldsymbol{F}_{\mathrm{VM},\mu} = -\nabla_{\mu} E_{\mathrm{VM}},
-\label{eq:fmugrade}
-\end{equation}
-where $\nabla_{\mu} \equiv \partial/\partial \boldsymbol{r}_{\mu}$. We compute
-\begin{equation}
-\nabla_{\mu} \left(|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|\right) = \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|},
-\end{equation}
-as well as
-\begin{equation}
-\nabla_{\mu} \left([(\boldsymbol{r}_{\mu} - \boldsymbol{r}_i) \times (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i)] \cdot \hat{\boldsymbol{e}}_z\right) = (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z
-\end{equation}
-to write \eqref{eq:fmugrade} in its full form
-\begin{equation}
-\begin{aligned}
-\boldsymbol{F}_{\mathrm{VM},\mu} &= - \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) \left[(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z - (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z\right]\\
-&\qquad\qquad\qquad\qquad+ \Gamma_i (P_i - P^0_i) \left[\frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|} + \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|}\right]\bigg]\\
-&= \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) {\color{blue} \underbrace{(\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu + 1}) \times \hat{\boldsymbol{e}}_z}_{\text{towards cell interior}}} + \Gamma_i (P_i - P^0_i) \bigg[{\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}} + {\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}}\bigg]\bigg],
-\end{aligned}
-\end{equation}
-where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworthy that, with potential \eqref{eq:evm}, the force acting on each cell centre is zero
-\begin{equation}
-\boldsymbol{F}_{\mathrm{VM}, i} = - \nabla_i E_{\mathrm{VM}} = - \frac{1}{2} K_i (A_i - A^0_i) \sum_{\mu \in \Omega_i} (\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}) \times \hat{\boldsymbol{e}}_z = 0.
-\end{equation}
-
 \section{Half-edge procedure}
 
-\begin{figure}[H]
+The edges of the mesh (Fig.~\ref{fig:schematic}) divide the entire system in adjacent and non-overlapping \textit{triangles} (or \textit{faces}). We endow all of these triangles with three arrows. These are oriented such that, for an arbitrary vertex (\textit{e.g.}, $\mu$ in Fig.~\ref{fig:he}) and an arbitrary triangle (\textit{e.g.}, $(\mu, \nu, i)$), the cross product of the half-edges pointing toward this vertex in this triangle (\textit{i.e.}, $i \to \mu$) on the one hand and the half-edge pointing out of this vertex in this triangle (\textit{i.e.}, $\mu \to \nu$) on the other hand, has a positive scalar product with $\hat{\boldsymbol{e}}_z$. We introduce three relations between half-edges, which we exemplify in Fig.~\ref{fig:he} using an arbitrary {\color{yellow} reference half-egde $\mu \to \nu$}.
+\begin{enumerate}
+    \item The {\color{purple} \textit{next} half-edge} departs from the vertex pointed at by the reference half-edge (\textit{i.e.}, $\nu$ here) inside the same triangle. ``Next'' is an order-3 bijection, meaning that the next half-edge of the next half-edge of any half-edge is this same half-edge.
+    \item The {\color{green} \textit{previous} half-edge} points towards the vertex from which departs the reference half-edge (\textit{i.e.}, $\mu$ here) inside the same triangle. ``Previous'' is also an order-3 bijection.
+    \item The {\color{blue} \textit{pair} half-edge} has inverse depart and arrival vertices with respect to the reference half-edge (\textit{i.e.}, $\nu$ and $\mu$ here) in the adjacent triangle sharing the same edge the reference half-edge belongs to. ``Pair'' is an order-2 bijecton, meaning that the pair half-edge of any pair half-edge is this same half-edge.
+\end{enumerate}
+These relations between the half-edges enable us to identify all neighbours of any vertex (Alg.~\ref{alg:neighbours}), given that each vertex contains the information of (at least) one half-edge leaving the vertex. We propose in Alg.~\ref{alg:check} a way to check the consistency of the half-edge construction in the mesh.
+
+\begin{figure}[!t]
 \centering
 \begin{tikzpicture}[scale=0.8*\scale]
 
@@ -315,11 +358,76 @@ where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworth
 \draw[->] ($(G1)!0.1!(B0)$) -- ($(G1)!0.9!(B0)$);
 \draw[ultra thick, blue, ->] ($(B0)!0.1!(A5)$) -- ($(B0)!0.9!(A5)$);
 
+% LEGEND
+\draw[ultra thick, yellow, ->] (5.5, 1.5) -- +(1.5, 0);
+\draw[ultra thick, purple, ->] (5.5, 0.5) -- +(1.5, 0);
+\draw[ultra thick, green, ->] (5.5, -0.5) -- +(1.5, 0);
+\draw[ultra thick, blue, ->] (5.5, -1.5) -- +(1.5, 0);
+\draw (11, 1.5) node[]{\color{yellow} reference ($\mu \to \nu$) half-edge};
+\draw (11, 0.5) node[]{{\color{purple} next ($\nu \to i$)} of {\color{yellow} reference}};
+\draw (11, -0.5) node[]{{\color{green} previous ($i \to \mu$)} of {\color{yellow} reference}};
+\draw (11, -1.5) node[]{{\color{blue} pair ($\nu \to \mu$)} of {\color{yellow} reference}};
+
+\draw (-4.5, -1) circle (0.1) node[below right]{\large $\hat{\boldsymbol{e}}_z$};
+\draw[fill=black] (-4.5, -1) circle (0.02);
+
 \end{tikzpicture}
-\caption{}
+\caption{Half-edge representation in 6 adjacent triangles, highlighting an arbitrary reference half-edge and its associated half-edges.}
+\label{fig:he}
 \end{figure}
 
+\begin{algorithm}[H]
+\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices.}
+\label{alg:neighbours}
+\begin{algorithmic}[1]
+\REQUIRE Arbitrary half-edge $\boldsymbol{h}$ departing from a given vertex $v$.
+\ENSURE Ensemble $\mathcal{D}$ of neighbours of vertex $v$, ensemble $\mathcal{H}$ of half-edges from vertex $v$ to its neighbours.
+\STATE{Set $d^0 = $ destination vertex of $\boldsymbol{h}$.} \COMMENT[0.7\textwidth]{Save first neighbour.}
+\STATE{Set $d = \textsc{null}$.} \COMMENT[0.7\textwidth]{Setting to \textsc{null} to enter while loop \ref{ins:while_neigh}.}
+\WHILE{$d \neq d^0$}
+\label{ins:while_neigh}
+    \STATE{Set $\boldsymbol{h} =$ pair half-edge of previous half-edge of $\boldsymbol{h}$.}
+    \STATE{Set $d =$ destination vectex of $\boldsymbol{h}$.}
+    \STATE{Add $d$ to $\mathcal{D}$, add $\boldsymbol{h}$ to $\mathcal{H}$.} \COMMENT[0.7\textwidth]{By convention of the half-edge construction, these are added in anticlockwise order.}
+\ENDWHILE
+\RETURN $\mathcal{D},~\mathcal{H}$
+\end{algorithmic}
+\end{algorithm}
+
 \section{T1 transition}
+
+T1 transitions correspond to changes in the mesh topology (Fig.~\ref{fig:T1}).
+
+\begin{algorithm}[!t]
+\caption{Check half-edge construction.}
+\label{alg:check}
+\begin{algorithmic}[1]
+\REQUIRE Ensemble $\mathcal{V}$ of all vertices, ensemble $\mathcal{H}$ of all half-edges.
+\STATE{Make copies $\mathcal{V}^{\prime}$ and $\mathcal{H}^{\prime}$ of $\mathcal{V}$ and $\mathcal{H}$.}
+\FOR{$\boldsymbol{h} \in \mathcal{H}$}
+    \IF{$\boldsymbol{h} \notin \mathcal{H}^{\prime}$} \COMMENT{Half-edge $\boldsymbol{h}$ has already been checked.}
+        \STATE{\textbf{continue}}
+    \ENDIF
+    \STATE{Set $\mathcal{T} = \{\boldsymbol{h},~\text{next of }\boldsymbol{h},~\text{previous of }\boldsymbol{h}\}$.} \COMMENT{Triangle to which $\boldsymbol{h}$ belongs.}
+    \FOR{$\boldsymbol{h}^{\prime} \in \mathcal{T}$} \COMMENT{Loop over the half-edges in the triangle.}
+        \STATE{Set $o$ and $d$ as the origin and destination vertices of $\boldsymbol{h}^{\prime}$.}
+        \IF{$o \in \mathcal{V}^{\prime}$} \COMMENT{Origin vertex $o$ has not been checked.}
+            \ASSERT $o$ knows one half-edge which \textit{does} leave from $o$
+            \STATE{Remove $o$ from $\mathcal{V}^{\prime}$.}
+        \ENDIF
+        \ASSERT $[\boldsymbol{h}^{\prime} \times (\boldsymbol{h}^{\prime} + 1)] \cdot \hat{\boldsymbol{e}}_z > 0$ \COMMENT{Check orientation, $\boldsymbol{h}^{\prime} + 1$ is meant as next element in order in $\mathcal{T}$.}
+        \ASSERT pair half-edge of $\boldsymbol{h}^{\prime}$ has opposite origin and destination vertices \COMMENT[0.35\textwidth]{Check half-edge.}
+        \ASSERT $\boldsymbol{h}^{\prime}$ is the pair of half-edge of its pair half-edge
+        \ASSERT $\boldsymbol{h}^{\prime}$ is previous half-edge of $\boldsymbol{h}^{\prime} + 1$. \COMMENT[0.35\textwidth]{Check next half-edge.}
+        \ASSERT destination vertex of $\boldsymbol{h}^{\prime}$ is the origin vertex of $\boldsymbol{h}^{\prime} + 1$
+        \ASSERT $\boldsymbol{h}^{\prime}$ is next half-edge of $\boldsymbol{h}^{\prime} - 1$. \COMMENT[0.35\textwidth]{Check previous half-edge.}
+        \ASSERT origin vertex of $\boldsymbol{h}^{\prime}$ is the destination vertex of $\boldsymbol{h}^{\prime} - 1$
+        \STATE{Remove $\boldsymbol{h}^{\prime}$ from $\mathcal{H}^{\prime}$.}
+    \ENDFOR
+\ENDFOR
+\ASSERT $\mathcal{V}^{\prime} = \emptyset$ and $\mathcal{H}^{\prime} = \emptyset$
+\end{algorithmic}
+\end{algorithm}
 
 \begin{figure}[H]
 \centering
