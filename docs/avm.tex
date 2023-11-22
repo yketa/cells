@@ -1,3 +1,5 @@
+%%%%% GENERIC PREAMBLE
+
 \documentclass[aps, superscriptaddress, notitlepage]{revtex4-1}
 
 \usepackage{amsmath,amsfonts,amssymb,graphicx,hyperref,listings,xcolor,float}
@@ -17,12 +19,9 @@
 \algrenewcommand\algorithmicrequire{\textbf{Input:}}
 \algrenewcommand\algorithmicensure{\textbf{Output:}}
 % https://tex.stackexchange.com/questions/180212
-\algrenewcommand{\algorithmiccomment}[2][.6\linewidth]{\leavevmode\hfill\makebox[#1][l]{\triangleright~#2}}
+\algrenewcommand{\algorithmiccomment}[2][.6\linewidth]{\leavevmode\hfill\makebox[#1][l]{\triangleright~{\em#2}}}
 % https://tex.stackexchange.com/questions/184827
-\providecommand{\LINECOMMENT}[2][.6\linewidth]{\STATEx\algorithmiccomment[#1]{#2}}
-% algorithm macros
-\providecommand\RETURN{\STATE\textbf{return}~}
-\providecommand\ASSERT{\STATE\textbf{assert}~}
+\providecommand{\LINECOMMENT}[1]{\STATEx//~{\em#1}}
 
 % colours
 % seaborn `colorblind' palette
@@ -50,6 +49,11 @@
 %%%%% MACROS
 
 \def\scale{0.8}
+\providecommand\RETURN{\STATE\textbf{return}~}
+\providecommand\ASSERT{\STATE\textbf{assert}~}
+\providecommand\BREAK{\STATE\textbf{break}~}
+\providecommand\TRUE{\textsc{true}}
+\providecommand\FALSE{\textsc{false}}
 
 %%%%% DOCUMENT
 
@@ -127,80 +131,99 @@ where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworth
 \label{fig:fmu}
 \end{figure}
 
-\section{Half-edge procedure}
+\section{Half-edge construction}
 
 The edges of the mesh (Fig.~\ref{fig:schematic}) divide the entire system in adjacent and non-overlapping \textit{triangles} (or \textit{faces}). We endow all of these triangles with three arrows. These are oriented such that, for an arbitrary vertex (\textit{e.g.}, $\mu$ in Fig.~\ref{fig:he}) and an arbitrary triangle (\textit{e.g.}, $(\mu, \nu, i)$), the cross product of the half-edges pointing toward this vertex in this triangle (\textit{i.e.}, $i \to \mu$) on the one hand and the half-edge pointing out of this vertex in this triangle (\textit{i.e.}, $\mu \to \nu$) on the other hand, has a positive scalar product with $\hat{\boldsymbol{e}}_z$. We introduce three relations between half-edges, which we exemplify in Fig.~\ref{fig:he} using an arbitrary {\color{yellow} reference half-egde $\mu \to \nu$}.
 \begin{enumerate}
     \item The {\color{purple} \textit{next} half-edge} departs from the vertex pointed at by the reference half-edge (\textit{i.e.}, $\nu$ here) inside the same triangle. ``Next'' is an order-3 bijection, meaning that the next half-edge of the next half-edge of any half-edge is this same half-edge.
-    \item The {\color{green} \textit{previous} half-edge} points towards the vertex from which departs the reference half-edge (\textit{i.e.}, $\mu$ here) inside the same triangle. ``Previous'' is also an order-3 bijection.
+    \item The {\color{green} \textit{previous} half-edge} (or {\color{green}\textit{before}}) points towards the vertex from which departs the reference half-edge (\textit{i.e.}, $\mu$ here) inside the same triangle. ``Previous'' is also an order-3 bijection.
     \item The {\color{blue} \textit{pair} half-edge} has inverse depart and arrival vertices with respect to the reference half-edge (\textit{i.e.}, $\nu$ and $\mu$ here) in the adjacent triangle sharing the same edge the reference half-edge belongs to. ``Pair'' is an order-2 bijecton, meaning that the pair half-edge of any pair half-edge is this same half-edge.
 \end{enumerate}
-These relations between the half-edges enable us to identify all neighbours of any vertex (Alg.~\ref{alg:neighbours}), given that each vertex contains the information of (at least) one half-edge leaving the vertex. We propose in Alg.~\ref{alg:check} a way to check the consistency of the half-edge construction in the mesh.
+We refer to the ensemble of half-edges and vertices as the \textit{half-edge construction}. We propose in Alg.~\ref{alg:check} a way to check its consistency. While this construction contains the same information as the geometric mesh (thus indicating that there is redundancy in this contruction) it enables for faster and in some cases easier computations. We show with Alg.~\ref{alg:neighbours} how to identify all neighbours of any vertex given that each vertex contains the information of (at least) one half-edge leaving the vertex.
 
 \begin{figure}[!t]
 \centering
 \begin{tikzpicture}[scale=0.8*\scale]
 \input{src/he}
 \end{tikzpicture}
-\caption{Half-edge representation in 6 adjacent triangles, highlighting an arbitrary reference half-edge and its associated half-edges.}
+\caption{Half-edge construction in 6 adjacent triangles, highlighting an arbitrary reference half-edge and its associated half-edges.}
 \label{fig:he}
 \end{figure}
 
 \section{T1 transition}
 
-T1 transitions correspond to changes in the mesh topology (Fig.~\ref{fig:t1}).
+T1 transitions correspond to changes of neighbours of 4 cells resulting in a modification of the mesh topology, see Fig.~\ref{fig:t1}. First (1) two vertices are merged (\textit{i.e.}, a junction is deleted) creating a \textit{four-vertex}. In principle, if one of the vertices of the deleted junction had initially more than 3 neighbouring cells, there would be more than 4 cells at the merged vertex. While we expect this not to be frequent, the algorithm designed to perform this merge has to take this into account. Then (2) a junction is created (\textit{i.e.}, a vertex is created).
 
-\begin{figure}[H]
+\begin{figure}[!b]
 \centering
 \begin{tikzpicture}[scale=0.25*\scale]
 \input{src/t1}
 \end{tikzpicture}
-\caption{}
+\caption{Four cells undergoing a T1 transition. (A) Cells at the top and at the bottom are in contact while cells on the left and on the right are disjointed. (B) All four cells are touching, at the centre is a four-vertex. (C) Cells at the top and at the bottom are disjointed while cells on the left and on the right are touching.}
 \label{fig:t1}
 \end{figure}
 
-\begin{figure}[H]
+It is noteworthy that states (A) and (B) (Fig.~\ref{fig:t1}) are described within the half-edge construction with the same number of half-edges and vertices. Therefore it is possible to implement a direct change from (A) to (B) through a clever relabelling of objects. We propose here to implement the two steps (1) and (2) separately in order to enable also the stabilisation of higher order vertices.
+
+Deleting a junction amounts, in the half-edge construction, to deleting 2 triangles (\textit{i.e.}, sets of 3 half-edges) and one vertex. We represent this operation in Fig.~\ref{fig:merge}, where the junction to delete is $[\mu, \nu]$ ($\mu$ is merged into $\nu$) and the triangles to delete are shaded. Relations between half-edges, as well as the knowledge for each vertex of a half-edge going out of itself, imply that we need to relabel and reaffect half-edges and vertices before deleting anything in order for the construction to remain consistent at the end of the operation (see Alg.~\ref{alg:merge}).
+
+\begin{figure}[!t]
 \centering
 \begin{tikzpicture}[scale=0.75*\scale]
 \input{src/merge}
 \end{tikzpicture}
-\caption{}
+\caption{Representation of vertex merging and junction creation in the half-edge construction. (See Fig.~\ref{fig:create} for representation in the orthogonal direction.)}
 \label{fig:merge}
 \end{figure}
 
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[scale=0.75*\scale]
-\input{src/create}
-\end{tikzpicture}
-\caption{}
-\label{fig:create}
-\end{figure}
+\begin{algorithm}[H]
+\caption{Merge vertices.}
+\label{alg:merge}
+\begin{algorithmic}[1]
+\REQUIRE Half-edge $\boldsymbol{h}$ belonging to the junction to delete. \COMMENT[0.4\textwidth]{Thick {\color{red}red} half-edge in Fig.~\ref{fig:merge}.}
+\STATE $\mu, \nu =$ origin and destination vertices of $\boldsymbol{h}$.
+\LINECOMMENT{Relabel half-edge origins and destinations for all half-edges connected to $\mu$.}
+\STATE Set $\boldsymbol{b} =$ previous half-edge of $\boldsymbol{h}$.
+\STATE Set $\boldsymbol{b}^0 =$ pair half-edge of $\boldsymbol{h}$.
+\WHILE\TRUE \COMMENT[0.7\textwidth]{See break condition on line~\ref{alg:merge_break}.}
+    \STATE Set destination vertex of $\boldsymbol{b} = \nu$ (instead of $\mu$).
+    \STATE Set $\boldsymbol{p} =$ pair half-edge of $\boldsymbol{b}$.
+    \STATE Set origin vertex of $\boldsymbol{p} = \nu$ (instead of $\mu$).
+    \IF{$\boldsymbol{b} = \boldsymbol{b}^0$} \COMMENT[0.7\textwidth]{All half-edges going out of $\mu$ were found, we should also then have $\boldsymbol{p} = \boldsymbol{h}$.}
+        \BREAK
+        \label{alg:merge_break}
+    \ENDIF
+    \STATE Set $\boldsymbol{b} =$ previous half-edge of $\boldsymbol{p}$.
+\ENDWHILE
+\LINECOMMENT{Reassign half-edges associated to vertices belonging to the deleted triangles.}
+\STATE{Set $\boldsymbol{p} =$ pair half-edge of previous half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thick {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Associate $\boldsymbol{p}$ to $\nu$ as half-edge going out of it.}
+\STATE{Set $\boldsymbol{p} =$ pair half-edge of next half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $i =$ origin vertex of $\boldsymbol{p}$.}
+\STATE{Associate $\boldsymbol{p}$ to $i$ as half-edge goigng out of it.}
+\STATE{Set $\boldsymbol{p} =$ pair half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{red}red} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{p} =$ pair half-edge of next half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thin {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $j =$ origin vertex of $\boldsymbol{p}$.}
+\STATE{Associate $\boldsymbol{p}$ to $j$ as half-edge goigng out of it.}
+\LINECOMMENT{Relabel half-edge pairs.}
+\STATE{Set $\boldsymbol{f} =$ as pair half-edge of previous half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thick {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{t} =$ as pair half-edge of next half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Associate $\boldsymbol{f}$ as pair half-edge of $\boldsymbol{t}$ and vice-versa.}
+\STATE{Set $\boldsymbol{p} =$ pair half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{red}red} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{f} =$ as pair half-edge of previous half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thick {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{t} =$ as pair half-edge of next half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thin {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Associate $\boldsymbol{f}$ as pair half-edge of $\boldsymbol{t}$ and vice-versa.}
+\LINECOMMENT{At this point the vertex $\mu$ and the half-edges in the triangles adjacent at $\boldsymbol{h}$ are separated from the rest of the mesh.}
+\STATE{Delete junction and triangles.}
+\end{algorithmic}
+\end{algorithm}
 
 \bibliography{ref}
 
-\newpage
 \appendix
 
-\section{Algorithms}
-
-\begin{algorithm}[H]
-\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices.}
-\label{alg:neighbours}
-\begin{algorithmic}[1]
-\REQUIRE Arbitrary half-edge $\boldsymbol{h}$ departing from a given vertex $v$.
-\ENSURE Ensemble $\mathcal{D}$ of neighbours of vertex $v$, ensemble $\mathcal{H}$ of half-edges from vertex $v$ to its neighbours.
-\STATE{Set $d^0 = $ destination vertex of $\boldsymbol{h}$.} \COMMENT[0.7\textwidth]{Save first neighbour.}
-\STATE{Set $d = \textsc{null}$.} \COMMENT[0.7\textwidth]{Setting to \textsc{null} to enter while loop \ref{ins:while_neigh}.}
-\WHILE{$d \neq d^0$}
-\label{ins:while_neigh}
-    \STATE{Set $\boldsymbol{h} =$ pair half-edge of previous half-edge of $\boldsymbol{h}$.}
-    \STATE{Set $d =$ destination vectex of $\boldsymbol{h}$.}
-    \STATE{Add $d$ to $\mathcal{D}$, add $\boldsymbol{h}$ to $\mathcal{H}$.} \COMMENT[0.7\textwidth]{By convention of the half-edge construction, these are added in anticlockwise order.}
-\ENDWHILE
-\RETURN $\mathcal{D},~\mathcal{H}$
-\end{algorithmic}
-\end{algorithm}
+\newpage
+\section{Half-edge construction algorithms}
 
 \begin{algorithm}[H]
 \caption{Check half-edge construction.}
@@ -232,6 +255,38 @@ T1 transitions correspond to changes in the mesh topology (Fig.~\ref{fig:t1}).
 \ASSERT $\mathcal{V}^{\prime} = \emptyset$ and $\mathcal{H}^{\prime} = \emptyset$
 \end{algorithmic}
 \end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices.}
+\label{alg:neighbours}
+\begin{algorithmic}[1]
+\REQUIRE Arbitrary half-edge $\boldsymbol{h}$ departing from a given vertex $v$.
+\ENSURE Ensemble $\mathcal{D}$ of neighbours of vertex $v$, ensemble $\mathcal{H}$ of half-edges from vertex $v$ to its neighbours.
+\STATE{Set $d^0 = $ destination vertex of $\boldsymbol{h}$.} \COMMENT[0.7\textwidth]{Save first neighbour.}
+\WHILE\TRUE \COMMENT[0.7\textwidth]{See break condition on line~\ref{alg:neigh_break}.}
+    \STATE{Set $\boldsymbol{h} =$ pair half-edge of previous half-edge of $\boldsymbol{h}$.}
+    \STATE{Set $d =$ destination vectex of $\boldsymbol{h}$.}
+    \STATE{Add $d$ to $\mathcal{D}$, add $\boldsymbol{h}$ to $\mathcal{H}$.} \COMMENT[0.7\textwidth]{By convention of the half-edge construction, these are added in anticlockwise order.}
+    \IF{$d = d^0$} \COMMENT[0.7\textwidth]{All neighbours have been found.}
+        \BREAK
+        \label{alg:neigh_break}
+    \ENDIF
+\ENDWHILE
+\RETURN $\mathcal{D},~\mathcal{H}$
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+\section{T1 transition with half-edge construction}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.75*\scale]
+\input{src/create}
+\end{tikzpicture}
+\caption{Representation of vertex merging and junction creation in the half-edge construction. (See Fig.~\ref{fig:merge} for representation in the orthogonal direction.)}
+\label{fig:create}
+\end{figure}
 
 \end{document}
 
