@@ -1,12 +1,12 @@
-%%%%% BEFORE CREATION
+%%%%% AFTER CREATION
 
 % vertices
 
 \coordinate (A) at (0, 2);
-\draw[fill=black] (A) circle (0.2) node[left, xshift=-5pt]{\large $\nu$};
+\draw[fill=black] (A) circle (0.2) node[left, xshift=-5pt]{\large $\xi$};
 
 \coordinate (B) at ($(A) + ({4*cos(0*60 - 90)}, {4*sin(0*60 - 90)})$);
-\draw[fill=black] (B) circle (0.2) node[right, xshift=5pt]{\large $\xi$};
+\draw[fill=black] (B) circle (0.2) node[right, xshift=5pt]{\large $\nu$};
 \coordinate (C) at ($(A) + ({4*cos(1*60 - 90)}, {4*sin(1*60 - 90)})$);
 \draw[thick] (C) circle (0.2) node[right, xshift=5pt]{\large $l$};
 \coordinate (D) at ($(A) + ({4*cos(2*60 - 90)}, {4*sin(2*60 - 90)})$);
@@ -78,7 +78,7 @@
 % triangles
 
 % first triangle
-\draw[->, ultra thick, grey] ($(A0)!0.1!(B1)$) -- ($(A0)!0.9!(B1)$);
+\draw[->, grey] ($(A0)!0.1!(B1)$) -- ($(A0)!0.9!(B1)$);
 \draw[->] ($(B1)!0.1!(C0)$) -- ($(B1)!0.9!(C0)$);
 \draw[->] ($(C0)!0.1!(A0)$) -- ($(C0)!0.9!(A0)$);
 % second triangle
@@ -100,7 +100,7 @@
 % sixth triangle
 \draw[->] ($(A5)!0.1!(G1)$) -- ($(A5)!0.9!(G1)$);
 \draw[->] ($(G1)!0.1!(B0)$) -- ($(G1)!0.9!(B0)$);
-\draw[->, grey] ($(B0)!0.1!(A5)$) -- ($(B0)!0.9!(A5)$);
+\draw[->, ultra thick, grey] ($(B0)!0.1!(A5)$) -- ($(B0)!0.9!(A5)$);
 % seventh triangle
 \draw[->, ultra thick, green] ($(B5)!0.1!(G2)$) -- ($(B5)!0.9!(G2)$);
 \draw[->] ($(G2)!0.1!(H0)$) -- ($(G2)!0.9!(H0)$);
@@ -123,7 +123,7 @@
 \draw[ultra thick, arrows={-Stealth[harpoon]}] ({-4*cos(30) - 1.5}, -0.5) -- ++(-3, 0) node[midway, below]{merge vertices};
 \draw[ultra thick, arrows={-Stealth[harpoon]}] ({-4*cos(30) - 4.5}, 0.5) -- ++(3, 0) node[midway, above]{create junction};
 
-%%%%% AFTER CREATION
+%%%%% BEFORE CREATION
 
 % vertices
 

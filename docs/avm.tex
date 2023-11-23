@@ -165,7 +165,7 @@ T1 transitions correspond to changes of neighbours of 4 cells resulting in a mod
 
 It is noteworthy that states (A) and (B) (Fig.~\ref{fig:t1}) are described within the half-edge construction with the same number of half-edges and vertices. Therefore it is possible to implement a direct change from (A) to (B) through a clever relabelling of objects. We propose here to implement the two steps (1) and (2) separately in order to enable also the stabilisation of higher order vertices.
 
-Deleting a junction amounts, in the half-edge construction, to deleting 2 triangles (\textit{i.e.}, sets of 3 half-edges) and one vertex. We represent this operation in Fig.~\ref{fig:merge}, where the junction to delete is $[\mu, \nu]$ ($\mu$ is merged into $\nu$) and the triangles to delete are shaded. Relations between half-edges, as well as the knowledge for each vertex of a half-edge going out of itself, imply that we need to relabel and reaffect half-edges and vertices before deleting anything in order for the construction to remain consistent at the end of the operation (see Alg.~\ref{alg:merge}).
+Merging two vertices amounts, in the half-edge construction, to deleting 2 triangles (\textit{i.e.}, 2 sets of 3 half-edges) among which one junction as well as one vertex. We represent this operation in Fig.~\ref{fig:merge}, where the junction to delete is $[\mu, \nu]$ ($\mu$ is merged into $\nu$) and the triangles to delete are shaded. Relations between half-edges, as well as the knowledge for each vertex of a half-edge going out of itself, imply that we need to relabel and reaffect half-edges and vertices before deleting anything in order for the construction to remain consistent at the end of the operation (see Alg.~\ref{alg:merge}).
 
 \begin{figure}[!t]
 \centering
@@ -177,7 +177,7 @@ Deleting a junction amounts, in the half-edge construction, to deleting 2 triang
 \end{figure}
 
 \begin{algorithm}[H]
-\caption{Merge vertices.}
+\caption{Merge vertices (see \textsc{System::mergeVertices} in \href{../system.cpp}{\textsc{system.cpp}}).}
 \label{alg:merge}
 \begin{algorithmic}[1]
 \REQUIRE Half-edge $\boldsymbol{h}$ belonging to the junction to delete. \COMMENT[0.4\textwidth]{Thick {\color{red}red} half-edge in Fig.~\ref{fig:merge}.}
@@ -206,15 +206,58 @@ Deleting a junction amounts, in the half-edge construction, to deleting 2 triang
 \STATE{Set $j =$ origin vertex of $\boldsymbol{p}$.}
 \STATE{Associate $\boldsymbol{p}$ to $j$ as half-edge goigng out of it.}
 \LINECOMMENT{Relabel half-edge pairs.}
-\STATE{Set $\boldsymbol{f} =$ as pair half-edge of previous half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thick {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
-\STATE{Set $\boldsymbol{t} =$ as pair half-edge of next half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{f} =$ pair half-edge of previous half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thick {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{t} =$ pair half-edge of next half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{blue}blue} half-edge in Fig.~\ref{fig:merge}.}
 \STATE{Associate $\boldsymbol{f}$ as pair half-edge of $\boldsymbol{t}$ and vice-versa.}
 \STATE{Set $\boldsymbol{p} =$ pair half-edge of $\boldsymbol{h}$.} \COMMENT[0.4\textwidth]{Thin {\color{red}red} half-edge in Fig.~\ref{fig:merge}.}
-\STATE{Set $\boldsymbol{f} =$ as pair half-edge of previous half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thick {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
-\STATE{Set $\boldsymbol{t} =$ as pair half-edge of next half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thin {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{f} =$ pair half-edge of previous half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thick {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
+\STATE{Set $\boldsymbol{t} =$ pair half-edge of next half-edge of $\boldsymbol{p}$.} \COMMENT[0.4\textwidth]{Thin {\color{purple}purple} half-edge in Fig.~\ref{fig:merge}.}
 \STATE{Associate $\boldsymbol{f}$ as pair half-edge of $\boldsymbol{t}$ and vice-versa.}
 \LINECOMMENT{At this point the vertex $\mu$ and the half-edges in the triangles adjacent at $\boldsymbol{h}$ are separated from the rest of the mesh.}
-\STATE{Delete junction and triangles.}
+\STATE{Delete 6 half-edges in the 2 triangles adjacent at $\boldsymbol{h}$ and the vertex $\mu$.}
+\end{algorithmic}
+\end{algorithm}
+
+Creating a junction involves the same steps as merging vertices but in reverse order, \textit{i.e.} first create a vertex and 6 half-edges, then relabelling and affecting half-edges and vertices in the system. To identify unequivocally the topology around the new junction in the half-edge construction, it is necessary to specify two distinct half-edges going out of a same vertex. We represent this operation in Fig.~\ref{fig:create}, where vertex $\xi$ is created from vertex $\nu$ and half-edges {\color{green}$\nu \to k$} and {\color{yellow}$\nu \to l$}.
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[scale=0.75*\scale]
+\input{src/create}
+\end{tikzpicture}
+\caption{Representation of vertex merging and junction creation in the half-edge construction. (See Fig.~\ref{fig:merge} for representation in the orthogonal direction.)}
+\label{fig:create}
+\end{figure}
+
+\begin{algorithm}[H]
+\caption{Create junction (see \textsc{System::createJunction} in \href{../system.cpp}{\textsc{system.cpp}}).}
+\label{alg:merge}
+\begin{algorithmic}[1]
+\REQUIRE Half-edges $\boldsymbol{h}$ and $\boldsymbol{h}^{\prime}$ going out of the same vertex. \COMMENT[0.45\textwidth]{Thick {\color{green}green} and {\color{yellow}yellow} half-edges in Fig.~\ref{fig:create}.}
+\STATE $\nu$ = origin vertex of $\boldsymbol{h}$. \COMMENT{$\nu$ should also be the origin vertex of $\boldsymbol{h}^{\prime}$.}
+\LINECOMMENT{Create new vertex.}
+\STATE Create vertex $\xi$ associated to half-edge $\boldsymbol{h}^{\prime}$ going out of it.
+\STATE Associate $\boldsymbol{h}$ to $\nu$ as half-edge going out of it.
+\LINECOMMENT{Relabel half-edge origins and destinations for part of the half-edges connected to $\nu$ (between $\boldsymbol{h}$ and $\boldsymbol{h}^{\prime}$).}
+\STATE Set $\boldsymbol{p} = \boldsymbol{h}^{\prime}$.
+\WHILE{$\boldsymbol{p} \neq \boldsymbol{h}$}
+    \STATE Set origin vertex of $\boldsymbol{p} = \xi$ (instead of $\nu$).
+    \STATE Set $\boldsymbol{b} =$ previous half-edge of $\boldsymbol{p}$.
+    \STATE Set destination vertex of $\boldsymbol{b} = \xi$ (instead of $\nu$).
+    \STATE Set $\boldsymbol{p} =$ pair half-edge of $\boldsymbol{b}$.
+\ENDWHILE
+\LINECOMMENT{Create new half-edges and relabel half-edge pairs.}
+\STATE Create half-edge $\boldsymbol{h}^{1} = \nu \to \xi$ and its pair half-edge $\boldsymbol{h}^{1\dagger} = \xi \to \nu$. \COMMENT[0.45\textwidth]{Thick and thin {\color{grey}grey} lines in Fig.~\ref{fig:create}.}
+\STATE Set $k =$ destination vertex of $\boldsymbol{h}$.
+\STATE Create $\boldsymbol{b}  = k \to \nu$ as previous half-edge of $\boldsymbol{h}^1$, and $\boldsymbol{n} = \xi \to k$ as next half-edge of $\boldsymbol{h}^1$. \COMMENT[0.25\textwidth]{$(\boldsymbol{n}, \boldsymbol{b}, \boldsymbol{h}^{1})$ form a triangle.}
+\STATE Set $\boldsymbol{h}^{\dagger} =$ pair half-edge of $\boldsymbol{h}$. \COMMENT[0.45\textwidth]{At this stage, $\boldsymbol{h}^{\dagger}$ is the thin {\color{green}green} half-edge in Fig.~\ref{fig:create}.}
+\STATE{Associate $\boldsymbol{b}$ as pair half-edge of $\boldsymbol{h}$ and vice-versa.}
+\STATE{Associate $\boldsymbol{n}$ as pair half-edge of $\boldsymbol{h}^{\dagger}$ and vice-versa.}
+\STATE{Set $l =$ destination vertex of $\boldsymbol{h}^{\prime}$.}
+\STATE{Create $\boldsymbol{b}  = l \to \xi$ as previous half-edge of $\boldsymbol{h}^{1\dagger}$, and $\boldsymbol{n} = \nu \to l$ as next half-edge of $\boldsymbol{h}^{1\dagger}$.} \COMMENT[0.25\textwidth]{$(\boldsymbol{n}, \boldsymbol{b}, \boldsymbol{h}^{1\dagger})$ form a triangle.}
+\STATE{Set $\boldsymbol{h}^{\prime\dagger} =$ pair half-edge of $\boldsymbol{h}^{\prime}$.} \COMMENT[0.45\textwidth]{At this stage, $\boldsymbol{h}^{\prime\dagger}$ is the thin {\color{yellow}yellow} half-edge in Fig.~\ref{fig:create}.}
+\STATE{Associate $\boldsymbol{b}$ as pair half-edge of $\boldsymbol{h}^{\prime}$ and vice-versa.}
+\STATE{Associate $\boldsymbol{n}$ as pair half-edge of $\boldsymbol{h}^{\prime\dagger}$ and vice-versa.}
 \end{algorithmic}
 \end{algorithm}
 
@@ -226,7 +269,7 @@ Deleting a junction amounts, in the half-edge construction, to deleting 2 triang
 \section{Half-edge construction algorithms}
 
 \begin{algorithm}[H]
-\caption{Check half-edge construction.}
+\caption{Check half-edge construction (see \textsc{Mesh::checkMesh} in \href{../mesh.cpp}{\textsc{mesh.cpp}}).}
 \label{alg:check}
 \begin{algorithmic}[1]
 \REQUIRE Ensemble $\mathcal{V}$ of all vertices, ensemble $\mathcal{H}$ of all half-edges.
@@ -257,7 +300,7 @@ Deleting a junction amounts, in the half-edge construction, to deleting 2 triang
 \end{algorithm}
 
 \begin{algorithm}[H]
-\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices.}
+\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices (see \textsc{Mesh::getNeighbourVertices} in \href{../mesh.cpp}{\textsc{mesh.cpp}}).}
 \label{alg:neighbours}
 \begin{algorithmic}[1]
 \REQUIRE Arbitrary half-edge $\boldsymbol{h}$ departing from a given vertex $v$.
@@ -275,18 +318,6 @@ Deleting a junction amounts, in the half-edge construction, to deleting 2 triang
 \RETURN $\mathcal{D},~\mathcal{H}$
 \end{algorithmic}
 \end{algorithm}
-
-\newpage
-\section{T1 transition with half-edge construction}
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[scale=0.75*\scale]
-\input{src/create}
-\end{tikzpicture}
-\caption{Representation of vertex merging and junction creation in the half-edge construction. (See Fig.~\ref{fig:merge} for representation in the orthogonal direction.)}
-\label{fig:create}
-\end{figure}
 
 \end{document}
 
