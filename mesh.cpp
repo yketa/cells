@@ -74,9 +74,9 @@ std::vector<std::vector<long int>> const Mesh::getNeighbourVertices(
     assert(firstNeighbourVertexIndex >= 0);                             // check that the first destination vertex exists
 
     // loop around neighbours
-    long int toVertexIndex = -1;
+    long int toVertexIndex;
     long int previousHalfEdgeIndex;
-    while (toVertexIndex != firstNeighbourVertexIndex) {
+    while (true) {
 
         // get next half-edge in anticlockwise order (previous - pair)
         previousHalfEdgeIndex = *halfEdges[halfEdgeIndex].getPreviousIndex();
@@ -90,6 +90,10 @@ std::vector<std::vector<long int>> const Mesh::getNeighbourVertices(
 
         neighbourVerticesIndices.push_back(toVertexIndex);
         halfEdgesToNeighboursIndices.push_back(halfEdgeIndex);
+
+        if (toVertexIndex == firstNeighbourVertexIndex) {   // all neighbours have been found
+            break;
+        }
     }
 
     return {neighbourVerticesIndices, halfEdgesToNeighboursIndices};
@@ -189,12 +193,12 @@ void Mesh::checkMesh() {
             assert(fromVertex ==
                 *halfEdges[pairHalfEdgeIndex].getToIndex());
 
-            assert(triangle[i] ==   // check the indexing of previous
+            assert(triangle[i] ==   // check the indexing of next
                 *halfEdges[triangle[pmod(i + 1, 3)]].getPreviousIndex());
             assert(toVertex ==
                 *halfEdges[triangle[pmod(i + 1, 3)]].getFromIndex());
 
-            assert(triangle[i] ==   // check the indexing of next
+            assert(triangle[i] ==   // check the indexing of previous
                 *halfEdges[triangle[pmod(i - 1, 3)]].getNextIndex());
             assert(fromVertex ==
                 *halfEdges[triangle[pmod(i - 1, 3)]].getToIndex());
