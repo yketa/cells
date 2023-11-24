@@ -14,108 +14,204 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include "mesh.hpp"
 #include "system.hpp"
 #include "tools.hpp"
+#include "plot.hpp"
 
 /*
-Functions using VertexModel to speed up plotting.
+Functions to save to and load from pickle.
 */
 
-std::vector<std::vector<double>> getLinesHalfEdge(
-    VertexModel& vm) {
+template<class T> pybind11::tuple pybind11_getstate(T const& obj);  // python __getstate__
+template<class T> T pybind11_setstate(pybind11::tuple const& t);    // python __setstate__
+
 /*
-Return vector [[x0, x0'], [y0, y0'], ..., [xN-1, xN-1'], [yN-1, yN-1']] where
-the line (xi, yi) -- (xi', yi') corresponds to the i-th half-edge in `vm'.
-*/
+ *  [tools.hpp]
+ *
+ */
 
-    std::vector<std::vector<double>> lines(0);
-
-    std::map<long int, Vertex> vertices = vm.getVertices();
-    std::map<long int, HalfEdge> halfEdges = vm.getHalfEdges();
-
-    for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over all vertices
-        vm.wrap((it->second).getPosition());    // wrap position with respect to periodic boundary conditions
+// MultiIntKeyDict<TT>
+template<class TT> pybind11::tuple pybind11_getstate_MultiIntKeyDict(
+    MultiIntKeyDict<TT> const& mikd) {
+    // copy data from MultiIntKeyDict
+    std::map<long int, long int> const mikd_keys = mikd.getKeys();
+    std::map<long int, TT> const mikd_data = mikd.getData();
+    long int const mikd_maxIndex = mikd.getMaxIndex();
+    // extract data from TT
+    std::map<long int, pybind11::tuple> data;
+    for (auto it=mikd_data.begin(); it != mikd_data.end(); ++it) {
+        data[it->first] = pybind11_getstate<TT>(it->second);
     }
-
-    double* fromPos;
-    std::vector<double> disp;
-    for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {  // loop over all half-edges
-        fromPos = vertices[*(it->second).getFromIndex()].getPosition(); // position of origin vertex
-        disp = vm.getHalfEdgeVector(it->first, false);                  // displacement to destination vertex
-        lines.push_back({fromPos[0], fromPos[0] + disp[0]});            // x-coordinates of line
-        lines.push_back({fromPos[1], fromPos[1] + disp[1]});            // y-coordinates of line
-    }
-
-    return lines;
+    // return ensemble of data
+    return pybind11::make_tuple(
+        mikd_keys, data, mikd_maxIndex);
+}
+template<class TT> MultiIntKeyDict<TT> pybind11_setstate_MultiIntKeyDict(
+    pybind11::tuple const& t) {
+    // check
+    if (t.size() != 3)
+        { throw std::runtime_error("Invalid state."); }
+    // get data
+    std::map<long int, long int> const keys =
+        t[0].cast<std::map<long int, long int>>();
+    std::map<long int, pybind11::tuple> const data =
+        t[1].cast<std::map<long int, pybind11::tuple>>();
+    long int const initial =
+        t[2].cast<long int>();
+    // create MultiIntKeyDict and associate data
+    MultiIntKeyDict<TT> mikd(initial);
+    return mikd;
 }
 
-std::vector<std::vector<double>> getLinesJunction(
-    VertexModel& vm) {
-/*
-Return vector [[x0, x0'], [y0, y0'], ..., [xN-1, xN-1'], [yN-1, yN-1']] where
-the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
-*/
-
-    std::vector<std::vector<double>> lines(0);
-
-    std::map<long int, Vertex> vertices = vm.getVertices();
-    std::map<long int, HalfEdge> halfEdges = vm.getHalfEdges();
-    MultiIntKeyDict<Junction> junctions = vm.getJunctions();
-
-    for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over all vertices
-        vm.wrap((it->second).getPosition());    // wrap position with respect to periodic boundary conditions
-    }
-
-    double* fromPos;
-    std::vector<double> disp;
-    std::vector<long int> halfEdgeIndices;
-    for (auto it=junctions.begin(); it != junctions.end(); ++it) {  // loop over all junctions
-        halfEdgeIndices.clear();
-        halfEdgeIndices.push_back(
-            *it);
-        halfEdgeIndices.push_back(
-            *halfEdges[halfEdgeIndices[0]].getPairIndex());
-        for (long int index : halfEdgeIndices) {
-            fromPos = vertices[*halfEdges[index].getFromIndex()].getPosition(); // position of origin vertex
-            disp = vm.getHalfEdgeVector(index, false);                          // displacement to destination vertex
-            lines.push_back({fromPos[0], fromPos[0] + disp[0]});                // x-coordinates of line
-            lines.push_back({fromPos[1], fromPos[1] + disp[1]});                // y-coordinates of line
-        }
-    }
-
-    return lines;
+// MultiIntKeyDict<SPVertex>
+template<>
+pybind11::tuple pybind11_getstate<MultiIntKeyDict<SPVertex>>(
+    MultiIntKeyDict<SPVertex> const& mikd) {
+    return pybind11_getstate_MultiIntKeyDict<SPVertex>(mikd);
+}
+template<>
+MultiIntKeyDict<SPVertex> pybind11_setstate<MultiIntKeyDict<SPVertex>>(
+    pybind11::tuple const& t) {
+    return pybind11_setstate_MultiIntKeyDict<SPVertex>(t);
+}
+// MultiIntKeyDict<Cell>
+template<>
+pybind11::tuple pybind11_getstate<MultiIntKeyDict<Cell>>(
+    MultiIntKeyDict<Cell> const& mikd) {
+    return pybind11_getstate_MultiIntKeyDict<Cell>(mikd);
+}
+template<>
+MultiIntKeyDict<Cell> pybind11_setstate<MultiIntKeyDict<Cell>>(
+    pybind11::tuple const& t) {
+    return pybind11_setstate_MultiIntKeyDict<Cell>(t);
+}
+// MultiIntKeyDict<Face>
+template<>
+pybind11::tuple pybind11_getstate<MultiIntKeyDict<Face>>(
+    MultiIntKeyDict<Face> const& mikd) {
+    return pybind11_getstate_MultiIntKeyDict<Face>(mikd);
+}
+template<>
+MultiIntKeyDict<Face> pybind11_setstate<MultiIntKeyDict<Face>>(
+    pybind11::tuple const& t) {
+    return pybind11_setstate_MultiIntKeyDict<Face>(t);
+}
+// MultiIntKeyDict<Junction>
+template<>
+pybind11::tuple pybind11_getstate<MultiIntKeyDict<Junction>>(
+    MultiIntKeyDict<Junction> const& mikd) {
+    return pybind11_getstate_MultiIntKeyDict<Junction>(mikd);
+}
+template<>
+MultiIntKeyDict<Junction> pybind11_setstate<MultiIntKeyDict<Junction>>(
+    pybind11::tuple const& t) {
+    return pybind11_setstate_MultiIntKeyDict<Junction>(t);
 }
 
-std::vector<std::vector<std::vector<double>>> getPolygonsCell(
-    VertexModel& vm) {
 /*
-Return vector [..., [[xi^0, yi^0], ..., [xi^Ni-1, yi^Ni-1]], ...] where the
-point (xi^j, yi^j) is the j-th corner of the i-th cell.
-*/
+ *  [mesh.hpp]
+ *
+ */
 
-    std::vector<std::vector<std::vector<double>>> polygons(0);
+// Vertex
+template<>
+pybind11::tuple pybind11_getstate<Vertex>(Vertex const& v) {
+    return pybind11::make_tuple(
+        v.getIndex(),
+        v.getPosition(),
+        v.getHalfEdgeIndex());
+}
+template<>
+Vertex pybind11_setstate<Vertex>(pybind11::tuple const& t) {
+    if (t.size() != 3)
+        { throw std::runtime_error("Invalid state."); }
+    long int const index =
+        t[0].cast<long int>();
+    std::vector<double>position =
+        t[1].cast<std::vector<double>>();
+    long int const halfEdgeIndex =
+        t[2].cast<long int>();
+    return Vertex(index, position, halfEdgeIndex);
+}
 
-    std::map<long int, Vertex> vertices = vm.getVertices();
-    MultiIntKeyDict<Cell> cells = vm.getCells();
+/*
+ *  [system.hpp]
+ *
+ */
 
-    long int n;
-    double* cellPos;
-    long int vertexIndex;
-    std::vector<long int> halfEdgesToNeighboursIndices;
-    std::vector<double> disp;
-    for (Cell* cell : cells.getValues()) {                              // loop over all cells
-        n = polygons.size();
-        polygons.push_back(std::vector<std::vector<double>>(0));
+// SPVertex
+template<>
+pybind11::tuple pybind11_getstate<SPVertex>(SPVertex const& spv) {
+    return pybind11::make_tuple(
+        spv.getVertexIndex(),
+        spv.gettheta(),
+        spv.getv0(),
+        spv.getDr());
+}
+template<>
+SPVertex pybind11_setstate<SPVertex>(pybind11::tuple const& t) {
+    if (t.size() != 4)
+        { throw std::runtime_error("Invalid state."); }
+    long int const vertexIndex = t[0].cast<long int>();
+    double const theta = t[1].cast<double>();
+    double const v0 = t[2].cast<double>();
+    double const Dr = t[3].cast<double>();
+    return SPVertex(vertexIndex, theta, v0, Dr);
+}
 
-        vertexIndex = cell->getVertexIndex();
-        cellPos = vertices[vertexIndex].getPosition();          // position of cell centre
-        halfEdgesToNeighboursIndices = vm.getNeighbourVertices(vertexIndex)[1];
-        for (long int halfEdgeIndex : halfEdgesToNeighboursIndices) {   // loop over cell vertices
-            disp = vm.getHalfEdgeVector(halfEdgeIndex, false);  // displacement to vertex
-            polygons[n].push_back(                              // vertex position
-                {cellPos[0] + disp[0], cellPos[1] + disp[1]});
-        }
-    }
+// Cell
+template<>
+pybind11::tuple pybind11_getstate<Cell>(Cell const& cell) {
+    return pybind11::make_tuple(
+        cell.getVertexIndex(),
+        cell.getArea(),
+        cell.getkA(),
+        cell.getA0(),
+        cell.getPerimeter(),
+        cell.getkP(),
+        cell.getp0());
+}
+template<>
+Cell pybind11_setstate<Cell>(pybind11::tuple const& t) {
+    if (t.size() != 7)
+        { throw std::runtime_error("Invalid state."); }
+    long int const vertexIndex = t[0].cast<long int>();
+    double const area = t[1].cast<double>();
+    double const kA = t[2].cast<double>();
+    double const A0 = t[3].cast<double>();
+    double const perimeter = t[4].cast<double>();
+    double const kP = t[5].cast<double>();
+    double const p0 = t[6].cast<double>();
+    Cell cell(vertexIndex, A0, p0, kA, kP);
+    cell.setArea(area);
+    cell.setPerimeter(perimeter);
+    return cell;
+}
 
-    return polygons;
+// Face
+template<>
+pybind11::tuple pybind11_getstate<Face>(Face const& face) {
+    return pybind11::make_tuple(
+        face.getHalfEdgeIndex());
+}
+template<>
+Face pybind11_setstate<Face>(pybind11::tuple const& t) {
+    if (t.size() != 1)
+        { throw std::runtime_error("Invalid state."); }
+    long int const halfEdgeIndex = t[0].cast<long int>();
+    return Face(halfEdgeIndex);
+}
+
+// Junction
+template<>
+pybind11::tuple pybind11_getstate<Junction>(Junction const& j) {
+    return pybind11::make_tuple(
+        j.getHalfEdgeIndex());
+}
+template<>
+Junction pybind11_setstate<Junction>(pybind11::tuple const& t) {
+    if (t.size() != 1)
+        { throw std::runtime_error("Invalid state."); }
+    long int const halfEdgeIndex = t[0].cast<long int>();
+    return Junction(halfEdgeIndex);
 }
 
 /*
@@ -146,7 +242,11 @@ template<class T> void declare_MultiIntKeyDict_class(
             },
             pybind11::keep_alive<0, 1>())
         .def("__len__",
-            &MultiIntKeyDict<T>::size);
+            &MultiIntKeyDict<T>::size)
+        // pickle
+        .def(pybind11::pickle(
+            &pybind11_getstate_MultiIntKeyDict<T>,
+            &pybind11_setstate_MultiIntKeyDict<T>));
 }
 
 PYBIND11_MODULE(bind, m) {
@@ -175,26 +275,31 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("index",
             &Vertex::getIndex)
         .def_property_readonly("position",
-            [](Vertex& self) {
-                return pybind11::array_t<double>({2}, self.getPosition());
+            [](Vertex const& self) {
+                std::vector<double> const position = self.getPosition();
+                return pybind11::array_t<double>({2}, &(position[0]));
             })
         .def_property_readonly("halfEdgeIndex",
-            [](Vertex& self) { return *self.getHalfEdgeIndex(); });
+            &Vertex::getHalfEdgeIndex)
+        // pickle
+        .def(pybind11::pickle(
+            &pybind11_getstate<Vertex>,
+            &pybind11_setstate<Vertex>));
 
     pybind11::class_<HalfEdge>(m, "HalfEdge")
         // attributes
         .def_property_readonly("index",
             &HalfEdge::getIndex)
         .def_property_readonly("fromIndex",
-            [](HalfEdge& self) { return *self.getFromIndex(); })
+            &HalfEdge::getFromIndex)
         .def_property_readonly("toIndex",
-            [](HalfEdge& self) { return *self.getToIndex(); })
+            &HalfEdge::getToIndex)
         .def_property_readonly("previousIndex",
-            [](HalfEdge& self) { return *self.getPreviousIndex(); })
+            &HalfEdge::getPreviousIndex)
         .def_property_readonly("nextIndex",
-            [](HalfEdge& self) { return *self.getNextIndex(); })
+            &HalfEdge::getNextIndex)
         .def_property_readonly("pairIndex",
-            [](HalfEdge& self) { return *self.getPairIndex(); });
+            &HalfEdge::getPairIndex);
 
     pybind11::class_<Mesh>(m, "Mesh");
 
@@ -215,20 +320,23 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("Dr",
             &SPVertex::getDr)
         .def_property_readonly("theta",
-            [](SPVertex& self) { return *self.gettheta(); });
+            &SPVertex::gettheta)
+        .def(pybind11::pickle(
+            &pybind11_getstate<SPVertex>,
+            &pybind11_setstate<SPVertex>));
 
     pybind11::class_<Cell>(m, "Cell")
         // attributes
         .def_property_readonly("vertexIndex",
             &Cell::getVertexIndex)
         .def_property_readonly("area",
-            [](Cell& cell) { return *cell.getArea(); })
+            &Cell::getArea)
         .def_property_readonly("kA",
             &Cell::getkA)
         .def_property_readonly("A0",
             &Cell::getA0)
         .def_property_readonly("perimeter",
-            [](Cell& cell) { return *cell.getPerimeter(); })
+            &Cell::getPerimeter)
         .def_property_readonly("kP",
             &Cell::getkP)
         .def_property_readonly("p0",
@@ -274,8 +382,9 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("p0",
             &VertexModel::getp0)
         .def_property_readonly("systemSize",
-            [](VertexModel& self) {
-                return pybind11::array_t<double>({2}, self.getSystemSize());
+            [](VertexModel const& self) {
+                std::vector<double> const systemSize = self.getSystemSize();
+                return pybind11::array_t<double>({2}, &(systemSize[0]));
             })
         .def_property_readonly("seed",
             &VertexModel::getSeed)
@@ -285,20 +394,25 @@ PYBIND11_MODULE(bind, m) {
             &VertexModel::getnT1)
         // methods
         .def("wrap",
-            [](VertexModel& self, pybind11::array_t<double> pos) {
-                pybind11::array_t<double>
-                    wrapPos({2}, (double*) pos.request().ptr);
-                self.wrap((double*) wrapPos.request().ptr);
-                return wrapPos;
+            [](VertexModel const& self, pybind11::array_t<double> const& pos) {
+                double const* posPTR =
+                    (double const*) pos.request().ptr;
+                std::vector<double> const wpos =
+                    self.wrap(std::vector<double>(posPTR, posPTR + 2));
+                return pybind11::array_t<double>({2}, &(wpos[0]));
             })
         .def("wrapDiff",
-            [](VertexModel& self,
-                pybind11::array_t<double> fromPos,
-                pybind11::array_t<double> toPos) {
+            [](VertexModel const& self,
+                pybind11::array_t<double> const& fromPos,
+                pybind11::array_t<double> const& toPos) {
+                double const* fromPosPTR =
+                    (double const*) fromPos.request().ptr;
+                double const* toPosPTR =
+                    (double const*) toPos.request().ptr;
                 std::vector<double> const disp =
                     self.wrapDiff(
-                        (double*) fromPos.request().ptr,
-                        (double*) toPos.request().ptr);
+                        std::vector<double>(fromPosPTR, fromPosPTR + 2),
+                        std::vector<double>(toPosPTR, toPosPTR + 2));
                 return pybind11::array_t<double>({2}, &(disp[0]));
             })
         .def("reset",
