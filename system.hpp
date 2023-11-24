@@ -52,10 +52,12 @@ Physical self-propelled vertex.
             Rotational diffusion constant.
         */
 
-        long int const getVertexIndex() { return vertexIndex; }
-        double const getv0() { return v0; }
-        double const getDr() { return Dr; }
-        double* gettheta() { return &theta; }
+        long int getVertexIndex() const { return vertexIndex; }
+        double getv0() const { return v0; }
+        double getDr() const { return Dr; }
+        double gettheta() const { return theta; }
+
+        void settheta(double const& t) { theta = t; }
 
 };
 
@@ -98,14 +100,17 @@ mesh.
             Perimeter stiffness.
         */
 
-        long int const getVertexIndex() { return vertexIndex; }
-        double* getArea() { return &area; }
-        double const getkA() { return kA; }
-        double const getA0() { return A0; }
-        double* getPerimeter() { return &perimeter; }
-        double const getkP() { return kP; }
-        double const getp0() { return p0; }
-        double const getP0() { return p0*std::sqrt(A0); }
+        long int getVertexIndex() const { return vertexIndex; }
+        double getArea() const { return area; }
+        double getkA() const { return kA; }
+        double getA0() const { return A0; }
+        double getPerimeter() const { return perimeter; }
+        double getkP() const { return kP; }
+        double getp0() const { return p0; }
+        double getP0() const { return p0*std::sqrt(A0); }
+
+        void setArea(double const& a) { area = a; }
+        void setPerimeter(double const& p) { perimeter = p; }
 
 };
 
@@ -129,7 +134,7 @@ Triangle enclosed by three vertices.
             Unique index of a helf-edge belonging to the face.
         */
 
-        long int const getHalfEdgeIndex() { return halfEdgeIndex; }
+        long int getHalfEdgeIndex() const { return halfEdgeIndex; }
 
 };
 
@@ -154,7 +159,7 @@ Physical link between two vertices.
             Unique index of a helf-edge belonging to the junction.
         */
 
-        long int const getHalfEdgeIndex() { return halfEdgeIndex; }
+        long int getHalfEdgeIndex() const { return halfEdgeIndex; }
 
 };
 
@@ -201,22 +206,19 @@ class VertexModel : public Mesh {
             Dimensionless target perimeter of cell.
         */
 
-        std::map<long int, Vertex> const getVertices() { return vertices; }
-        std::map<long int, HalfEdge> const getHalfEdges() { return halfEdges; }
-        MultiIntKeyDict<SPVertex> const getSPVertices() { return sPVertices; }
-        MultiIntKeyDict<Cell> const getCells() { return cells; }
-        MultiIntKeyDict<Face> const getFaces() { return faces; }
-        MultiIntKeyDict<Junction> const getJunctions() { return junctions; }
+        MultiIntKeyDict<SPVertex> getSPVertices() const { return sPVertices; }
+        MultiIntKeyDict<Cell> getCells() const { return cells; }
+        MultiIntKeyDict<Face> getFaces() const { return faces; }
+        MultiIntKeyDict<Junction> getJunctions() const { return junctions; }
 
-        double const getv0() { return v0; }
-        double const getDr() { return Dr; }
-        double const getp0() { return p0; }
-        double* getSystemSize() { return systemSize; }
+        double getv0() const { return v0; }
+        double getDr() const { return Dr; }
+        double getp0() const { return p0; }
 
-        long int const getSeed() { return seed; }
+        long int getSeed() const { return seed; }
 
-        double const getTime() { return time; }
-        long int const getnT1() { return nT1; }
+        double getTime() const { return time; }
+        long int getnT1() const { return nT1; }
 
         void reset() {
         /*

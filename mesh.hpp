@@ -27,7 +27,7 @@ Individual nodes of the two-dimensional mesh.
     public:
 
         Vertex() : index(-1) {}
-        Vertex(long int const& index_, double* const& position_,
+        Vertex(long int const& index_, std::vector<double> const& position_,
             long int const& halfEdgeIndex_=-1)
             : index(index_), position{position_[0], position_[1]},
                 halfEdgeIndex(halfEdgeIndex_) {}
@@ -43,9 +43,21 @@ Individual nodes of the two-dimensional mesh.
             association needs not to be bijective).
         */
 
-        long int const getIndex() { return index; }
-        double* getPosition() { return position; }
-        long int* getHalfEdgeIndex() { return &halfEdgeIndex; }
+        long int getIndex() const
+            { return index; }
+        std::vector<double> getPosition() const
+            { return std::vector<double>(position, position + 2); }
+        long int getHalfEdgeIndex() const
+            { return halfEdgeIndex; }
+
+        void setPosition(double const& x, double const& y)
+            { position[0] = x; position[1] = y; }
+        void setPosition(std::vector<double> const& r)
+            { setPosition(r[0], r[1]); }
+        void setPosition(double* const& r)
+            { setPosition(r[0], r[1]); }
+        void setHalfEdgeIndex(long int const& i)
+            { halfEdgeIndex = i; }
 
 };
 
@@ -95,12 +107,18 @@ Directed arrow between vertices (Vertex) of the two-dimensional mesh.
             to the origin of this half-edge. (default: -1)
         */
 
-        long int const getIndex() { return index; }
-        long int* getFromIndex() { return &fromIndex; }
-        long int* getToIndex() { return &toIndex; }
-        long int* getPreviousIndex() { return &previousIndex; }
-        long int* getNextIndex() { return &nextIndex; }
-        long int* getPairIndex() { return &pairIndex; }
+        long int getIndex() const { return index; }
+        long int getFromIndex() const { return fromIndex; }
+        long int getToIndex() const { return toIndex; }
+        long int getPreviousIndex() const { return previousIndex; }
+        long int getNextIndex() const { return nextIndex; }
+        long int getPairIndex() const { return pairIndex; }
+
+        void setFromIndex(long int const& i) { fromIndex = i; }
+        void setToIndex(long int const& i) { toIndex = i; }
+        void setPreviousIndex(long int const& i) { previousIndex = i; }
+        void setNextIndex(long int const& i) { nextIndex = i; }
+        void setPairIndex(long int const& i) { pairIndex = i; }
 
 };
 
@@ -119,7 +137,16 @@ Two-dimensional ensembles of vertices and edges.
 
         Mesh() {}
 
-        void wrap(double* position);
+        std::map<long int, Vertex> getVertices() const
+            { return vertices; }
+        std::map<long int, HalfEdge> getHalfEdges() const
+            { return halfEdges; }
+        std::vector<double> getSystemSize() const
+            { return std::vector<double>(systemSize, systemSize + 2); }
+
+        std::vector<double> wrap(
+            std::vector<double> const& position)
+            const;
         /*
         Wrap position to positive values with respect to periodic boundary
         conditions.
@@ -127,11 +154,18 @@ Two-dimensional ensembles of vertices and edges.
         Parameters
         ----------
         position :
-            Pointer to unwrapped position to wrap.
+            Position to wrap.
+
+        Returns
+        -------
+        wposition :
+            Wraped position.
         */
 
-        std::vector<double> const wrapDiff(
-            double* const& fromPos, double* const& toPos);
+        std::vector<double> wrapDiff(
+            std::vector<double> const& fromPos,
+            std::vector<double> const& toPos)
+            const;
         /*
         Wrap difference vector with respect to periodic boundary conditions.
 
@@ -148,9 +182,10 @@ Two-dimensional ensembles of vertices and edges.
             (2,) difference vector.
         */
 
-        std::vector<double> const wrapTo(
+        std::vector<double> wrapTo(
             long int const& fromVertexIndex, long int const& toVertexIndex,
-            bool const& unit=false);
+            bool const& unit=false)
+            const;
         /*
         Vector between two vertices, accounting for periodic boundary
         conditions.
@@ -170,8 +205,9 @@ Two-dimensional ensembles of vertices and edges.
             (2,) vector between vertices.
         */
 
-        std::vector<double> const getHalfEdgeVector(
-            long int const& halfEdgeIndex, bool const& unit=false);
+        std::vector<double> getHalfEdgeVector(
+            long int const& halfEdgeIndex, bool const& unit=false)
+            const;
         /*
         Vector going from the origin to the destination of a half-edge.
 
@@ -188,7 +224,9 @@ Two-dimensional ensembles of vertices and edges.
             (2,) vector corresponding to half-edge.
         */
 
-        double const getEdgeLength(long int const& halfEdgeIndex);
+        double getEdgeLength(
+            long int const& halfEdgeIndex)
+            const;
         /*
         Length of edge.
 
@@ -203,8 +241,9 @@ Two-dimensional ensembles of vertices and edges.
             Length of edge.
         */
 
-        std::vector<std::vector<long int>> const getNeighbourVertices(
-            long int const& vertexIndex);
+        std::vector<std::vector<long int>> getNeighbourVertices(
+            long int const& vertexIndex)
+            const;
         /*
         Indices of neighbouring vertices and indices of half-edges towards
         them.
@@ -226,8 +265,9 @@ Two-dimensional ensembles of vertices and edges.
             Indices of half-edges from this vertex towards neighbour vertices.
         */
 
-        double const getVertexToNeighboursArea(
-            long int const& vertexIndex);
+        double getVertexToNeighboursArea(
+            long int const& vertexIndex)
+            const;
         /*
         Area encapsulated by the neighbours of a vertex (shoelace formula).
 
@@ -242,8 +282,9 @@ Two-dimensional ensembles of vertices and edges.
             Area encapsulated by neighbours.
         */
 
-        double const getVertexToNeighboursPerimeter(
-            long int const& vertexIndex);
+        double getVertexToNeighboursPerimeter(
+            long int const& vertexIndex)
+            const;
         /*
         Perimeter encapsulated by the neighbours of a vertex.
 
@@ -258,7 +299,7 @@ Two-dimensional ensembles of vertices and edges.
             Perimeter encapsulated by neighbours.
         */
 
-        void checkMesh();
+        void checkMesh() const;
         /*
         Check that the vertices and half-edges define a planar mesh, with
         anticlockwise triangles.

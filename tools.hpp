@@ -47,10 +47,9 @@ template<class T> double const angle2(T* array)
  *
  */
 
-double const cross2(
-    std::vector<double> const& a, std::vector<double> const& b);    // cross product of 2D vector
+double cross2(std::vector<double> const& a, std::vector<double> const& b);  // cross product of 2D vector
 
-std::vector<double> const cross2z(std::vector<double> const& a);    // cross product of 2D (x, y[, 0]) vector with (0, 0, 1) projected in the xy-plane
+std::vector<double> cross2z(std::vector<double> const& a);                  // cross product of 2D (x, y[, 0]) vector with (0, 0, 1) projected in the xy-plane
 
 /*
  *  CLASSES
@@ -73,8 +72,10 @@ Return integers in order at each call.
 
         Counter(long int const& initial=0) : counter(initial - 1) {}    // initialise counter
 
-        Counter& operator=(long int const& current) // set counter
+        Counter& operator=(long int const& current) // lvalue assignment: set counter
             { counter = current; return *this; }
+        operator long int() const                   // rvalue assignment: return counter + 1
+            { return counter + 1; }
         long int operator()()                       // increment and return counter
             { counter++; return counter; }
 
@@ -165,7 +166,7 @@ to the same value.
 
     public:
 
-        MultiIntKeyDict() {}
+        MultiIntKeyDict(long int const& initial=0) : maxIndex(initial) {}
 
         // SET
 
@@ -198,15 +199,16 @@ to the same value.
 
         // CONSULT
 
-        const_key_iterator<long int, long int> begin()                          // iterator referring to first key
+        const_key_iterator<long int, long int> begin() const    // iterator referring to first key
             { return (const_key_iterator<long int, long int>) keys.begin(); }
-        const_key_iterator<long int, long int> end()                            // iterator referring to the past-the-end key
+        const_key_iterator<long int, long int> end() const      // iterator referring to the past-the-end key
             { return (const_key_iterator<long int, long int>) keys.end(); }
 
-        bool in(long int const& key) { return (keys.find(key) != keys.end()); } // is key in the dictionary?
+        bool in(long int const& key) const                      // is key in the dictionary?
+            { return (keys.find(key) != keys.end()); }
 
-        std::size_t size() { return data.size(); }                              // number of values
-        std::vector<T*> getValues() {                                           // vector of pointers to stored values
+        std::size_t size() const { return data.size(); }        // number of values
+        std::vector<T*> getValues() {                           // vector of pointers to stored values
             std::vector<T*> values(0);
             for (auto it=data.begin(); it != data.end(); ++it) {
                 values.push_back(&(it->second));
@@ -214,9 +216,14 @@ to the same value.
             return values;
         }
 
+        // getters for all private attributes (for copy purposes)
+        std::map<long int, long int> getKeys() const { return keys; }
+        std::map<long int, T> getData() const { return data; }
+        long int getMaxIndex() const { return (long int) maxIndex; }
+
         // OUTPUT
 
-        void print(std::string const& comment="") {
+        void print(std::string const& comment="") const {
             std::cout << "[KEYS] " << comment << std::endl;
             for (auto it=keys.begin(); it != keys.end(); it++) {
                 std::cout << it->first << ": " << it->second << std::endl;
