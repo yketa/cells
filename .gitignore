@@ -6,6 +6,9 @@ test.*pp
 *.so
 old
 sync.sh
+*.p
+*.pickle
+*~
 # latexmk files
 *.aux
 *.bbl
