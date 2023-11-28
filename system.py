@@ -37,22 +37,22 @@ class ModelSystem(VertexModel):
         """
 
         super().__init__(seed, v0, Dr, p0)
-        self.fig, self.ax = plt.subplots()
-
-        self.cax = make_axes_locatable(self.ax).append_axes(
-            'right', size='5%', pad=0.05)
-        self.cmap = plt.cm.PiYG
-        self.norm = Normalize(-0.05, 0.05)
-        self.colormap = mpl.colorbar.ColorbarBase(self.cax,
-            cmap=self.cmap, norm=self.norm, orientation='vertical')
-        self.scalarMap = ScalarMappable(self.norm, self.cmap)
 
     def plot(self):
         """
         Update plot of system.
         """
 
-        assert hasattr(self, 'fig') and hasattr(self, 'ax')
+        # initialise figure
+        if not(hasattr(self, 'fig')) or not(hasattr(self, 'ax')):
+            self.fig, self.ax = plt.subplots()
+            self.cmap = plt.cm.PiYG
+            self.norm = Normalize(-0.05, 0.05)
+            self.cax = make_axes_locatable(self.ax).append_axes(
+                'right', size='5%', pad=0.05)
+            self.colormap = mpl.colorbar.ColorbarBase(self.cax,
+                cmap=self.cmap, norm=self.norm, orientation='vertical')
+            self.scalarMap = ScalarMappable(self.norm, self.cmap)
 
         plt.sca(self.ax)
         self.ax.cla()
