@@ -46,6 +46,7 @@ while True:
     # integrate
     m.integrate(
         args.iterations, dt=args.dt, delta=args.delta, epsilon=args.epsilon)
+#     m.checkMesh()
     # plot
     m.plot()
 
