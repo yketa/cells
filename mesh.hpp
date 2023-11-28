@@ -21,7 +21,7 @@ Individual nodes of the two-dimensional mesh.
 
         long int const index;
 
-        double position[2];
+        std::vector<double> position;
         long int halfEdgeIndex;
 
     public:
@@ -29,8 +29,8 @@ Individual nodes of the two-dimensional mesh.
         Vertex() : index(-1) {}
         Vertex(long int const& index_, std::vector<double> const& position_,
             long int const& halfEdgeIndex_=-1)
-            : index(index_), position{position_[0], position_[1]},
-                halfEdgeIndex(halfEdgeIndex_) {}
+            : index(index_), position(position_), halfEdgeIndex(halfEdgeIndex_)
+            {}
         /*
         Parameters
         ----------
@@ -46,7 +46,7 @@ Individual nodes of the two-dimensional mesh.
         long int getIndex() const
             { return index; }
         std::vector<double> getPosition() const
-            { return std::vector<double>(position, position + 2); }
+            { return position; }
         long int getHalfEdgeIndex() const
             { return halfEdgeIndex; }
 
@@ -131,18 +131,36 @@ Two-dimensional ensembles of vertices and edges.
 
         std::map<long int, Vertex> vertices;
         std::map<long int, HalfEdge> halfEdges;
-        double systemSize[2] {0, 0};
+        std::vector<double> systemSize{0, 0};
 
     public:
 
         Mesh() {}
+
+        Mesh(                   // used to load state
+            std::map<long int, Vertex> const& vertices_,
+            std::map<long int, HalfEdge> const& halfEdges_,
+            std::vector<double> const& systemSize_) {
+            // clear maps and vector
+            vertices.clear();
+            halfEdges.clear();
+            systemSize.clear();
+            // copy maps
+            vertices.insert(vertices_.begin(), vertices_.end());
+            halfEdges.insert(halfEdges_.begin(), halfEdges_.end());
+            // set vector
+            systemSize.push_back(systemSize_[0]);
+            systemSize.push_back(systemSize_[1]);
+        }
+        Mesh(Mesh const& m_) :  // copy constructor
+            Mesh(m_.getVertices(), m_.getHalfEdges(), m_.getSystemSize()) {}
 
         std::map<long int, Vertex> getVertices() const
             { return vertices; }
         std::map<long int, HalfEdge> getHalfEdges() const
             { return halfEdges; }
         std::vector<double> getSystemSize() const
-            { return std::vector<double>(systemSize, systemSize + 2); }
+            { return systemSize; }
 
         std::vector<double> wrap(
             std::vector<double> const& position)

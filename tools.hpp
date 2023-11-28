@@ -70,14 +70,14 @@ Return integers in order at each call.
 
     public:
 
-        Counter(long int const& initial=0) : counter(initial - 1) {}    // initialise counter
+        Counter(long int const& initial=0) : counter(initial) {}    // initialise counter
 
         Counter& operator=(long int const& current) // lvalue assignment: set counter
             { counter = current; return *this; }
-        operator long int() const                   // rvalue assignment: return counter + 1
-            { return counter + 1; }
+        operator long int() const                   // rvalue assignment: return counter
+            { return counter; }
         long int operator()()                       // increment and return counter
-            { counter++; return counter; }
+            { counter++; return counter - 1; }
 
 };
 
@@ -168,6 +168,21 @@ to the same value.
 
         MultiIntKeyDict(long int const& initial=0) : maxIndex(initial) {}
 
+        MultiIntKeyDict(                                    // used to load state
+            std::map<long int, long int> const& keys_,
+            std::map<long int, T> const& data_,
+            long int const& maxIndex_) : maxIndex(maxIndex_) {
+            // clear maps
+            keys.clear();
+            data.clear();
+            // copy maps
+            keys.insert(keys_.begin(), keys_.end());
+            data.insert(data_.begin(), data_.end());
+        }
+        MultiIntKeyDict(MultiIntKeyDict<T> const& mikd_)    // copy constructor
+            : MultiIntKeyDict(
+                mikd_.getKeys(), mikd_.getData(), mikd_.getMaxIndex()) {}
+
         // SET
 
         Proxy operator[] (long int const& key)                  // set and return value from index
@@ -194,7 +209,7 @@ to the same value.
         void clear() {                                  // remove all entries
             keys.clear();
             data.clear();
-            maxIndex = -1;
+            maxIndex = 0;
         }
 
         // CONSULT
@@ -223,13 +238,9 @@ to the same value.
 
         // OUTPUT
 
-        void print(std::string const& comment="") const {
+        void printKeys(std::string const& comment="") const {
             std::cout << "[KEYS] " << comment << std::endl;
             for (auto it=keys.begin(); it != keys.end(); it++) {
-                std::cout << it->first << ": " << it->second << std::endl;
-            }
-            std::cout << "[DATA] " << comment << std::endl;
-            for (auto it=data.begin(); it != data.end(); it++) {
                 std::cout << it->first << ": " << it->second << std::endl;
             }
             std::cout << std::endl;

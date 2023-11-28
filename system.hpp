@@ -172,6 +172,14 @@ class VertexModel : public Mesh {
 
     private:
 
+        /*
+        inherited from Mesh
+        -------------------
+        std::map<long int, Vertex> vertices;    // std::map<long int, Vertex> Mesh::getVertices
+        std::map<long int, HalfEdge> halfEdges; // std::map<long int, HalfEdge> Mesh::getHalfEdges
+        std::vector<double> systemSize;         // std::vector<double> Mesh::getSystemSize
+        */
+
         MultiIntKeyDict<SPVertex> sPVertices;
         MultiIntKeyDict<Cell> cells;
         MultiIntKeyDict<Face> faces;
@@ -206,6 +214,35 @@ class VertexModel : public Mesh {
             Dimensionless target perimeter of cell.
         */
 
+        VertexModel(                            // used to load state
+            Mesh const& mesh_,
+            MultiIntKeyDict<SPVertex> const& sPVertices_,
+            MultiIntKeyDict<Cell> const& cells_,
+            MultiIntKeyDict<Face> const& faces_,
+            MultiIntKeyDict<Junction> const& junctions_,
+            double const& v0_, double const& Dr_, double const& p0_,
+            long int const& seed_, double const time_, long int const nT1_) :
+            // geometrical objects (mesh)
+            Mesh(mesh_),
+            // physical objects
+            sPVertices(sPVertices_), cells(cells_), faces(faces_),
+                junctions(junctions_),
+            // physical parameters
+            v0(v0_), Dr(Dr_), p0(p0_),
+            // integration quantities
+            seed(seed_), time(time_), nT1(nT1_) {}
+        VertexModel(VertexModel const& vm_) :   // copy constructor
+            VertexModel(
+                // geometrical objects (mesh)
+                vm_,
+                // physical objects
+                vm_.getSPVertices(), vm_.getCells(), vm_.getFaces(),
+                    vm_.getJunctions(),
+                // physical parameters
+                vm_.getv0(), vm_.getDr(), vm_.getp0(),
+                // integration quantities
+                vm_.getSeed(), vm_.getTime(), vm_.getnT1()) {}
+
         MultiIntKeyDict<SPVertex> getSPVertices() const { return sPVertices; }
         MultiIntKeyDict<Cell> getCells() const { return cells; }
         MultiIntKeyDict<Face> getFaces() const { return faces; }
@@ -226,7 +263,8 @@ class VertexModel : public Mesh {
         */
             vertices.clear();
             halfEdges.clear();
-            systemSize[0] = 0; systemSize[1] = 0;
+            systemSize.clear();
+            systemSize.push_back(0); systemSize.push_back(0);
             sPVertices.clear();
             cells.clear();
             faces.clear();
