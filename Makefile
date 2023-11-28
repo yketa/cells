@@ -8,7 +8,7 @@ MPIFLAGS=
 all: bind.so
 
 clean:
-	rm *.o *.so
+	rm -f *.o *.so
 
 # object files
 
