@@ -1,52 +1,54 @@
-from cells.system import ModelSystem
+from cells.bind import VertexModel
+from cells.vertex_model import plot
 
-import numpy as np
-
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 import matplotlib.pyplot as plt
 
-# PARAMETERS
+if __name__ == "__main__":
 
-parser = ArgumentParser()
-# physics
-parser.add_argument("-n", type=int, default=6,
-    help="Number of vertices in each direction (must be multiple of 6).")
-parser.add_argument("-v0", type=float, default=1e-1,
-    help="Vertex self-propulsion velocity.")
-parser.add_argument("-Dr", type=float, default=1e-1,
-    help="Vertex propulsion rotational diffusion constant.")
-parser.add_argument("-p0", type=float, default=3.81,
-    help="Dimensionless target perimeter of cell.")
-# algorithm
-parser.add_argument("-seed", type=int, default=0,
-    help="Random number generator seed.")
-# integration
-parser.add_argument("-dt", type=float, default=1e-3,
-    help="Intergation time step.")
-parser.add_argument("-delta", type=float, default=0.5,
-    help="Length below which to perform T1.")
-parser.add_argument("-epsilon", type=float, default=0.1,
-    help="Create junction with length epsilon above threshold after T1.")
-parser.add_argument("-iterations", type=int, default=1000,
-    help="Number of iterations between plots.")
+    # PARAMETERS
 
-args = parser.parse_args()
+    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    # physics
+    parser.add_argument("-n", type=int, default=6,
+        help="number of vertices in each direction (must be multiple of 6)")
+    parser.add_argument("-v0", type=float, default=1e-1,
+        help="vertex self-propulsion velocity")
+    parser.add_argument("-Dr", type=float, default=1e-1,
+        help="vertex propulsion rotational diffusion constant")
+    parser.add_argument("-p0", type=float, default=3.81,
+        help="dimensionless target perimeter of cell")
+    # algorithm
+    parser.add_argument("-seed", type=int, default=0,
+        help="random number generator seed")
+    # integration
+    parser.add_argument("-dt", type=float, default=1e-3,
+        help="intergation time step")
+    parser.add_argument("-delta", type=float, default=0.5,
+        help="length below which to perform T1")
+    parser.add_argument("-epsilon", type=float, default=0.1,
+        help="create junction with length epsilon above threshold after T1")
+    parser.add_argument("-iterations", type=int, default=1000,
+        help="number of iterations between plots")
 
-# INITIALISATION
+    args = parser.parse_args()
 
-m = ModelSystem(args.seed, args.v0, args.Dr, args.p0)
-m.initRegularTriangularLattice(size=args.n)
+    # INITIALISATION
 
-# RUN
+    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0)
+    vm.initRegularTriangularLattice(size=args.n)
+    fig, ax = plot(vm)
 
-plt.ion()
-plt.show()
-while True:
-    # integrate
-    m.integrate(
-        args.iterations, dt=args.dt, delta=args.delta, epsilon=args.epsilon)
-#     m.checkMesh()
-    # plot
-    m.plot()
+    # RUN
+
+    plt.ion()
+    plt.show()
+    while True:
+        # integrate
+        vm.nintegrate(args.iterations,
+            dt=args.dt, delta=args.delta, epsilon=args.epsilon)
+        #m.checkMesh()
+        # plot
+        plot(vm, fig=fig, ax=ax)
 

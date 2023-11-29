@@ -21,16 +21,19 @@ Individual nodes of the two-dimensional mesh.
 
         long int const index;
 
-        std::vector<double> position;
+        std::vector<double> position;   // position wrapped with respect to periodic boundary conditions
+        std::vector<double> uposition;  // unwrapped position
         long int halfEdgeIndex;
 
     public:
 
         Vertex() : index(-1) {}
-        Vertex(long int const& index_, std::vector<double> const& position_,
-            long int const& halfEdgeIndex_=-1)
-            : index(index_), position(position_), halfEdgeIndex(halfEdgeIndex_)
-            {}
+        Vertex(long int const& index_,
+            std::vector<double> const& position_,
+            long int const& halfEdgeIndex_=-1) :
+                index(index_),
+                position(position_), uposition(position_),
+                halfEdgeIndex(halfEdgeIndex_) {}
         /*
         Parameters
         ----------
@@ -43,19 +46,27 @@ Individual nodes of the two-dimensional mesh.
             association needs not to be bijective).
         */
 
+        Vertex(long int const& index_,
+            std::vector<double> const& position_,
+            std::vector<double> const& uposition_,
+            long int const& halfEdgeIndex_=-1) :
+                index(index_),
+                position(position_), uposition(uposition_),
+                halfEdgeIndex(halfEdgeIndex_) {}
+
         long int getIndex() const
             { return index; }
         std::vector<double> getPosition() const
             { return position; }
+        std::vector<double> getUPosition() const
+            { return uposition; }
         long int getHalfEdgeIndex() const
             { return halfEdgeIndex; }
 
-        void setPosition(double const& x, double const& y)
-            { position[0] = x; position[1] = y; }
         void setPosition(std::vector<double> const& r)
-            { setPosition(r[0], r[1]); }
-        void setPosition(double* const& r)
-            { setPosition(r[0], r[1]); }
+            { position = r; }
+        void setUPosition(std::vector<double> const& r)
+            { uposition = r; }
         void setHalfEdgeIndex(long int const& i)
             { halfEdgeIndex = i; }
 

@@ -106,18 +106,21 @@ pybind11::tuple pybind11_getstate<Vertex>(Vertex const& v) {
     return pybind11::make_tuple(
         v.getIndex(),
         v.getPosition(),
+        v.getUPosition(),
         v.getHalfEdgeIndex());
 }
 template<>
 Vertex pybind11_setstate<Vertex>(pybind11::tuple const& t) {
-    checkSize(t, 3);
+    checkSize(t, 4);
     long int const index =
         t[0].cast<long int>();
-    std::vector<double>position =
+    std::vector<double> position =
         t[1].cast<std::vector<double>>();
+    std::vector<double> uposition =
+        t[2].cast<std::vector<double>>();
     long int const halfEdgeIndex =
-        t[2].cast<long int>();
-    return Vertex(index, position, halfEdgeIndex);
+        t[3].cast<long int>();
+    return Vertex(index, position, uposition, halfEdgeIndex);
 }
 
 // HalfEdge
@@ -324,6 +327,9 @@ template<class T> void declare_MultiIntKeyDict_class(
 }
 
 PYBIND11_MODULE(bind, m) {
+    m.doc() =
+        "Module bind wraps C++ objects and functions to integrate and plot\n"
+        "vertex model.\n";
 
     m.def("getLinesHalfEdge", &getLinesHalfEdge);
     m.def("getLinesJunction", &getLinesJunction);
@@ -352,6 +358,11 @@ PYBIND11_MODULE(bind, m) {
             [](Vertex const& self) {
                 std::vector<double> const position = self.getPosition();
                 return pybind11::array_t<double>({2}, &(position[0]));
+            })
+        .def_property_readonly("uposition",
+            [](Vertex const& self) {
+                std::vector<double> const uposition = self.getUPosition();
+                return pybind11::array_t<double>({2}, &(uposition[0]));
             })
         .def_property_readonly("halfEdgeIndex",
             &Vertex::getHalfEdgeIndex)
@@ -515,7 +526,7 @@ PYBIND11_MODULE(bind, m) {
             })
         .def("reset",
             &VertexModel::reset)
-        .def("integrate",
+        .def("nintegrate",
             [](VertexModel& self,
                 long int const& niter, double const& dt,
                 double const& delta, double const& epsilon) {

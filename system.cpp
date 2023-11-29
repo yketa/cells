@@ -9,37 +9,40 @@ void VertexModel::integrate(double const& dt,
     double const& delta, double const& epsilon) {
 
     // get forces
-    std::map<long int, std::vector<double>> const forces = getForces();
 
-    long int vertexIndex;
+    std::map<long int, std::vector<double>> const forces = getForces();
 
     // integrate
 
-    std::vector<double> position;
+    long int vertexIndex;
+    std::vector<double> uposition;
     for (auto it=forces.begin(); it != forces.end(); ++it) {
         vertexIndex = it->first;
-        position = vertices.at(vertexIndex).getPosition();
+        uposition = vertices.at(vertexIndex).getUPosition();
         for (int dim=0; dim < 2; dim++) {
-            position[dim] += forces.at(vertexIndex)[dim]*dt;    // Euler integration
+            uposition[dim] += forces.at(vertexIndex)[dim]*dt;           // Euler integration of position
         }
-        vertices[vertexIndex].setPosition(wrap(position));      // wrap with respect to boundary conditions
+        vertices[vertexIndex].setUPosition( // unwrapped position
+            uposition);
+        vertices[vertexIndex].setPosition(  // (wrapped) position
+            wrap(vertices[vertexIndex].getUPosition()));
     }
     for (SPVertex* sPVertex : sPVertices.getValues()) {
         sPVertex->settheta(
             sPVertex->gettheta()
-                + std::sqrt(2*sPVertex->getDr()*dt)*random.gauss());
+                + std::sqrt(2*sPVertex->getDr()*dt)*random.gauss());    // Euler integration of angle
     }
 
     // move cell centres
 
-    std::vector<double> cellPosition(0), initialCellPosition(0);
+    std::vector<double> cellUPosition(0), initialCellPosition(0);
     std::vector<long int> neighbourVerticesIndices(0); int numberNeighbours;
     std::vector<double> disp(0);
     for (Cell* cell : cells.getValues()) {
         vertexIndex = cell->getVertexIndex();
 
-        cellPosition = vertices.at(vertexIndex).getPosition();
-        initialCellPosition = cellPosition;
+        cellUPosition = vertices.at(vertexIndex).getUPosition();
+        initialCellPosition = vertices.at(vertexIndex).getPosition();
 
         neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
         numberNeighbours = neighbourVerticesIndices.size();
@@ -49,10 +52,13 @@ void VertexModel::integrate(double const& dt,
                 vertices.at(neighbourVertexIndex).getPosition());
 
             for (int dim=0; dim < 2; dim++) {
-                cellPosition[dim] += disp[dim]/numberNeighbours;
+                cellUPosition[dim] += disp[dim]/numberNeighbours;
             }
         }
-        vertices[vertexIndex].setPosition(wrap(cellPosition));  // wrap with respect to boundary conditions
+        vertices[vertexIndex].setUPosition( // unwrapped position
+            cellUPosition);
+        vertices[vertexIndex].setPosition(  // (wrapped) position
+            wrap(vertices.at(vertexIndex).getUPosition()));
     }
 
     // perform T1s
@@ -66,9 +72,42 @@ void VertexModel::integrate(double const& dt,
 
 std::map<long int,std::vector<double>> const VertexModel::getForces() {
 
-    std::map<long int,std::vector<double>> forces;
+    // VERTEX SELF-PROPULSION FORCE
+
+    long int vertexIndex;
+    std::map<long int, std::vector<double>> sPForces;
+    double sp; std::vector<double> meanSP(2, 0);
+    long int const nSPVertices = sPVertices.size();
+    for (SPVertex* sPVertex : sPVertices.getValues()) { // loop over self-propelled vertices
+        vertexIndex = sPVertex->getVertexIndex();
+        sPForces[vertexIndex] = {0, 0};
+
+        for (int dim=0; dim < 2; dim++) {
+
+            sp = sPVertex->getv0()
+                *std::cos(sPVertex->gettheta() - dim*std::numbers::pi/2);
+            sPForces[vertexIndex][dim] = sp;            // add self-propulsion force
+            meanSP[dim] += sp/nSPVertices;              // compute average self-propulsion force
+        }
+    }
+
+    for (SPVertex* sPVertex : sPVertices.getValues()) {
+        vertexIndex = sPVertex->getVertexIndex();
+        for (int dim=0; dim < 2; dim++) {
+            sPForces[vertexIndex][dim] -= meanSP[dim];  // remove average self-propulsion force
+        }
+    }
+
+    // VERTEX MODEL INTERACTION FORCE
+
+    std::map<long int, std::vector<double>> forces;
     for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-        forces[it->first] = {0, 0}; // initialise forces at each vertex
+        forces[it->first] = {0, 0};                                 // initialise zero force at each vertex
+        if (sPVertices.in(it->first)) {
+            for (int dim=0; dim < 2; dim++) {
+                forces[it->first][dim] += sPForces[it->first][dim]; // add self-propulsion forces to self-propelled vertices
+            }
+        }
     }
 
     long int cellVertexIndex;
@@ -127,30 +166,6 @@ std::map<long int,std::vector<double>> const VertexModel::getForces() {
                     cell->getkP()*(cell->getPerimeter() - cell->getP0())*(
                         fromTo[dim] + fromToBis[dim]);
             }
-        }
-    }
-
-    // self-propelled vertices
-
-    long int vertexIndex;
-    double sp; std::vector<double> meanSP(2, 0);
-    long int const nSPVertices = sPVertices.size();
-    for (SPVertex* sPVertex : sPVertices.getValues()) { // loop over self-propelled vertices
-        vertexIndex = sPVertex->getVertexIndex();
-
-        for (int dim=0; dim < 2; dim++) {
-
-            sp = sPVertex->getv0()
-                *std::cos(sPVertex->gettheta() - dim*std::numbers::pi/2);
-            forces[vertexIndex][dim] += sp;             // add self-propulsion force
-            meanSP[dim] += sp/nSPVertices;              // compute average self-propulsion force
-        }
-    }
-
-    for (SPVertex* sPVertex : sPVertices.getValues()) {
-        vertexIndex = sPVertex->getVertexIndex();
-        for (int dim=0; dim < 2; dim++) {
-            forces[vertexIndex][dim] -= meanSP[dim];    // remove average self-propulsion force
         }
     }
 
@@ -339,9 +354,12 @@ long int const VertexModel::mergeVertices(long int const& halfEdgeIndex) {
     std::vector<double> position =
         vertices.at(toMergeIndex).getPosition();
     for (int dim=0; dim < 2; dim++) {
-        position[dim] += diff[dim]/2;   // move vertex to half point between two merged vertices
+        position[dim] += diff[dim]/2;       // move vertex to half point between two merged vertices
     }
-    vertices[toMergeIndex].setPosition(position);
+    vertices[toMergeIndex].setPosition(     // wrap position
+        wrap(position));
+    vertices[toMergeIndex].setUPosition(    // set unwrapped position back to wrapped position
+        vertices.at(toMergeIndex).getPosition());
 
     // delete faces, junctions, half-edges, and vertex
 
@@ -507,8 +525,14 @@ long int const VertexModel::createJunction(
         newPosition[dim] -= direction[dim]*length/2.;
         newPositionBis[dim] += direction[dim]*length/2.;
     }
-    vertices[vertexIndex].setPosition(newPosition);
-    vertices[newVertexIndex].setPosition(newPositionBis);
+    vertices[vertexIndex].setPosition(      // wrap position
+        wrap(newPosition));
+    vertices[vertexIndex].setUPosition(     // set unwrapped position back to wrapped position
+        vertices.at(vertexIndex).getPosition());
+    vertices[newVertexIndex].setPosition(   // wrap position
+        wrap(newPositionBis));
+    vertices[newVertexIndex].setUPosition(  // set unwrapped position back to wrapped position
+        vertices.at(newVertexIndex).getPosition());
 
     return newVertexIndex;
 }
@@ -542,10 +566,8 @@ void VertexModel::initRegularTriangularLattice(
             vertices.emplace(vertexIndex, Vertex(
                 // vertices is std::map so add with std::map::emplace
                 vertexIndex,
-                position,                       // position of the vertex on the regular triangular lattice
+                wrap(position),                 // wrapped position of the vertex on the regular triangular lattice
                 6*vertexIndex + 0));            // index of a single half-edge going out of this vertex
-            vertices[vertexIndex].setPosition(  // wrap coordinate around periodic boundary condition
-                wrap(vertices.at(vertexIndex).getPosition()));
 
             // create cell or self-propelled vertex
             if ((line - column)%3 == 0) {   // condition for vertex to be a cell centre...

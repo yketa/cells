@@ -21,12 +21,6 @@ the line (xi, yi) -- (xi', yi') corresponds to the i-th half-edge in `vm'.
     std::map<long int, Vertex> vertices = vm.getVertices();
     std::map<long int, HalfEdge> halfEdges = vm.getHalfEdges();
 
-    std::vector<double> position;
-    for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over all vertices
-        position = (it->second).getPosition();
-        (it->second).setPosition(vm.wrap(position));    // wrap position with respect to periodic boundary conditions
-    }
-
     std::vector<double> fromPos, disp;
     for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {  // loop over all half-edges
         fromPos = vertices[(it->second).getFromIndex()].getPosition();  // position of origin vertex
@@ -50,12 +44,6 @@ the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
     std::map<long int, Vertex> vertices = vm.getVertices();
     std::map<long int, HalfEdge> halfEdges = vm.getHalfEdges();
     MultiIntKeyDict<Junction> junctions = vm.getJunctions();
-
-    std::vector<double> position;
-    for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over all vertices
-        position = (it->second).getPosition();
-        (it->second).setPosition(vm.wrap(position));    // wrap position with respect to periodic boundary conditions
-    }
 
     std::vector<double> fromPos, disp;
     std::vector<long int> halfEdgeIndices;
