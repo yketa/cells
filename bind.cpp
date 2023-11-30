@@ -33,6 +33,18 @@ Check that pybind11::tuple has correct size to generate data.
 }
 
 /*
+ *  long int
+ *
+ */
+
+template<>
+pybind11::tuple pybind11_getstate<long int>(long int const& i)
+    { return pybind11::make_tuple(i); }
+template<>
+long int pybind11_setstate<long int>(pybind11::tuple const& t)
+    { checkSize(t, 1); return t[0].cast<long int>(); }
+
+/*
  *  std::map<long int, TT>
  *
  */
@@ -302,8 +314,15 @@ https://stackoverflow.com/questions/49257947
 template<class T> void declare_MultiIntKeyDict_class(
     pybind11::module& m, std::string const& nameT) {
 
-    std::string const type = "MultiIntKeyDict<" + nameT + ">";
+    std::string const type = "MultiIntKeyDict" + nameT;
     pybind11::class_<MultiIntKeyDict<T>>(m, type.c_str())
+//         // constructor
+//         .def(pybind11::init<>())
+        // attributes
+        .def_property_readonly("keys",
+            &MultiIntKeyDict<T>::getKeys)
+        .def_property_readonly("data",
+            &MultiIntKeyDict<T>::getData)
         // methods
         .def("__contains__",
             &MultiIntKeyDict<T>::in,
@@ -313,8 +332,18 @@ template<class T> void declare_MultiIntKeyDict_class(
                 return (T) self[i];
             },
             pybind11::is_operator())
+//         .def("__setitem__",
+//             [](MultiIntKeyDict<T>& self, long int const& i, T const& v) {
+//                 self[i] = v;
+//             },
+//             pybind11::is_operator())
+//         .def("__delitem__",
+//             [](MultiIntKeyDict<T>& self, long int const& i) {
+//                 self.erase(i);
+//             },
+//             pybind11::is_operator())
         .def("__iter__",
-            [](MultiIntKeyDict<T>& self) {
+            [](MultiIntKeyDict<T> const& self) {
                 return pybind11::make_iterator(self.begin(), self.end());
             },
             pybind11::keep_alive<0, 1>())
@@ -340,6 +369,7 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
+    declare_MultiIntKeyDict_class<long int>(m, "");
     declare_MultiIntKeyDict_class<SPVertex>(m, "SPVertex");
     declare_MultiIntKeyDict_class<Cell>(m, "Cell");
     declare_MultiIntKeyDict_class<Face>(m, "Face");
