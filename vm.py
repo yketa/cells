@@ -79,6 +79,7 @@ class Read:
                 else:                           # relative difference in time
                     _max_diff_t = max(_max_diff_t, np.abs(time - vm.time)/time)
                 current_pointer = dump.tell()   # current position of the read pointer
+            progressbar(1)
             sys.stdout.write("\n")              # end the progress bar
             try:
                 pickle.load(dump)   # this should raise an EOFError if the file was read completely
@@ -296,7 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("-log-frames", "-log",
         action=argparse.BooleanOptionalAction,
         help="compute logarithmically spaced frames")
-    parser.add_argument("id", metavar="%id", type=int, nargs="?", default=0,
+    parser.add_argument("-id", type=int, default=0,
         help="numerical identifier for simulation file")
 
     args = parser.parse_args()
