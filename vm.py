@@ -7,6 +7,9 @@ from cells.bind import VertexModel
 from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
 from cells.exponents import float_to_letters
 
+import sys
+from math import ceil
+
 from datetime import datetime
 import atexit, signal
 
@@ -51,22 +54,39 @@ class Read:
             self.frames = self.metadata["frames"]   # array of computed frames
             self.dt = self.metadata["dt"]           # integration time step
 
+            # progress bar (https://stackoverflow.com/a/3160819/7385044)
+            toolbar_width = 40
+            def progressbar(p):
+                out = "[%s] (%2i%%)" % (
+                    "="*ceil(p*toolbar_width)
+                        + " "*(toolbar_width - ceil(p*toolbar_width)),
+                    ceil(100*p))
+                sys.stdout.write(out)
+                sys.stdout.flush()
+                sys.stdout.write("\b"*len(out))
+
             # check file consistency and build skip directory
             self.skip = np.array([], dtype=int) # position of each object in file
             _max_diff_t = 0                     # check consistency with metadata in computed times
-            for time in self.frames*self.dt:
+            for i, time in enumerate(self.frames*self.dt):
+                progressbar(i/self.frames.size) # display progress bar
                 self.skip = np.append(self.skip, current_pointer)
                 vm = pickle.load(dump)          # load vertex model object
                 assert(type(vm) == VertexModel) # check object has correct type
-                _max_diff_t = max(_max_diff_t, np.abs(time - vm.time))
+                if time == 0:                   # absolute difference in time
+                    _max_diff_t = max(_max_diff_t, np.abs(time - vm.time))
+                    assert(_max_diff_t == 0)
+                else:                           # relative difference in time
+                    _max_diff_t = max(_max_diff_t, np.abs(time - vm.time)/time)
                 current_pointer = dump.tell()   # current position of the read pointer
+            sys.stdout.write("\n")              # end the progress bar
             try:
                 pickle.load(dump)   # this should raise an EOFError if the file was read completely
                 raise ValueError("File size is not consistent with metadata.")
             except EOFError:
                 pass
 
-        assert _max_diff_t < 1e-12  # difference between python and C++ times
+        assert _max_diff_t < 1e-8   # relative difference between python and C++ times
 
         self.fig, self.ax = None, None  # used for plotting
 
@@ -105,13 +125,13 @@ class Read:
 
         return vm
 
-    def __contains__(self, k):
-        return self.frames.__contains__(k)
+    def __contains__(self, frame):  # is frame in saved frames?
+        return self.frames.__contains__(frame)
 
-    def __iter__(self):
+    def __iter__(self):             # iterator over frames
         return self.frames.__iter__()
 
-    def __next__(self):
+    def __next__(self):             # iterator over frames
         return self.frames.__next__()
 
 def filename(N, v0, Dr, p0, identifier):
@@ -318,7 +338,7 @@ if __name__ == "__main__":
 
     # simulation of vertex model
     for t in np.diff(metadata["frames"], prepend=0):
-        vm.nintegrate(t, args.dt, args.delta, args.epsilon)
+        vm.nintegrate(t, metadata["dt"], args.delta, args.epsilon)
         vm.checkMesh()
         with open(metadata["filename"], "ab") as dump:
             pickle.dump(vm, dump)
