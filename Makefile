@@ -15,20 +15,13 @@ clean:
 %.o: %.cpp
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-system.o: system.hpp tools.hpp
+bind.o: mesh.hpp system.hpp tools.hpp pickle.hpp plot.hpp
 
 mesh.o: mesh.hpp tools.hpp
 
-test.o: system.hpp
+system.o: system.hpp tools.hpp
 
 tools.o: tools.hpp
-
-bind.o: mesh.hpp system.hpp tools.hpp
-
-# executables
-
-test: system.o mesh.o test.o tools.o
-	$(CC) -o $@ $^ $(LDFLAGS)
 
 # libraries
 

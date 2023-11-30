@@ -2,8 +2,8 @@
 #include <cmath>
 #include <assert.h>
 
-#include "tools.hpp"
 #include "mesh.hpp"
+#include "tools.hpp"
 
 std::vector<double> Mesh::wrap(
     std::vector<double> const& position)

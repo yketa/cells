@@ -2,6 +2,9 @@
 Functions using VertexModel to speed up plotting.
 */
 
+#ifndef PLOT_HPP
+#define PLOT_HPP
+
 #include <vector>
 
 #include "system.hpp"
@@ -96,4 +99,6 @@ point (xi^j, yi^j) is the j-th corner of the i-th cell.
 
     return polygons;
 }
+
+#endif
 
