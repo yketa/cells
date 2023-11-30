@@ -1,5 +1,5 @@
 from cells.bind import VertexModel
-from cells.vertex_model import plot
+from cells.vm import plot
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
