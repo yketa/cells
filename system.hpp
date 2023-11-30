@@ -284,9 +284,9 @@ class VertexModel : public Mesh {
         dt :
             Integration time step.
         delta :
-            Distance between vertices below which these should be merge.
+            Distance between vertices below which these should be merged.
         epsilon :
-            Create two vertices at distance `delta' + `epsilon'.
+            Create two vertices at distance `delta' + `epsilon' after T1.
         */
 
         std::map<long int,std::vector<double>> const getForces();
@@ -365,7 +365,7 @@ class VertexModel : public Mesh {
             Number of vertices in both horizontal and vertical directions.
             NOTE: Must be a multiple of 6.
         junctionLength :
-            Distance between nearest neighbour junctions.
+            Length of nearest neighbour junctions.
         */
 
 };

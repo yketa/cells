@@ -26,10 +26,14 @@ https://stackoverflow.com/questions/49257947
 */
 
 template<class T> void declare_MultiIntKeyDict_class(
-    pybind11::module& m, std::string const& nameT) {
+    pybind11::module& m, std::string const& nameT, std::string const& typeT) {
 
-    std::string const type = "MultiIntKeyDict" + nameT;
-    pybind11::class_<MultiIntKeyDict<T>>(m, type.c_str())
+    std::string const type =
+        "MultiIntKeyDict" + nameT;
+    std::string const doc =
+        "Python wrapper around C++ MultiIntKeyDict<" + typeT + ">.";
+    pybind11::class_<MultiIntKeyDict<T>>(m, type.c_str(), doc.c_str())
+        //.doc("Python wrapper around C++ MultiIntKeyDict<" + nameT + ">.")
 //         // constructor
 //         .def(pybind11::init<>())
         // attributes
@@ -40,11 +44,13 @@ template<class T> void declare_MultiIntKeyDict_class(
         // methods
         .def("__contains__",
             &MultiIntKeyDict<T>::in,
+            "Is key in dictionary?",
             pybind11::is_operator())
         .def("__getitem__",
             [](MultiIntKeyDict<T>& self, long int const& i) {
                 return (T) self[i];
             },
+            "Get value associated to key.",
             pybind11::is_operator())
 //         .def("__setitem__",
 //             [](MultiIntKeyDict<T>& self, long int const& i, T const& v) {
@@ -60,9 +66,11 @@ template<class T> void declare_MultiIntKeyDict_class(
             [](MultiIntKeyDict<T> const& self) {
                 return pybind11::make_iterator(self.begin(), self.end());
             },
+            "Iterator over keys.",
             pybind11::keep_alive<0, 1>())
         .def("__len__",
-            &MultiIntKeyDict<T>::size)
+            &MultiIntKeyDict<T>::size,
+            "Number of values in the dictionary.")
         // pickle
         .def(pybind11::pickle(
             &pybind11_getstate_MultiIntKeyDict<T>,
@@ -74,6 +82,11 @@ PYBIND11_MODULE(bind, m) {
         "Module bind wraps C++ objects and functions to integrate and plot\n"
         "vertex model.\n";
 
+    /*
+     *  [plot.hpp]
+     *
+     */
+
     m.def("getLinesHalfEdge", &getLinesHalfEdge);
     m.def("getLinesJunction", &getLinesJunction);
     m.def("getPolygonsCell", &getPolygonsCell);
@@ -83,11 +96,11 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
-    declare_MultiIntKeyDict_class<long int>(m, "");
-    declare_MultiIntKeyDict_class<SPVertex>(m, "SPVertex");
-    declare_MultiIntKeyDict_class<Cell>(m, "Cell");
-    declare_MultiIntKeyDict_class<Face>(m, "Face");
-    declare_MultiIntKeyDict_class<Junction>(m, "Junction");
+    declare_MultiIntKeyDict_class<long int>(m, "", "long int");
+    declare_MultiIntKeyDict_class<SPVertex>(m, "SPVertex", "SPVertex");
+    declare_MultiIntKeyDict_class<Cell>(m, "Cell", "Cell");
+    declare_MultiIntKeyDict_class<Face>(m, "Face", "Face");
+    declare_MultiIntKeyDict_class<Junction>(m, "Junction", "Junction");
 
     /*
      *  [mesh.hpp]
@@ -148,7 +161,7 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
-    pybind11::class_<SPVertex>(m, "SPVertex")
+    pybind11::class_<SPVertex>(m, "SPVertex", "Self-propelled vertex.")
         // attributes
         .def_property_readonly("vertexIndex",
             &SPVertex::getVertexIndex)
@@ -166,7 +179,7 @@ PYBIND11_MODULE(bind, m) {
             &pybind11_getstate<SPVertex>,
             &pybind11_setstate<SPVertex>));
 
-    pybind11::class_<Cell>(m, "Cell")
+    pybind11::class_<Cell>(m, "Cell", "Physical cell.")
         // attributes
         .def_property_readonly("vertexIndex",
             &Cell::getVertexIndex)
@@ -189,7 +202,7 @@ PYBIND11_MODULE(bind, m) {
             &pybind11_getstate<Cell>,
             &pybind11_setstate<Cell>));
 
-    pybind11::class_<Face>(m, "Face")
+    pybind11::class_<Face>(m, "Face", "Physical face.")
         // attributes
         .def_property_readonly("halfEdgeIndex",
             &Face::getHalfEdgeIndex)
@@ -198,7 +211,7 @@ PYBIND11_MODULE(bind, m) {
             &pybind11_getstate<Face>,
             &pybind11_setstate<Face>));
 
-    pybind11::class_<Junction>(m, "Junction")
+    pybind11::class_<Junction>(m, "Junction", "Physical junction.")
         // attributes
         .def_property_readonly("halfEdgeIndex",
             &Junction::getHalfEdgeIndex)
@@ -207,10 +220,22 @@ PYBIND11_MODULE(bind, m) {
             &pybind11_getstate<Junction>,
             &pybind11_setstate<Junction>));
 
-    pybind11::class_<VertexModel, Mesh>(m, "VertexModel")
+    pybind11::class_<VertexModel, Mesh>(m, "VertexModel",
+        "Python wrapper around C++ vertex model simulation object.")
         // constructor
         .def(pybind11::init
             <long int const&, double const&, double const&, double const&>(),
+            "Parameters\n"
+            "----------\n"
+            "seed : int\n"
+            "    Random number generator seed. (default: 0)\n"
+            "v0 : float\n"
+            "    Vertex self-propulsion velocity. (default: 1e-1)\n"
+            "Dr : float\n"
+            "    Vertex propulsion rotational diffusion constant.\n"
+            "    (default: 1e-1)\n"
+            "p0 : float\n"
+            "    Dimensionless target perimeter of cell. (default: 3.81)",
             pybind11::arg("seed")=0,
             pybind11::arg("v0")=1e-1,
             pybind11::arg("Dr")=1e-1,
@@ -253,7 +278,20 @@ PYBIND11_MODULE(bind, m) {
                 std::vector<double> const wpos =
                     self.wrap(std::vector<double>(posPTR, posPTR + 2));
                 return pybind11::array_t<double>({2}, &(wpos[0]));
-            })
+            },
+            "Wrap position to positive values with respect to periodic\n"
+            "boundary conditions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "position : (2,) float array-like\n"
+            "    Position to wrap.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "wposition : (2,) float numpy array\n"
+            "    Wrapped position.",
+            pybind11::arg("positions"))
         .def("wrapDiff",
             [](VertexModel const& self,
                 pybind11::array_t<double> const& fromPos,
@@ -267,9 +305,25 @@ PYBIND11_MODULE(bind, m) {
                         std::vector<double>(fromPosPTR, fromPosPTR + 2),
                         std::vector<double>(toPosPTR, toPosPTR + 2));
                 return pybind11::array_t<double>({2}, &(disp[0]));
-            })
-        .def("reset",
-            &VertexModel::reset)
+            },
+            "Wrap difference vector with respect to periodic boundary\n"
+            "conditions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "fromPos : (2,) float array-like\n"
+            "    Pointer to initial point position.\n"
+            "toPos : (2,) float array-like\n"
+            "    Pointer to final point position.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "disp : (2,) float numpy array\n"
+            "    Difference vector.",
+            pybind11::arg("fromPos"),
+            pybind11::arg("toPos"))
+//         .def("reset",
+//             &VertexModel::reset)
         .def("nintegrate",
             [](VertexModel& self,
                 long int const& niter, double const& dt,
@@ -278,12 +332,34 @@ PYBIND11_MODULE(bind, m) {
                     self.integrate(dt, delta, epsilon);
                 }
             },
+            "Integrate self-propelled vertex model and check for and perform\n"
+            "T1s (at each step).\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "niter : int\n"
+            "    Number of integration steps to perform.\n"
+            "dt : float\n"
+            "    Integration time step. (default: 0)\n"
+            "delta : float\n"
+            "    Distance between vertices below which these should be\n"
+            "    merged. (default: 0.1)\n"
+            "epsilon : float\n"
+            "    Create two vertices at distance `delta' + `epsilon' after\n"
+            "    T1. (default: 0.1)",
             pybind11::arg("niter"),
             pybind11::arg("dt")=0,
             pybind11::arg("delta")=0.1,
             pybind11::arg("epsilon")=0.1)
         .def("getForces",
-            &VertexModel::getForces)
+            &VertexModel::getForces,
+            "Compute forces on vertices from vertex model."
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "forces : {int: list} dict\n"
+            "    Dictionary which associates vertex indices to force applied\n"
+            "     on the vertex.")
 //         .def("mergeVertices",
 //             &VertexModel::mergeVertices,
 //             pybind11::arg("halfEdgeIndex"))
@@ -295,10 +371,22 @@ PYBIND11_MODULE(bind, m) {
 //             pybind11::arg("length")=1)
         .def("initRegularTriangularLattice",
             &VertexModel::initRegularTriangularLattice,
+            "Initialises a regular triangular lattice.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "size : int\n"
+            "    Number of vertices in both horizontal and vertical\n"
+            "    directions. (default: 6)\n"
+            "    NOTE: This must be a multiple of 6.\n"
+            "junctionLength : float\n"
+            "    Length of nearest neighbour junctions. (default: 1)",
             pybind11::arg("size")=6,
             pybind11::arg("junctionLength")=1)
         .def("checkMesh",
-            &VertexModel::checkMesh)
+            &VertexModel::checkMesh,
+            "Check that the vertices and half-edges define a planar mesh,\n"
+            "with anticlockwise triangles.")
         // pickle
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,
