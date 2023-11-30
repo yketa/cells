@@ -100,7 +100,18 @@ class Read:
             Index of frame.
         """
 
-        plot(self[frame], fig=self.fig, ax=self.ax)
+        self.fig, self.ax = plot(self[frame], fig=self.fig, ax=self.ax)
+
+    def play(self):
+        """
+        Plot all frames.
+        """
+
+        self.plot(self.frames[0])
+        plt.ion()
+        plt.show()
+        for frame in self.frames[1:]:
+            self.plot(frame)
 
     def __getitem__(self, frame):
         """
@@ -133,6 +144,9 @@ class Read:
 
     def __next__(self):             # iterator over frames
         return self.frames.__next__()
+
+    def __len__(self):              # number of frames
+        return self.frames.__len__()
 
 def filename(N, v0, Dr, p0, identifier):
     """
