@@ -31,7 +31,7 @@ from matplotlib.collections import PatchCollection
 
 class Read:
 
-    def __init__(self, fname):
+    def __init__(self, fname, check=True):
         """
         Extract metadata and check consistency of file.
 
@@ -39,6 +39,9 @@ class Read:
         ----------
         fname : str
             Path to input file.
+        check : bool
+            Check file consistency. This is mandatory in order to access data,
+            otherwise only metadata is read and accessible. (default: True)
         """
 
         self.filename = fname
@@ -66,6 +69,7 @@ class Read:
                 sys.stdout.write("\b"*len(out))
 
             # check file consistency and build skip directory
+            if not(check): return
             self.skip = np.array([], dtype=int) # position of each object in file
             _max_diff_t = 0                     # check consistency with metadata in computed times
             for i, time in enumerate(self.frames*self.dt):
