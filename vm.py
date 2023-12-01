@@ -179,7 +179,7 @@ def filename(N, v0, Dr, p0, identifier):
 
 # PLOT VERTEX MODEL OBJECT
 
-cmap = plt.cm.PiYG                      # colourmap
+cmap = plt.cm.jet                       # colourmap (colourmap without white for TESTING)
 norm = Normalize(-0.05, 0.05)           # interval of value represented by colourmap
 scalarMap = ScalarMappable(norm, cmap)  # conversion from scalar value to colour
 

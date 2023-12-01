@@ -116,22 +116,25 @@ template<>
 pybind11::tuple pybind11_getstate<Vertex>(Vertex const& v) {
     return pybind11::make_tuple(
         v.getIndex(),
+        v.getBoundary(),
         v.getPosition(),
         v.getUPosition(),
         v.getHalfEdgeIndex());
 }
 template<>
 Vertex pybind11_setstate<Vertex>(pybind11::tuple const& t) {
-    checkSize(t, 4);
+    checkSize(t, 5);
     long int const index =
         t[0].cast<long int>();
+    bool const boundary =
+        t[1].cast<bool>();
     std::vector<double> position =
-        t[1].cast<std::vector<double>>();
-    std::vector<double> uposition =
         t[2].cast<std::vector<double>>();
+    std::vector<double> uposition =
+        t[3].cast<std::vector<double>>();
     long int const halfEdgeIndex =
-        t[3].cast<long int>();
-    return Vertex(index, position, uposition, halfEdgeIndex);
+        t[4].cast<long int>();
+    return Vertex(index, boundary, position, uposition, halfEdgeIndex);
 }
 
 // HalfEdge

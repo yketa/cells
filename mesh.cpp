@@ -166,7 +166,8 @@ void Mesh::checkMesh() const {
     }
 
     long int halfEdgeIndex, halfEdgeIndexBis, pairHalfEdgeIndex;
-    long int fromVertex, toVertex;
+    bool boundary;
+    long int fromVertex, toVertex, thirdVertex;
     std::vector<long int> triangle(3, 0);
     for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {  // loop over all half-edges
         halfEdgeIndex = it->first;
@@ -177,6 +178,20 @@ void Mesh::checkMesh() const {
             halfEdgeIndex,
             halfEdges.at(halfEdgeIndex).getNextIndex(),
             halfEdges.at(halfEdgeIndex).getPreviousIndex()};
+
+        fromVertex =
+            halfEdges.at(halfEdgeIndex)
+                .getFromIndex();
+        toVertex =
+            halfEdges.at(halfEdgeIndex)
+                .getToIndex();
+        thirdVertex =
+            halfEdges.at(halfEdges.at(halfEdgeIndex).getNextIndex())
+                .getToIndex();
+        boundary = (    // does the triangle has an outer boundary corner
+            vertices.at(fromVertex).getBoundary()
+            || vertices.at(toVertex).getBoundary()
+            || vertices.at(thirdVertex).getBoundary());
 
         for (int i=0; i < 3; i++) {
 
@@ -193,9 +208,11 @@ void Mesh::checkMesh() const {
                 eraseInVec<long int>(vertexIndices, fromVertex);
             }
 
-            assert(cross2(          // check that the triangle has anticlockwise orientation
-                getHalfEdgeVector(triangle[pmod(i + 0, 3)]),
-                getHalfEdgeVector(triangle[pmod(i + 1, 3)])) > 0);
+            if (!boundary) {        // only for inner triangles
+                assert(cross2(      // check that the triangle has anticlockwise orientation
+                    getHalfEdgeVector(triangle[pmod(i + 0, 3)]),
+                    getHalfEdgeVector(triangle[pmod(i + 1, 3)])) > 0);
+            }
 
             pairHalfEdgeIndex = halfEdges.at(triangle[i]).getPairIndex();
             assert(triangle[i] ==   // check the indexing of pair

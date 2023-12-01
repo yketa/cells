@@ -20,6 +20,7 @@ Individual nodes of the two-dimensional mesh.
     private:
 
         long int const index;
+        bool const boundary;
 
         std::vector<double> position;   // position wrapped with respect to periodic boundary conditions
         std::vector<double> uposition;  // unwrapped position
@@ -27,11 +28,12 @@ Individual nodes of the two-dimensional mesh.
 
     public:
 
-        Vertex() : index(-1) {}
+        Vertex() : index(-1), boundary(false) {}
         Vertex(long int const& index_,
             std::vector<double> const& position_,
-            long int const& halfEdgeIndex_=-1) :
-                index(index_),
+            long int const& halfEdgeIndex_=-1,
+            bool const& boundary_=false) :
+                index(index_), boundary(boundary_),
                 position(position_), uposition(position_),
                 halfEdgeIndex(halfEdgeIndex_) {}
         /*
@@ -44,18 +46,23 @@ Individual nodes of the two-dimensional mesh.
         halfEdgeIndex_ :
             Index of a single halfedge going out of this vertex (the
             association needs not to be bijective).
+        boundary_ :
+            Indicates that vertex is used to designate an outer boundary.
         */
 
         Vertex(long int const& index_,
+            bool const& boundary_,
             std::vector<double> const& position_,
             std::vector<double> const& uposition_,
-            long int const& halfEdgeIndex_=-1) :
-                index(index_),
+            long int const& halfEdgeIndex_) :
+                index(index_), boundary(boundary_),
                 position(position_), uposition(uposition_),
                 halfEdgeIndex(halfEdgeIndex_) {}
 
         long int getIndex() const
             { return index; }
+        bool getBoundary() const
+            { return boundary; }
         std::vector<double> getPosition() const
             { return position; }
         std::vector<double> getUPosition() const

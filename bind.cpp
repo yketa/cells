@@ -111,6 +111,8 @@ PYBIND11_MODULE(bind, m) {
         // attributes
         .def_property_readonly("index",
             &Vertex::getIndex)
+        .def_property_readonly("boundary",
+            &Vertex::getBoundary)
         .def_property_readonly("position",
             [](Vertex const& self) {
                 std::vector<double> const position = self.getPosition();

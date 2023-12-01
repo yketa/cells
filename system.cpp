@@ -177,7 +177,16 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
     // identify small junctions
 
     std::vector<long int> halfEdgeIndices(0);
+    long int fromMergeIndex, toMergeIndex;
     for (Junction* junction : junctions.getValues()) {
+        fromMergeIndex =                // (first) vertex to be (potentially) merged into neighbour
+            halfEdges.at(junction->getHalfEdgeIndex()).getFromIndex();
+        toMergeIndex =                  // (second) vertex towards which neighbour is (potentially) merged
+            halfEdges.at(junction->getHalfEdgeIndex()).getToIndex();
+        if (vertices.at(fromMergeIndex).getBoundary()
+            || vertices.at(toMergeIndex).getBoundary()) {
+            continue;                   // boundary vertex cannot be merged
+        }
         if (getEdgeLength(junction->getHalfEdgeIndex()) < delta) {
             halfEdgeIndices.push_back(junction->getHalfEdgeIndex());
         }
@@ -186,7 +195,6 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 
     // perform T1s
 
-    long int fromMergeIndex, toMergeIndex;
     std::vector<std::vector<long int>> neighbours;
     std::vector<long int> neighboursFromMerge, halfEdgesNeighboursFromMerge;
     std::vector<long int> neighboursToMerge, halfEdgesNeighboursToMerge;
@@ -200,7 +208,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 
         // identify half-edge to split to create new junction
 
-        fromMergeIndex = halfEdges.at(mergeHalfEdgeIndex).getFromIndex();   // (first) vertex to be merge into neighbour
+        fromMergeIndex = halfEdges.at(mergeHalfEdgeIndex).getFromIndex();   // (first) vertex to be merged into neighbour
         toMergeIndex = halfEdges.at(mergeHalfEdgeIndex).getToIndex();       // (second) vertex towards which neighbour is merged
 
         neighbours = getNeighbourVertices(fromMergeIndex);  // neighbours of first vertex and half-edges towards them
@@ -216,7 +224,8 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         halfEdgeToCellsIndices.clear();
         for (int i=0; i < numberNeighbours; i++) {
             vertexIndex = neighboursFromMerge[i];
-            if (cells.in(vertexIndex)) {                                // cell centres neighbours of the first vertex...
+            if (cells.in(vertexIndex)                                   // cell centres neighbours of the first vertex...
+                || vertices.at(vertexIndex).getBoundary()) {            // ... or boundary neighbours of the first vertex...
                 if (!inVec(neighboursToMerge, vertexIndex)) {           // ... which are not neighbours to the second vertex
                     halfEdgeToCellsIndices.push_back(
                         halfEdgesNeighboursFromMerge[i]);
@@ -231,7 +240,8 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         halfEdgeToCellsIndices.clear();
         for (int i=0; i < numberNeighbours; i++) {
             vertexIndex = neighboursToMerge[i];
-            if (cells.in(vertexIndex)) {                                // cell centres neighbours of the second vertex...
+            if (cells.in(vertexIndex)                                   // cell centres neighbours of the second vertex...
+                || vertices.at(vertexIndex).getBoundary()) {            // ... or boundary neighbours of the second vertex...
                 if (!inVec(neighboursFromMerge, vertexIndex)) {         // ... which are not neighbours to the first vertex
                     halfEdgeToCellsIndices.push_back(
                         halfEdgesNeighboursToMerge[i]);
@@ -584,17 +594,19 @@ void VertexModel::initRegularTriangularLattice(
             vertices.emplace(vertexIndex, Vertex(
                 // vertices is std::map so add with std::map::emplace
                 vertexIndex,
-                wrap(position),                 // wrapped position of the vertex on the regular triangular lattice
-                6*vertexIndex + 0));            // index of a single half-edge going out of this vertex
+                wrap(position),                                 // wrapped position of the vertex on the regular triangular lattice
+                6*vertexIndex + 0,                              // index of a single half-edge going out of this vertex
+                (line == size/2 - 1 && column == size/2 - 1))); // (TESTING) create 1 boundary vertex (here a hole)
 
             // create cell or self-propelled vertex
-            if ((line - column)%3 == 0) {   // condition for vertex to be a cell centre...
+            if ((line - column)%3 == 0                              // condition for vertex to be a cell centre
+                && !(line == size/2 - 1 && column == size/2 - 1)) { // ignore created boundary vertex
                 cells[vertexIndex] = {
                     // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
-                    vertexIndex,                            // vertexIndex
-                    (junctionLength*junctionLength)         // A0
+                    vertexIndex,                                    // vertexIndex
+                    (junctionLength*junctionLength)                 // A0
                         *(3./2.)/std::tan(std::numbers::pi/6.),
-                    p0};                                    // p0
+                    p0};                                            // p0
             }
             else {                          // ... or a self-propelled vertex
                 sPVertices[vertexIndex] = {
