@@ -337,7 +337,9 @@ if __name__ == "__main__":
             dtype=int)
 
     metadata["frames"] = np.array(list(OrderedDict().fromkeys(sorted(       # ensemble of unique frames
-        [0] + [t0 + t for t0 in metadata["t0"] for t in metadata["t"]]))))
+        [0, *[t0 + t
+            for t0 in metadata["t0"]
+            for t in [0, *metadata["t"]]]]))))
 
     # DUMP METADATA
 
