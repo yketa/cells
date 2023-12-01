@@ -195,9 +195,8 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
     long int vertexIndex;
     long int createHalfEdgeIndex0, createHalfEdgeIndex1;
     double angle;
-    if (halfEdgeIndices.size() > 0) { std::cerr << "to merge: "; }
     for (long int mergeHalfEdgeIndex : halfEdgeIndices) {
-        std::cerr << mergeHalfEdgeIndex << " "; nT1++;
+        nT1++;
 
         // identify half-edge to split to create new junction
 
@@ -245,6 +244,26 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         angle = std::numbers::pi/2. // create new junction orthogonal to the deleted junction
             + angle2(getHalfEdgeVector(mergeHalfEdgeIndex));
 
+//         // output T1 to standard error
+// 
+//         long int cellA0, cellB0, cellA1, cellB1;
+//         cellA0 = halfEdges[                                     // first cell for which junction is created
+//             halfEdges[mergeHalfEdgeIndex]
+//                 .getPreviousIndex()]
+//                     .getFromIndex();
+//         cellB0 = halfEdges[                                     // second cell for which junction is deleted
+//             halfEdges[halfEdges[mergeHalfEdgeIndex].getPairIndex()]
+//                     .getPreviousIndex()]
+//                         .getFromIndex();
+//         cellA1 = halfEdges[createHalfEdgeIndex0].getToIndex();  // first cell for which junction is created
+//         cellB1 = halfEdges[createHalfEdgeIndex1].getToIndex();  // second cell for whch junction is created
+//         std::cerr << "T1: #" << mergeHalfEdgeIndex
+//             << " ("
+//             << std::min(cellA0, cellB0) << "|" << std::max(cellA0, cellB0)
+//             << " to "
+//             << std::min(cellA1, cellB1) << "|" << std::max(cellA1, cellB1)
+//             << ")" << std::endl;
+
         // merge vertices
 
         mergeVertices(mergeHalfEdgeIndex);
@@ -254,7 +273,6 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         createJunction(createHalfEdgeIndex0, createHalfEdgeIndex1,
             angle, delta + epsilon);
     }
-    if (halfEdgeIndices.size() > 0) { std::cerr << std::endl; }
 //     if (halfEdgeIndices.size() > 0) { checkMesh(); }
 }
 
