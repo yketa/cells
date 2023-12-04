@@ -199,8 +199,10 @@ class VertexModel : public Mesh {
 
         VertexModel(long int const& seed_=0,
             double const& v0_=1e-1, double const& Dr_=1e-1,
-            double const& p0_=3.81)
-            : v0(v0_), Dr(Dr_), p0(p0_), seed(seed_), random(seed) {}
+            double const& p0_=3.81,
+            bool const& boundary_=false)
+            : Mesh(boundary_), v0(v0_), Dr(Dr_), p0(p0_),
+                seed(seed_), random(seed) {}
         /*
         Parameters
         ----------
@@ -357,7 +359,22 @@ class VertexModel : public Mesh {
         void initRegularTriangularLattice(
             long int const& size=6, double const& junctionLength=1);
         /*
-        Initialises a regular triangular lattice.
+        Initialise a regular triangular lattice.
+
+        Parameters
+        ----------
+        size :
+            Number of vertices in both horizontal and vertical directions.
+            NOTE: Must be a multiple of 6.
+        junctionLength :
+            Length of nearest neighbour junctions.
+        */
+
+        void initOpenRegularTriangularLattice(
+            long int const& size=6, double const& junctionLength=1);
+        /*
+        Initialise a regular triangular lattice with a cell replaced with a
+        hole. (TESTING)
 
         Parameters
         ----------

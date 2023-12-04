@@ -166,9 +166,10 @@ void Mesh::checkMesh() const {
     }
 
     long int halfEdgeIndex, halfEdgeIndexBis, pairHalfEdgeIndex;
-    bool boundary;
-    long int fromVertex, toVertex, thirdVertex;
+    long int fromVertex, toVertex;
     std::vector<long int> triangle(3, 0);
+    bool boundary = false;
+    long int thirdVertex;
     for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {  // loop over all half-edges
         halfEdgeIndex = it->first;
 
@@ -179,19 +180,21 @@ void Mesh::checkMesh() const {
             halfEdges.at(halfEdgeIndex).getNextIndex(),
             halfEdges.at(halfEdgeIndex).getPreviousIndex()};
 
-        fromVertex =
-            halfEdges.at(halfEdgeIndex)
-                .getFromIndex();
-        toVertex =
-            halfEdges.at(halfEdgeIndex)
-                .getToIndex();
-        thirdVertex =
-            halfEdges.at(halfEdges.at(halfEdgeIndex).getNextIndex())
-                .getToIndex();
-        boundary = (    // does the triangle has an outer boundary corner
-            vertices.at(fromVertex).getBoundary()
-            || vertices.at(toVertex).getBoundary()
-            || vertices.at(thirdVertex).getBoundary());
+        if (getBoundary()) {
+            fromVertex =
+                halfEdges.at(halfEdgeIndex)
+                    .getFromIndex();
+            toVertex =
+                halfEdges.at(halfEdgeIndex)
+                    .getToIndex();
+            thirdVertex =
+                halfEdges.at(halfEdges.at(halfEdgeIndex).getNextIndex())
+                    .getToIndex();
+            boundary = (    // does the triangle has an outer boundary corner
+                vertices.at(fromVertex).getBoundary()
+                || vertices.at(toVertex).getBoundary()
+                || vertices.at(thirdVertex).getBoundary());
+        }
 
         for (int i=0; i < 3; i++) {
 

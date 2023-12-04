@@ -275,6 +275,9 @@ if __name__ == "__main__":
         help="vertex propulsion rotational diffusion constant")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
+    parser.add_argument("-open", "-o",
+        action=argparse.BooleanOptionalAction,
+        help="turn on specific checks for boundary vertices")
     # algorithm
     parser.add_argument("-seed", type=int, default=0,
         help="random number generator seed")
@@ -354,8 +357,11 @@ if __name__ == "__main__":
     # SIMULATION
 
     # initialisation of mesh
-    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0)
-    vm.initRegularTriangularLattice(size=args.n)
+    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0, args.open)
+    if args.open:
+        vm.initOpenRegularTriangularLattice(size=args.n)
+    else:
+        vm.initRegularTriangularLattice(size=args.n)
 
     # simulation of vertex model
     for t in np.diff(metadata["frames"], prepend=0):

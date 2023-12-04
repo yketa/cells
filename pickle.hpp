@@ -116,25 +116,25 @@ template<>
 pybind11::tuple pybind11_getstate<Vertex>(Vertex const& v) {
     return pybind11::make_tuple(
         v.getIndex(),
-        v.getBoundary(),
         v.getPosition(),
         v.getUPosition(),
-        v.getHalfEdgeIndex());
+        v.getHalfEdgeIndex(),
+        v.getBoundary());
 }
 template<>
 Vertex pybind11_setstate<Vertex>(pybind11::tuple const& t) {
     checkSize(t, 5);
     long int const index =
         t[0].cast<long int>();
-    bool const boundary =
-        t[1].cast<bool>();
     std::vector<double> position =
-        t[2].cast<std::vector<double>>();
+        t[1].cast<std::vector<double>>();
     std::vector<double> uposition =
-        t[3].cast<std::vector<double>>();
+        t[2].cast<std::vector<double>>();
     long int const halfEdgeIndex =
-        t[4].cast<long int>();
-    return Vertex(index, boundary, position, uposition, halfEdgeIndex);
+        t[3].cast<long int>();
+    bool const boundary =
+        t[4].cast<bool>();
+    return Vertex(index, position, uposition, halfEdgeIndex, boundary);
 }
 
 // HalfEdge
@@ -167,11 +167,12 @@ pybind11::tuple pybind11_getstate<Mesh>(Mesh const& m) {
     return pybind11::make_tuple(
         pybind11_getstate_map<Vertex>(m.getVertices()),
         pybind11_getstate_map<HalfEdge>(m.getHalfEdges()),
-        m.getSystemSize());
+        m.getSystemSize(),
+        m.getBoundary());
 }
 template<>
 Mesh pybind11_setstate<Mesh>(pybind11::tuple const& t) {
-    checkSize(t, 3);
+    checkSize(t, 4);
     std::map<long int, Vertex> const vertices =
         pybind11_setstate_map<Vertex>
             (t[0].cast<std::map<long int, pybind11::tuple>>());
@@ -180,7 +181,9 @@ Mesh pybind11_setstate<Mesh>(pybind11::tuple const& t) {
             (t[1].cast<std::map<long int, pybind11::tuple>>());
     std::vector<double> const systemSize =
         t[2].cast<std::vector<double>>();
-    return Mesh(vertices, halfEdges, systemSize);
+    bool const boundary =
+        t[3].cast<bool>();
+    return Mesh(vertices, halfEdges, systemSize, boundary);
 }
 
 /*

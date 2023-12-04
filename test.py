@@ -1,7 +1,8 @@
 from cells.bind import VertexModel
 from cells.vm import plot
 
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter,\
+    BooleanOptionalAction
 
 import matplotlib.pyplot as plt
 
@@ -19,13 +20,16 @@ if __name__ == "__main__":
         help="vertex propulsion rotational diffusion constant")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
+    parser.add_argument("-open", "-o",
+        action=BooleanOptionalAction,
+        help="turn on specific checks for boundary vertices")
     # algorithm
     parser.add_argument("-seed", type=int, default=0,
         help="random number generator seed")
     # integration
     parser.add_argument("-dt", type=float, default=1e-3,
         help="intergation time step")
-    parser.add_argument("-delta", type=float, default=0.5,
+    parser.add_argument("-delta", type=float, default=0.1,
         help="length below which to perform T1")
     parser.add_argument("-epsilon", type=float, default=0.1,
         help="create junction with length epsilon above threshold after T1")
@@ -36,8 +40,11 @@ if __name__ == "__main__":
 
     # INITIALISATION
 
-    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0)
-    vm.initRegularTriangularLattice(size=args.n)
+    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0, args.open)
+    if args.open:
+        vm.initOpenRegularTriangularLattice(size=args.n)
+    else:
+        vm.initRegularTriangularLattice(size=args.n)
     fig, ax = plot(vm)
 
     # RUN

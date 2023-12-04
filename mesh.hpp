@@ -51,10 +51,10 @@ Individual nodes of the two-dimensional mesh.
         */
 
         Vertex(long int const& index_,
-            bool const& boundary_,
             std::vector<double> const& position_,
             std::vector<double> const& uposition_,
-            long int const& halfEdgeIndex_) :
+            long int const& halfEdgeIndex_,
+            bool const& boundary_) :
                 index(index_), boundary(boundary_),
                 position(position_), uposition(uposition_),
                 halfEdgeIndex(halfEdgeIndex_) {}
@@ -147,18 +147,21 @@ Two-dimensional ensembles of vertices and edges.
 
     protected:
 
+        bool const boundary;    // contains boundary vertices (these need to be checked differently)
+
         std::map<long int, Vertex> vertices;
         std::map<long int, HalfEdge> halfEdges;
         std::vector<double> systemSize{0, 0};
 
     public:
 
-        Mesh() {}
+        Mesh(bool const& boundary_=false) : boundary(boundary_) {}
 
         Mesh(                   // used to load state
             std::map<long int, Vertex> const& vertices_,
             std::map<long int, HalfEdge> const& halfEdges_,
-            std::vector<double> const& systemSize_) {
+            std::vector<double> const& systemSize_,
+            bool const& boundary_=false) : Mesh(boundary_) {
             // clear maps and vector
             vertices.clear();
             halfEdges.clear();
@@ -171,8 +174,11 @@ Two-dimensional ensembles of vertices and edges.
             systemSize.push_back(systemSize_[1]);
         }
         Mesh(Mesh const& m_) :  // copy constructor
-            Mesh(m_.getVertices(), m_.getHalfEdges(), m_.getSystemSize()) {}
+            Mesh(m_.getVertices(), m_.getHalfEdges(), m_.getSystemSize(),
+                m_.getBoundary()) {}
 
+        bool getBoundary() const
+            { return boundary; }
         std::map<long int, Vertex> getVertices() const
             { return vertices; }
         std::map<long int, HalfEdge> getHalfEdges() const

@@ -226,7 +226,8 @@ PYBIND11_MODULE(bind, m) {
         "Python wrapper around C++ vertex model simulation object.")
         // constructor
         .def(pybind11::init
-            <long int const&, double const&, double const&, double const&>(),
+            <long int const&, double const&, double const&, double const&,
+                bool const&>(),
             "Parameters\n"
             "----------\n"
             "seed : int\n"
@@ -237,16 +238,27 @@ PYBIND11_MODULE(bind, m) {
             "    Vertex propulsion rotational diffusion constant.\n"
             "    (default: 1e-1)\n"
             "p0 : float\n"
-            "    Dimensionless target perimeter of cell. (default: 3.81)",
+            "    Dimensionless target perimeter of cell. (default: 3.81)\n"
+            "boundary : bool\n"
+            "    Turn on specific checks for boundary vertices.\n"
+            "    (default: False)",
             pybind11::arg("seed")=0,
             pybind11::arg("v0")=1e-1,
             pybind11::arg("Dr")=1e-1,
-            pybind11::arg("p0")=3.81)
+            pybind11::arg("p0")=3.81,
+            pybind11::arg("boundary")=false)
         // attributes
+        .def_property_readonly("boundary",
+            &VertexModel::getBoundary)
         .def_property_readonly("vertices",
             &VertexModel::getVertices)
         .def_property_readonly("halfEdges",
             &VertexModel::getHalfEdges)
+        .def_property_readonly("systemSize",
+            [](VertexModel const& self) {
+                std::vector<double> const systemSize = self.getSystemSize();
+                return pybind11::array_t<double>({2}, &(systemSize[0]));
+            })
         .def_property_readonly("sPVertices",
             &VertexModel::getSPVertices)
         .def_property_readonly("cells",
@@ -261,11 +273,6 @@ PYBIND11_MODULE(bind, m) {
             &VertexModel::getDr)
         .def_property_readonly("p0",
             &VertexModel::getp0)
-        .def_property_readonly("systemSize",
-            [](VertexModel const& self) {
-                std::vector<double> const systemSize = self.getSystemSize();
-                return pybind11::array_t<double>({2}, &(systemSize[0]));
-            })
         .def_property_readonly("seed",
             &VertexModel::getSeed)
         .def_property_readonly("time",
@@ -373,7 +380,22 @@ PYBIND11_MODULE(bind, m) {
 //             pybind11::arg("length")=1)
         .def("initRegularTriangularLattice",
             &VertexModel::initRegularTriangularLattice,
-            "Initialises a regular triangular lattice.\n"
+            "Initialise a regular triangular lattice.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "size : int\n"
+            "    Number of vertices in both horizontal and vertical\n"
+            "    directions. (default: 6)\n"
+            "    NOTE: This must be a multiple of 6.\n"
+            "junctionLength : float\n"
+            "    Length of nearest neighbour junctions. (default: 1)",
+            pybind11::arg("size")=6,
+            pybind11::arg("junctionLength")=1)
+        .def("initOpenRegularTriangularLattice",
+            &VertexModel::initOpenRegularTriangularLattice,
+            "Initialises a regular triangular lattice with a cell replaced\n"
+            "with a hole. (TESTING)\n"
             "\n"
             "Parameters\n"
             "----------\n"
