@@ -9,4 +9,4 @@ echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
 ```
 from this directory.
 
-Test with `python test.py` requires `numpy` and `matplotlib`. Use of `plot.py` requires `seaborn`. These can be installed with `python -m pip install -r requirements.txt`.
+Test with `python test.py` requires `numpy` and `matplotlib`. These can be installed with `python -m pip install -r requirements.txt`.

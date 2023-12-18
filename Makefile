@@ -1,6 +1,7 @@
 SHELL:=/bin/bash
 
 CC=g++
+PYTHON=python
 CFLAGS=-std=gnu++20 -O3 -Wall
 LDFLAGS=
 MPIFLAGS=
@@ -25,7 +26,7 @@ tools.o: tools.hpp
 
 # libraries
 
-bind.so: CFLAGS+=-fPIC `python -m pybind11 --includes`
+bind.so: CFLAGS+=-fPIC `$(PYTHON) -m pybind11 --includes`
 bind.so: bind.o system.o mesh.o tools.o
 	$(CC) -o $@ -shared $^ $(LDFLAGS)
 

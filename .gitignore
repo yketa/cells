@@ -9,7 +9,9 @@ sync.sh
 *.p
 *.pickle
 *~
-# latexmk files
+plot.py
+*.out
+out
 *.aux
 *.bbl
 *.blg
@@ -17,5 +19,3 @@ sync.sh
 *.fls
 *.log
 *Notes.bib
-*.out
-out
