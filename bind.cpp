@@ -407,6 +407,18 @@ PYBIND11_MODULE(bind, m) {
             "    Length of nearest neighbour junctions. (default: 1)",
             pybind11::arg("size")=6,
             pybind11::arg("junctionLength")=1)
+        .def("initOpenRegularHexagonalLattice",
+            &VertexModel::initOpenRegularHexagonalLattice,
+            "Initialise a regular square lattice with open outer bondary.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "nCells : int\n"
+            "    Number of cells. (default: 1)\n"
+            "junctionLength : float\n"
+            "    Length of nearest neighbour junctions. (default: 1)",
+            pybind11::arg("nCells")=1,
+            pybind11::arg("junctionLength")=1)
         .def("checkMesh",
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh,\n"

@@ -42,7 +42,8 @@ if __name__ == "__main__":
 
     vm = VertexModel(args.seed, args.v0, args.Dr, args.p0, args.open)
     if args.open:
-        vm.initOpenRegularTriangularLattice(size=args.n)
+        vm.initOpenRegularHexagonalLattice(nCells=args.n)
+#         vm.initOpenRegularTriangularLattice(size=args.n)
     else:
         vm.initRegularTriangularLattice(size=args.n)
     fig, ax = plot(vm)

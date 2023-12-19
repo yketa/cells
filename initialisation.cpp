@@ -305,7 +305,11 @@ void VertexModel::initOpenRegularHexagonalLattice(
         (long int const& col, long int const& line, long int const& k)
             { return 7*(col + line*nnCells) + k; };
     std::vector<double> position(2, 0);
-    std::map<std::vector<double>, long int> vertexPosMap;
+    std::vector<long int> proxyCellPos(2, 0);   // these two proxies are there to always exactly compare integer positions (and not approximately compare floats)
+    std::vector<long int> proxyVertexPos(2, 0);
+    std::vector<std::vector<long int>> proxyIncrements =
+        {{0, -2}, {1, -1}, {1, 1}, {0, 2}, {-1, 1}, {-1, -1}};
+    std::map<std::vector<long int>, long int> vertexPosMap;
     std::map<long int, long int> vertexIndexMap;
     std::map<long int, long int> exteriorVertexNext;
     for (long int col=0; col < nnCells; col++) {
@@ -326,7 +330,13 @@ void VertexModel::initOpenRegularHexagonalLattice(
                 p0};                            // p0
 
             // create cell corner vertices
+            proxyCellPos[0] = 2*col + col%2;
+            proxyCellPos[1] = 3*line;
             for (long int k=1; k <= 6; k++) {
+                for (int dim=0; dim < 2; dim++) {
+                    proxyVertexPos[dim] =
+                        proxyCellPos[dim] + proxyIncrements[k][dim];
+                }
                 position[0] =
                     vertices[vertexIndex(col, line, 0)].getPosition()[0]
                         + cos(-std::numbers::pi/2. + k*std::numbers::pi/6.);
@@ -334,10 +344,10 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     vertices[vertexIndex(col, line, 0)].getPosition()[1]
                         + sin(-std::numbers::pi/2. + k*std::numbers::pi/6.);
 
-                if (vertexPosMap.find(wrap(position)) != vertexPosMap.end()) {  // vertex already exists
+                if (vertexPosMap.find(proxyVertexPos) != vertexPosMap.end()) {  // vertex already exists
                     // relations between vertices for initialisation
                     vertexIndexMap[vertexIndex(col, line, k)] =
-                        vertexPosMap.find(position)->second;
+                        vertexPosMap.find(proxyVertexPos)->second;
                 }
                 else {                                                          // vertex does not exist
                     // create vertex
@@ -355,7 +365,7 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     // relations between vertices for initialisation
                     vertexIndexMap[vertexIndex(col, line, k)] =
                         vertexIndex(col, line, k);
-                    vertexPosMap[wrap(position)] =
+                    vertexPosMap[proxyVertexPos] =
                         vertexIndex(col, line, k);
                     // relations between exterior vertices for initialisation
                     if (exteriorVertexNext.find(vertexIndex(col, line, k))
