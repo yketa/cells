@@ -179,11 +179,11 @@ Two-dimensional ensembles of vertices and edges.
 
         bool getBoundary() const
             { return boundary; }
-        std::map<long int, Vertex> getVertices() const
+        std::map<long int, Vertex> const& getVertices() const
             { return vertices; }
-        std::map<long int, HalfEdge> getHalfEdges() const
+        std::map<long int, HalfEdge> const& getHalfEdges() const
             { return halfEdges; }
-        std::vector<double> getSystemSize() const
+        std::vector<double> const& getSystemSize() const
             { return systemSize; }
 
         std::vector<double> wrap(

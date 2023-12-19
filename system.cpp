@@ -850,3 +850,273 @@ void VertexModel::initOpenRegularTriangularLattice(
     checkMesh();    // check mesh construction
 }
 
+void VertexModel::initOpenRegularHexagonalLattice(
+    long int const& nCells, double const& junctionLength) {
+
+    long int const nnCells = sqrt(nCells);
+    assert(nnCells*nnCells == nCells);
+
+    reset();                                    // reset vertices, junctions, and cells
+    systemSize[0] = 2*nnCells*junctionLength;   // length of the periodic box in the x-direction
+    systemSize[1] = 2*nnCells*junctionLength;   // length of the periodic box in the y-direction
+
+    // first loop over cells to create vertices and self-propelled vertices
+    double const x0 = (nnCells/2. + 0.5)*junctionLength;                        // x-position of first cell centre
+    double const y0 = (nnCells - (nnCells + 1)*sqrt(3)/4 + 0.5)*junctionLength; // y-position of first cell centre
+    auto vertexIndex = [&nnCells]
+        (long int const& col, long int const& line, long int const& k)
+            { return 7*(col + line*nnCells) + k; };
+    std::vector<double> position(2, 0);
+    std::map<std::vector<double>, long int> vertexPosMap;
+    std::map<long int, long int> vertexIndexMap;
+    std::map<long int, long int> exteriorVertexNext;
+    for (long int col=0; col < nnCells; col++) {
+        for (long int line=0; line < nnCells; line++) {
+
+            // create cell centre vertex
+            position[0] = x0 + (col + (col%2)/2.)*junctionLength;
+            position[1] = y0 + line*(1. + sqrt(3)/2.)*junctionLength;
+            vertices.emplace(vertexIndex(col, line, 0), Vertex(
+                // vertices is std::map so add with std::map::emplace
+                vertexIndex(col, line, 0),
+                wrap(position)));   // wrapped position of the vertex
+            cells[vertexIndex(col, line, 0)] = {
+                // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
+                vertexIndex(col, line, 0),
+                (junctionLength*junctionLength) // A0
+                    *(3./2.)/std::tan(std::numbers::pi/6.),
+                p0};                            // p0
+
+            // create cell corner vertices
+            for (long int k=1; k <= 6; k++) {
+                position[0] =
+                    vertices[vertexIndex(col, line, 0)].getPosition()[0]
+                        + cos(-std::numbers::pi/2. + k*std::numbers::pi/6.);
+                position[1] =
+                    vertices[vertexIndex(col, line, 0)].getPosition()[1]
+                        + sin(-std::numbers::pi/2. + k*std::numbers::pi/6.);
+
+                if (vertexPosMap.find(wrap(position)) != vertexPosMap.end()) {  // vertex already exists
+                    // relations between vertices for initialisation
+                    vertexIndexMap[vertexIndex(col, line, k)] =
+                        vertexPosMap.find(position)->second;
+                }
+                else {                                                          // vertex does not exist
+                    // create vertex
+                    vertices.emplace(vertexIndex(col, line, k), Vertex(
+                        // vertices is std::map so add with std::map::emplace
+                        vertexIndex(col, line, k),
+                        wrap(position)));   // wrapped position of the vertex
+                    // crate self-propelled vertex
+                    sPVertices[vertexIndex(col, line, k)] = {
+                        // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
+                        vertexIndex(col, line, k),              // vertexIndex
+                        2*std::numbers::pi*random.random01(),   // theta
+                        v0,                                     // v0
+                        Dr};                                    // Dr
+                    // relations between vertices for initialisation
+                    vertexIndexMap[vertexIndex(col, line, k)] =
+                        vertexIndex(col, line, k);
+                    vertexPosMap[wrap(position)] =
+                        vertexIndex(col, line, k);
+                    // relations between exterior vertices for initialisation
+                    if (exteriorVertexNext.find(vertexIndex(col, line, k))
+                        == exteriorVertexNext.end()) {  // next vertex of exterior vertex not computed
+                        if (line == 0) {                // vertices on the bottom line
+                            if (k == 1) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 0);
+                            }
+                            else if (k == 0) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 5);
+                            }
+                        }
+                        if (line == nnCells - 1) {      // vertices on the top line
+                            if (k == 4) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 3);
+                            }
+                            else if (k == 3) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 2);
+                            }
+                        }
+                        if (col == 0) {                 // vertices on the left column
+                            if (k == 5) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 4);
+                            }
+                            else if (k == 4 && line%2 == 0) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 3);
+                            }
+                        }
+                        if (col == nnCells - 1) {       // vertices on the right column
+                            if (k == 2) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 1);
+                            }
+                            else if (k == 1 && line%2 == 1) {
+                                exteriorVertexNext[vertexIndex(col, line, k)] =
+                                    vertexIndex(col, line, 0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // boundary vertex
+    long int const boundaryIndex = vertexIndex(nnCells - 1, nnCells - 1, 7);
+    vertices.emplace(boundaryIndex, Vertex(
+        // vertices is std::map so add with std::map::emplace
+        boundaryIndex,
+        std::vector<double>(2, 0),
+        -1,
+        true));
+
+    // second loop over cells to create interior half-edges and faces
+    long int fromIndex, toIndex;
+    Counter c;
+    long int triangle[3];
+    std::map<std::tuple<long int, long int>, long int> halfEdgeIndexMap;
+    for (long int col=0; col < nnCells; col++) {
+        for (long int line=0; line < nnCells; line++) {
+
+            // create inner half-edges
+            for (long int k=1; k <= 6; k++) {
+                triangle[0] = c(); triangle[1] = c(); triangle[2] = c();
+                // half-edge from cell centre to first corner
+                fromIndex = vertexIndexMap[vertexIndex(col, line, 0)];
+                toIndex = vertexIndexMap[vertexIndex(col, line, k)];
+                if (
+                    halfEdgeIndexMap.find(std::make_tuple(fromIndex, toIndex))
+                    == halfEdgeIndexMap.end()) {    // half-edge does not exist
+                    halfEdges.emplace(triangle[0], HalfEdge(
+                        // halfEdges is std::map so add with std::map::emplace
+                        triangle[0],    // halfEdgeIndex
+                        fromIndex,      // fromIndex
+                        toIndex,        // toIndex
+                        triangle[2],    // previousIndex
+                        triangle[1]));  // nextIndex
+                    halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
+                        triangle[0];
+                    vertices[fromIndex].setHalfEdgeIndex(triangle[0]);  // this will be changed multiple times so is redundant
+                }
+                // half-edge from first corner to second corner
+                fromIndex = vertexIndexMap[vertexIndex(col, line, k)];
+                toIndex = vertexIndexMap[vertexIndex(col, line, k + 1)];
+                if (
+                    halfEdgeIndexMap.find(std::make_tuple(fromIndex, toIndex))
+                    == halfEdgeIndexMap.end()) {    // half-edge does not exist
+                    halfEdges.emplace(triangle[1], HalfEdge(
+                        // halfEdges is std::map so add with std::map::emplace
+                        triangle[1],    // halfEdgeIndex
+                        fromIndex,      // fromIndex
+                        toIndex,        // toIndex
+                        triangle[0],    // previousIndex
+                        triangle[2]));  // nextIndex
+                    halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
+                        triangle[1];
+                    vertices[fromIndex].setHalfEdgeIndex(triangle[1]);  // this will be changed multiple times so is redundant
+                }
+                // half-edge from second corner to cell centre
+                fromIndex = vertexIndexMap[vertexIndex(col, line, k + 1)];
+                toIndex = vertexIndexMap[vertexIndex(col, line, 0)];
+                if (
+                    halfEdgeIndexMap.find(std::make_tuple(fromIndex, toIndex))
+                    == halfEdgeIndexMap.end()) {    // half-edge does not exist
+                    halfEdges.emplace(triangle[2], HalfEdge(
+                        // halfEdges is std::map so add with std::map::emplace
+                        triangle[2],    // halfEdgeIndex
+                        fromIndex,      // fromIndex
+                        toIndex,        // toIndex
+                        triangle[1],    // previousIndex
+                        triangle[0]));  // nextIndex
+                    halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
+                        triangle[2];
+                    vertices[fromIndex].setHalfEdgeIndex(triangle[2]);  // this will be changed multiple times so is redundant
+                }
+                // face
+                faces[{triangle[0], triangle[1], triangle[2]}] = {
+                    // faces is MultiIntKeyDict<Face> so add with initialiser-list (sent to Face)
+                    triangle[0]};   // halfEdgeIndex
+            }
+        }
+    }
+
+    // create external half-edges
+    std::map<long int, long int>::iterator it;
+    for (it=exteriorVertexNext.begin(); it != exteriorVertexNext.end(); ++it) {
+        triangle[0] = c(); triangle[1] = c(); triangle[2] = c();
+        // half-edge from first exterior vertex to second exterior vertex
+        fromIndex = vertexIndexMap[it->first];
+        toIndex = vertexIndexMap[it->second];
+        assert(
+            halfEdgeIndexMap.find(std::make_tuple(fromIndex, toIndex))
+            == halfEdgeIndexMap.end()); // half-edge should not exist
+        halfEdges.emplace(triangle[0], HalfEdge(
+            // halfEdges is std::map so add with std::map::emplace
+            triangle[0],    // halfEdgeIndex
+            fromIndex,      // fromIndex
+            toIndex,        // toIndex
+            triangle[2],    // previousIndex
+            triangle[1]));  // nextIndex
+            halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
+                triangle[0];
+        vertices[fromIndex].setHalfEdgeIndex(triangle[0]);  // this will be changed multiple times so is redundant
+        // half-edge from second exterior vertex to boundary vertex
+        fromIndex = vertexIndexMap[it->second];
+        toIndex = boundaryIndex;
+        assert(
+            halfEdgeIndexMap.find(std::make_tuple(fromIndex, toIndex))
+            == halfEdgeIndexMap.end()); // half-edge should not exist
+        halfEdges.emplace(triangle[1], HalfEdge(
+            // halfEdges is std::map so add with std::map::emplace
+            triangle[1],    // halfEdgeIndex
+            fromIndex,      // fromIndex
+            toIndex,        // toIndex
+            triangle[0],    // previousIndex
+            triangle[2]));  // nextIndex
+            halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
+                triangle[1];
+        vertices[fromIndex].setHalfEdgeIndex(triangle[1]);  // this will be changed multiple times so is redundant
+        // half-edge from boundary vertex to first boundary vertex
+        fromIndex = boundaryIndex;
+        toIndex = vertexIndexMap[it->first];
+        assert(
+            halfEdgeIndexMap.find(std::make_tuple(fromIndex, toIndex))
+            == halfEdgeIndexMap.end()); // half-edge should not exist
+        halfEdges.emplace(triangle[2], HalfEdge(
+            // halfEdges is std::map so add with std::map::emplace
+            triangle[2],    // halfEdgeIndex
+            fromIndex,      // fromIndex
+            toIndex,        // toIndex
+            triangle[1],    // previousIndex
+            triangle[0]));  // nextIndex
+            halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
+                triangle[2];
+        vertices[fromIndex].setHalfEdgeIndex(triangle[2]);  // this will be changed multiple times so is redundant
+    }
+
+    // associate pair of half-edges
+    long int halfEdgeIndex, pairHalfEdgeIndex;
+    for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
+        fromIndex = (it->second).getFromIndex();
+        toIndex = (it->second).getToIndex();
+        halfEdgeIndex = (it->second).getIndex();
+        assert(halfEdgeIndexMap.find(std::make_tuple(toIndex, fromIndex))
+            != halfEdgeIndexMap.end()); // pair half-edge should exist
+        pairHalfEdgeIndex =
+            halfEdgeIndexMap.find(std::make_tuple(toIndex, fromIndex))->second;
+        halfEdges[halfEdgeIndex].setPairIndex(pairHalfEdgeIndex);
+        junctions[{halfEdgeIndex, pairHalfEdgeIndex}] = {
+            // junctions is MultiIntKeyDict<Junction> so add with initialiser-list (sent to Junction)
+            halfEdgeIndex};   // halfEdgeIndex
+    }
+
+    checkMesh();    // check mesh construction
+}
+
