@@ -9,7 +9,6 @@ sync.sh
 *.p
 *.pickle
 *~
-# latexmk files
 *.aux
 *.bbl
 *.blg
