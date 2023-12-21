@@ -341,6 +341,53 @@ Two-dimensional ensembles of vertices and edges.
             Perimeter encapsulated by neighbours.
         */
 
+        std::tuple<long int, std::vector<long int>> deleteEdge(
+            long int const& halfEdgeIndex);
+        /*
+        Delete edge by merging two vertices.
+
+        Parameters
+        ----------
+        halfEdgeIntex :
+            Index of half-edge linking two vertices to be merged.
+
+        Returns
+        -------
+        deletedVertexIndex :
+            Index of deleted vertex.
+        deletedHalfEdgeIndices :
+            Indices of half-edges deleted by this operation.
+        */
+
+        std::tuple<long int, std::vector<long int>> createEdge(
+            long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
+            double const& angle, double const& length=1);
+        /*
+        Create edge by splitting one vertex.
+
+        Parameters
+        ----------
+        halfEdgeIndex0 :
+            Index of first half-edge going out of a vertex, and from whose pair
+            half-edge it will be separated after the introduction of a new
+            junction.
+        halfEdgeIndex1 :
+            Index of second half-edge going out of the same vertex, and from
+            whose pair half-edge it will be separated after the introduction of
+            a new junction.
+        angle :
+            Angle of the new junction with respect to the horizontal axis.
+        distance :
+            Length to set for the new junction.
+
+        Returns
+        -------
+        createdVertexIndex :
+            Index of created vertex.
+        createdHalfEdgeIndices :
+            Indices of half-edges created by this operation.
+        */
+
         void checkMesh() const;
         /*
         Check that the vertices and half-edges define a planar mesh, with

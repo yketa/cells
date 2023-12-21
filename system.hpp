@@ -175,19 +175,14 @@ class VertexModel : public Mesh {
         /*
         inherited from Mesh
         -------------------
+        bool const boundary;                    // bool Mesh::getBoundary
         std::map<long int, Vertex> vertices;    // std::map<long int, Vertex> Mesh::getVertices
         std::map<long int, HalfEdge> halfEdges; // std::map<long int, HalfEdge> Mesh::getHalfEdges
         std::vector<double> systemSize;         // std::vector<double> Mesh::getSystemSize
         */
 
-        MultiIntKeyDict<SPVertex> sPVertices;
-        MultiIntKeyDict<Cell> cells;
-        MultiIntKeyDict<Face> faces;
-        MultiIntKeyDict<Junction> junctions;
-
-        double const v0;    // vertex self-propulsion velocity
-        double const Dr;    // vertex propulsion rotational diffusion constant
-        double const p0;    // dimensionless target perimeter of cell
+        std::vector<long int> cellVertexIndices(0);
+        std::vector<long int> junctionHalfEdgeIndices(0);
 
         long int const seed;    // random number generator seed
         Random random;      	// random number generator
@@ -197,40 +192,27 @@ class VertexModel : public Mesh {
 
     public:
 
-        VertexModel(long int const& seed_=0,
-            double const& v0_=1e-1, double const& Dr_=1e-1,
-            double const& p0_=3.81,
-            bool const& boundary_=false)
-            : Mesh(boundary_), v0(v0_), Dr(Dr_), p0(p0_),
-                seed(seed_), random(seed) {}
+        VertexModel(long int const& seed_=0, bool const& boundary_=false)
+            : Mesh(boundary_), seed(seed_), random(seed) {}
         /*
         Parameters
         ----------
-        seed :
+        seed_ :
             Random number generator seed.
-        v0_ :
-            Vertex self-propulsion velocity.
-        Dr_ :
-            Vertex propulsion rotational diffusion constant.
-        p0_ :
-            Dimensionless target perimeter of cell.
+        boundary_ :
+            System contains boundary vertices.
         */
 
         VertexModel(                            // used to load state
             Mesh const& mesh_,
-            MultiIntKeyDict<SPVertex> const& sPVertices_,
-            MultiIntKeyDict<Cell> const& cells_,
-            MultiIntKeyDict<Face> const& faces_,
-            MultiIntKeyDict<Junction> const& junctions_,
-            double const& v0_, double const& Dr_, double const& p0_,
+            std::vector<long int> const& cellVertexIndices_,
+            std::vector<long int> const& junctionHalfEdgeIndices_,
             long int const& seed_, double const time_, long int const nT1_) :
             // geometrical objects (mesh)
             Mesh(mesh_),
             // physical objects
-            sPVertices(sPVertices_), cells(cells_), faces(faces_),
-                junctions(junctions_),
-            // physical parameters
-            v0(v0_), Dr(Dr_), p0(p0_),
+            cellVertexIndices(cellVertexIndices_),
+            junctionHalfEdgeIndices(junctionHalfEdgeIndices_),
             // integration quantities
             seed(seed_), time(time_), nT1(nT1_) {}
         VertexModel(VertexModel const& vm_) :   // copy constructor
@@ -245,14 +227,10 @@ class VertexModel : public Mesh {
                 // integration quantities
                 vm_.getSeed(), vm_.getTime(), vm_.getnT1()) {}
 
-        MultiIntKeyDict<SPVertex> getSPVertices() const { return sPVertices; }
-        MultiIntKeyDict<Cell> getCells() const { return cells; }
-        MultiIntKeyDict<Face> getFaces() const { return faces; }
-        MultiIntKeyDict<Junction> getJunctions() const { return junctions; }
-
-        double getv0() const { return v0; }
-        double getDr() const { return Dr; }
-        double getp0() const { return p0; }
+        std::vector<long int> const& getCellVertexIndices() const
+            { return cellVertexIndices; }
+        std::vector<long int> const& getJunctionHalfEdgeIndices() const
+            { return junctionHalfEdgeIndices; }
 
         long int getSeed() const { return seed; }
 
@@ -356,8 +334,9 @@ class VertexModel : public Mesh {
             New vertex index.
         */
 
-        void initRegularTriangularLattice(
-            long int const& size=6, double const& junctionLength=1);
+        std::tuple<std::vector<long int>, std::vector<long int>>
+             initRegularTriangularLattice(
+                long int const& size=6, double const& junctionLength=1);
         /*
         Initialise a regular triangular lattice.
 
@@ -368,10 +347,19 @@ class VertexModel : public Mesh {
             NOTE: Must be a multiple of 6.
         junctionLength :
             Length of nearest neighbour junctions.
+
+        Returns
+        -------
+        cellVertexIndices :
+            Indices of cell centres.
+        junctionHalfEdgeIndices :
+            Indices of half-edge corresponding to junctions.
+            NOTE: Junctions contain two half-edges and both are present.
         */
 
-        void initOpenRegularTriangularLattice(
-            long int const& size=6, double const& junctionLength=1);
+        std::tuple<std::vector<long int>, std::vector<long int>>
+            initOpenRegularTriangularLattice(
+                long int const& size=6, double const& junctionLength=1);
         /*
         Initialise a regular triangular lattice with a cell replaced with a
         hole. (TESTING)
@@ -383,10 +371,19 @@ class VertexModel : public Mesh {
             NOTE: Must be a multiple of 6.
         junctionLength :
             Length of nearest neighbour junctions.
+
+        Returns
+        -------
+        cellVertexIndices :
+            Indices of cell centres.
+        junctionHalfEdgeIndices :
+            Indices of half-edge corresponding to junctions.
+            NOTE: Junctions contain two half-edges and both are present.
         */
 
-        void initOpenRegularHexagonalLattice(
-            long int const& nCells=1, double const& junctionLength=1);
+        std::tuple<std::vector<long int>, std::vector<long int>>
+            initOpenRegularHexagonalLattice(
+                long int const& nCells=1, double const& junctionLength=1);
         /*
         Initialise a regular square lattice with open outer bondary.
 
@@ -397,6 +394,14 @@ class VertexModel : public Mesh {
             NOTE: Must be the square of an integer.
         junctionLength :
             Length of nearest neighbour junctions.
+
+        Returns
+        -------
+        cellVertexIndices :
+            Indices of cell centres.
+        junctionHalfEdgeIndices :
+            Indices of half-edge corresponding to junctions.
+            NOTE: Junctions contain two half-edges and both are present.
         */
 
 };

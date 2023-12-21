@@ -18,7 +18,7 @@ std::vector<double> Mesh::wrap(
 
 std::vector<double> Mesh::wrapDiff(
     std::vector<double> const& fromPos,
-    std::vector<double> const& toPos) 
+    std::vector<double> const& toPos)
     const {
 
     std::vector<double> disp(2, 0);
@@ -152,6 +152,278 @@ double Mesh::getVertexToNeighboursPerimeter(
     }
 
     return perimeter;
+}
+
+std::tuple<long int, std::vector<long int>> Mesh::deleteEdge(
+    long int const& halfEdgeIndex) {
+
+    std::vector<long int> deletedHalfEdgeIndices(0);
+
+    // identify vertices to merge
+
+    long int const fromMergeIndex = // (first) vertex to be merge into neighbour
+        halfEdges.at(halfEdgeIndex).getFromIndex();
+    long int const toMergeIndex =   // (second) vertex towards which neighbour is merged
+        halfEdges.at(halfEdgeIndex).getToIndex();
+
+    // relabel half-edges origins and destinations
+
+    long int previousHalfEdgeIndex =            // half-edge pointing to the vertex to be removed in the first triangle to be removed
+        halfEdges.at(halfEdgeIndex).getPreviousIndex();
+    long int const endPreviousHalfEdgeIndex =   // half-edge pointing to the vertex to be removed in the second triangle to be removed
+        halfEdges.at(halfEdgeIndex).getPairIndex();
+
+    long int pairHalfEdgeIndex;
+    while (true) {
+
+        pairHalfEdgeIndex = halfEdges.at(previousHalfEdgeIndex).getPairIndex(); // half-edge pointing from the vertex to be removed and to be relabelled
+
+        // half-edge coming from vertex to be removed
+        assert(
+            fromMergeIndex
+                == halfEdges.at(pairHalfEdgeIndex).getFromIndex());
+        halfEdges[pairHalfEdgeIndex].setFromIndex(toMergeIndex);
+
+        // half-edge going to vertex to be removed
+        assert(
+            fromMergeIndex
+                == halfEdges.at(previousHalfEdgeIndex).getToIndex());
+        halfEdges[previousHalfEdgeIndex].setToIndex(toMergeIndex);
+
+        if (previousHalfEdgeIndex == endPreviousHalfEdgeIndex) {    // all triangles which the vertex to be removed belongs to have been explored and half-edges origins and destinations relabelled
+            assert(pairHalfEdgeIndex == halfEdgeIndex);
+            break;
+        }
+
+        previousHalfEdgeIndex = // half-edge pointing to the vertex to be removed and to be relabelled
+            halfEdges.at(pairHalfEdgeIndex).getPreviousIndex();
+    }
+
+    // reassign identifying half-edges of points belonging to triangles to be removed
+
+    long int nextHalfEdgeIndex, thirdVertexIndex;
+
+    previousHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPreviousIndex(); // half-edge pointing to the vertex to be removed in the first triangle to be removed
+    pairHalfEdgeIndex = halfEdges.at(previousHalfEdgeIndex).getPairIndex(); // half-edge pointing from the vertex to be removed
+
+    assert(toMergeIndex == halfEdges.at(pairHalfEdgeIndex).getFromIndex());
+    vertices[toMergeIndex].setHalfEdgeIndex(pairHalfEdgeIndex);
+
+    nextHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getNextIndex();         // half-edge pointing from the merge vertex in the first triangle to be removed
+    pairHalfEdgeIndex = halfEdges.at(nextHalfEdgeIndex).getPairIndex();     // half-edge pointing to the merge vertex
+    thirdVertexIndex = halfEdges.at(pairHalfEdgeIndex).getFromIndex();      // index of third vertex in the first triangle to be removed
+
+    vertices[thirdVertexIndex].setHalfEdgeIndex(pairHalfEdgeIndex);
+
+    pairHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPairIndex();         // half-edge pointing to the vertex to be removed in the second triangle to be removed
+    nextHalfEdgeIndex = halfEdges.at(pairHalfEdgeIndex).getNextIndex();     // half-edge pointing from the vertex to be removed in the second triangle to be removed
+    pairHalfEdgeIndex = halfEdges.at(nextHalfEdgeIndex).getPairIndex();     // half-edge pointing to the vertex to be removed
+    thirdVertexIndex = halfEdges.at(pairHalfEdgeIndex).getFromIndex();      // index of third vertex in the second triangle to be removed
+
+    vertices[thirdVertexIndex].setHalfEdgeIndex(pairHalfEdgeIndex);
+
+    // relabel half-edge pairs
+
+    long int fromHalfEdgeIndex, toHalfEdgeIndex;
+
+    fromHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPreviousIndex();     // half-edge pointing to the vertex to be removed in the first triangle to be removed
+    fromHalfEdgeIndex = halfEdges.at(fromHalfEdgeIndex).getPairIndex();     // half-edge pointing from the vertex to be removed paired to the first triangle to be removed
+
+    toHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getNextIndex();           // half-edge pointing from the merge vertex in the first triangle to be removed
+    toHalfEdgeIndex = halfEdges.at(toHalfEdgeIndex).getPairIndex();         // half-edge pointing to the vertex to be removed paired to the first triangle to be removed
+
+    halfEdges[fromHalfEdgeIndex].setPairIndex(toHalfEdgeIndex);
+    halfEdges[toHalfEdgeIndex].setPairIndex(fromHalfEdgeIndex);
+
+    fromHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPairIndex();         // half-edge pointing from the merge vertex to the vertex to be removed in the second triangle to be removed
+    fromHalfEdgeIndex = halfEdges.at(fromHalfEdgeIndex).getPreviousIndex(); // half-edge pointing to the merge vertex in the second triangle to be removed
+    fromHalfEdgeIndex = halfEdges.at(fromHalfEdgeIndex).getPairIndex();     // half-edge pointing from the merge vertex paired to the second triangle to be removed
+
+    toHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPairIndex();           // half-edge pointing from the merge vertex to the vertex to be removed in the second triangle to be removed
+    toHalfEdgeIndex = halfEdges.at(toHalfEdgeIndex).getNextIndex();         // half-edge pointing from the vertex to be removed in the second triangle to be removed
+    toHalfEdgeIndex = halfEdges.at(toHalfEdgeIndex).getPairIndex();         // half-edge pointing to the vertex to be removed paired to the second triangle to be removed
+
+    halfEdges[fromHalfEdgeIndex].setPairIndex(toHalfEdgeIndex);
+    halfEdges[toHalfEdgeIndex].setPairIndex(fromHalfEdgeIndex);
+
+    // move merge vertex
+
+    std::vector<double> const diff =
+        wrapTo(toMergeIndex, fromMergeIndex, false);
+    std::vector<double> position =
+        vertices.at(toMergeIndex).getPosition();
+    for (int dim=0; dim < 2; dim++) {
+        position[dim] += diff[dim]/2;       // move vertex to half point between two merged vertices
+    }
+    vertices[toMergeIndex].setPosition(     // wrap position
+        wrap(position));
+    vertices[toMergeIndex].setUPosition(    // set unwrapped position back to wrapped position
+        vertices.at(toMergeIndex).getPosition());
+
+    // delete half-edges and vertex
+
+    assert(halfEdgeIndex == halfEdges.at(halfEdgeIndex).getIndex());    // index of half-edge from deleted vertex
+    pairHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPairIndex();     // index of half-edge to deleted vertex
+
+    long int previousIndex, nextIndex;
+
+    // first face
+    previousIndex = halfEdges.at(halfEdgeIndex).getPreviousIndex();
+    nextIndex = halfEdges.at(halfEdgeIndex).getNextIndex();
+    // delete all half-edges from first triangle but the one from the deleted edge
+    deletedHalfEdgeIndices.push_back(previousIndex);
+    deletedHalfEdgeIndices.push_back(nextIndex);
+
+    // second face
+    previousIndex = halfEdges.at(pairHalfEdgeIndex).getPreviousIndex();
+    nextIndex = halfEdges.at(pairHalfEdgeIndex).getNextIndex();
+    // delete all half-edges from second triangle but the one from the deleted edge
+    deletedHalfEdgeIndices.push_back(previousIndex);
+    deletedHalfEdgeIndices.push_back(nextIndex);
+
+    // delete half-edges in the deleted edge
+    deletedHalfEdgeIndices.push_back(halfEdgeIndex);
+    deletedHalfEdgeIndices.push_back(pairHalfEdgeIndex);
+
+    vertices.erase(fromMergeIndex);                                         // delete vertex
+    for (long int index : deletedHalfEdgeIndices) halfEdges.erase(index);   // delete half-edges
+
+    return std::make_tuple(fromMergeIndex, deletedHalfEdgeIndices);
+}
+
+std::tuple<long int, std::vector<long int>> Mesh::createEdge(
+    long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
+    double const& angle, double const& length) {
+
+    std::vector<long int> createdHalfEdgeIndices(0);
+
+    // create new vertex
+
+    long int const vertexIndex = halfEdges.at(halfEdgeIndex0).getFromIndex();
+    assert(vertexIndex == halfEdges.at(halfEdgeIndex1).getFromIndex()); // check that both half-edges go out of the same vertex
+    vertices[vertexIndex].setHalfEdgeIndex(halfEdgeIndex0);             // re-assign identifying half-edge to `halfEdgeIndex0' which will remain attached to `vertexIndex'
+
+    long int const newVertexIndex = maxKey(vertices) + 1;
+    std::vector<double> const position =
+        vertices.at(vertexIndex).getPosition();
+    vertices.emplace(newVertexIndex, Vertex(
+        // vertices is std::map so add with std::map::emplace
+        newVertexIndex,     // vertexIndex
+        position,           // position
+        halfEdgeIndex1));   // halfEdgeIndex
+
+    // relabel origins and destinations of half of the half-edges
+
+    long int halfEdgeIndex = halfEdgeIndex1;
+    long int previousHalfEdgeIndex;
+    while (halfEdgeIndex != halfEdgeIndex0) {
+
+        assert(
+            vertexIndex == halfEdges.at(halfEdgeIndex).getFromIndex());
+        halfEdges[halfEdgeIndex].setFromIndex(newVertexIndex);
+
+        previousHalfEdgeIndex = halfEdges.at(halfEdgeIndex).getPreviousIndex();
+        assert(
+            vertexIndex == halfEdges.at(previousHalfEdgeIndex).getToIndex());
+        halfEdges[previousHalfEdgeIndex].setToIndex(newVertexIndex);
+
+        halfEdgeIndex = halfEdges.at(previousHalfEdgeIndex).getPairIndex();
+    }
+
+    // create new half-edges
+
+    Counter c(maxKey(halfEdges) + 1);
+
+    long int const newHalfEdgeIndex0 = c();
+    createdHalfEdgeIndices.push_back(newHalfEdgeIndex0);
+    long int const previousNewHalfEdgeIndex0 = c();
+    createdHalfEdgeIndices.push_back(previousNewHalfEdgeIndex0);
+    long int const nextNewHalfEdgeIndex0 = c();
+    createdHalfEdgeIndices.push_back(nextNewHalfEdgeIndex0);
+    long int const newHalfEdgeIndex1 = c();
+    createdHalfEdgeIndices.push_back(newHalfEdgeIndex1);
+    long int const previousNewHalfEdgeIndex1 = c();
+    createdHalfEdgeIndices.push_back(previousNewHalfEdgeIndex1);
+    long int const nextNewHalfEdgeIndex1 = c();
+    createdHalfEdgeIndices.push_back(nextNewHalfEdgeIndex1);
+
+    // first triangle
+    halfEdges.emplace(newHalfEdgeIndex0, HalfEdge(
+        // halfEdges is std::map so add with std::map::emplace
+        newHalfEdgeIndex0,                              // halfEdgeIndex
+        halfEdges.at(halfEdgeIndex0).getToIndex(),      // fromIndex
+        vertexIndex,                                    // toIndex
+        previousNewHalfEdgeIndex0,                      // previousIndex
+        nextNewHalfEdgeIndex0,                          // nextIndex
+        halfEdgeIndex0));                               // pairIndex
+    halfEdges.emplace(previousNewHalfEdgeIndex0, HalfEdge(
+        previousNewHalfEdgeIndex0,                      // halfEdgeIndex
+        newVertexIndex,                                 // fromIndex
+        halfEdges.at(halfEdgeIndex0).getToIndex(),      // toIndex
+        nextNewHalfEdgeIndex0,                          // previousIndex
+        newHalfEdgeIndex0,                              // nextIndex
+        halfEdges.at(halfEdgeIndex0).getPairIndex()));  // pairIndex
+    halfEdges.emplace(nextNewHalfEdgeIndex0, HalfEdge(
+        nextNewHalfEdgeIndex0,                          // halfEdgeIndex
+        vertexIndex,                                    // fromIndex
+        newVertexIndex,                                 // toIndex
+        newHalfEdgeIndex0,                              // previousIndex
+        previousNewHalfEdgeIndex0,                      // nextIndex
+        nextNewHalfEdgeIndex1));                        // pairIndex
+    halfEdges[halfEdges.at(halfEdgeIndex0).getPairIndex()].setPairIndex(
+        previousNewHalfEdgeIndex0);                     // relabel pair of old pair of halfEdgeIndex0
+    halfEdges[halfEdgeIndex0].setPairIndex(
+        newHalfEdgeIndex0);                             // relabel pair of halfEdgeIndex0
+
+    // second triangle
+    halfEdges.emplace(newHalfEdgeIndex1, HalfEdge(
+        newHalfEdgeIndex1,                              // halfEdgeIndex
+        halfEdges.at(halfEdgeIndex1).getToIndex(),      // fromIndex
+        newVertexIndex,                                 // toIndex
+        previousNewHalfEdgeIndex1,                      // previousIndex
+        nextNewHalfEdgeIndex1,                          // nextIndex
+        halfEdgeIndex1));                               // pairIndex
+    halfEdges.emplace(previousNewHalfEdgeIndex1, HalfEdge(
+        previousNewHalfEdgeIndex1,                      // halfEdgeIndex
+        vertexIndex,                                    // fromIndex
+        halfEdges.at(halfEdgeIndex1).getToIndex(),      // toIndex
+        nextNewHalfEdgeIndex1,                          // previousIndex
+        newHalfEdgeIndex1,                              // nextIndex
+        halfEdges.at(halfEdgeIndex1).getPairIndex()));  // pairIndex
+    halfEdges.emplace(nextNewHalfEdgeIndex1, HalfEdge(
+        nextNewHalfEdgeIndex1,                          // halfEdgeIndex
+        newVertexIndex,                                 // fromIndex
+        vertexIndex,                                    // toIndex
+        newHalfEdgeIndex1,                              // previousIndex
+        previousNewHalfEdgeIndex1,                      // nextIndex
+        nextNewHalfEdgeIndex0));                        // pairIndex
+    halfEdges[halfEdges.at(halfEdgeIndex1).getPairIndex()].setPairIndex(
+        previousNewHalfEdgeIndex1);                     // relabel pair of old pair of halfEdgeIndex1
+    halfEdges[halfEdgeIndex1].setPairIndex(
+        newHalfEdgeIndex1);                             // relabel pair of halfEdgeIndex1
+
+    // move vertices apart
+
+    std::vector<double> direction = {std::cos(angle), std::sin(angle)};
+    if (cross2(getHalfEdgeVector(newHalfEdgeIndex0), direction) < 0) {
+        for (int dim=0; dim < 2; dim++) { direction[dim] *= -1; }   // enforces that the newly created face has anticlockwise orientation
+    }
+
+    std::vector<double> newPosition(position), newPositionBis(position);
+    for (int dim=0; dim < 2; dim++) {
+        newPosition[dim] -= direction[dim]*length/2.;
+        newPositionBis[dim] += direction[dim]*length/2.;
+    }
+    vertices[vertexIndex].setPosition(      // wrap position
+        wrap(newPosition));
+    vertices[vertexIndex].setUPosition(     // set unwrapped position back to wrapped position
+        vertices.at(vertexIndex).getPosition());
+    vertices[newVertexIndex].setPosition(   // wrap position
+        wrap(newPositionBis));
+    vertices[newVertexIndex].setUPosition(  // set unwrapped position back to wrapped position
+        vertices.at(newVertexIndex).getPosition());
+
+    return std::make_tuple(newVertexIndex, createdHalfEdgeIndices);
 }
 
 void Mesh::checkMesh() const {
