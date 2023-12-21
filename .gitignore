@@ -9,9 +9,6 @@ sync.sh
 *.p
 *.pickle
 *~
-plot.py
-*.out
-out
 *.aux
 *.bbl
 *.blg

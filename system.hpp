@@ -385,6 +385,20 @@ class VertexModel : public Mesh {
             Length of nearest neighbour junctions.
         */
 
+        void initOpenRegularHexagonalLattice(
+            long int const& nCells=1, double const& junctionLength=1);
+        /*
+        Initialise a regular square lattice with open outer bondary.
+
+        Parameters
+        ----------
+        nCells :
+            Number of cells.
+            NOTE: Must be the square of an integer.
+        junctionLength :
+            Length of nearest neighbour junctions.
+        */
+
 };
 
 #endif

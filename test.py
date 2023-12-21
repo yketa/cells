@@ -12,8 +12,10 @@ if __name__ == "__main__":
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     # physics
+    parser.add_argument("-N", type=int, default=9,
+        help="[open] total number of cells (! square number)")
     parser.add_argument("-n", type=int, default=6,
-        help="number of vertices in each direction (must be multiple of 6)")
+        help="[close] number of vertices in each direction (! multiple of 6)")
     parser.add_argument("-v0", type=float, default=1e-1,
         help="vertex self-propulsion velocity")
     parser.add_argument("-Dr", type=float, default=1e-1,
@@ -42,7 +44,8 @@ if __name__ == "__main__":
 
     vm = VertexModel(args.seed, args.v0, args.Dr, args.p0, args.open)
     if args.open:
-        vm.initOpenRegularTriangularLattice(size=args.n)
+        vm.initOpenRegularHexagonalLattice(nCells=args.N)
+#         vm.initOpenRegularTriangularLattice(size=args.n)
     else:
         vm.initRegularTriangularLattice(size=args.n)
     fig, ax = plot(vm)
