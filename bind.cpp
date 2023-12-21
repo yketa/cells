@@ -3,6 +3,7 @@ Bind C++ objects to python using pybind11.
 https://pybind11.readthedocs.io/en/stable/index.html
 */
 
+#include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h> // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
 #include <pybind11/stl.h>   // https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html
