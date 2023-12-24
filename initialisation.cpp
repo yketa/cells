@@ -39,7 +39,7 @@ void VertexModel::initRegularTriangularLattice(
                 false));            // there is no open boundary
 
             // create cell or self-propelled vertex
-            if ((line - column)%3 == 0) {                           // condition for vertex to be a cell centre
+            if ((line - column)%3 == 0) {   // condition for vertex to be a cell centre
                 cells[vertexIndex] = {
                     // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
                     vertexIndex,                            // vertexIndex
@@ -190,7 +190,7 @@ void VertexModel::initOpenRegularTriangularLattice(
                         *(3./2.)/std::tan(std::numbers::pi/6.),
                     p0};                                            // p0
             }
-            else {                          // ... or a self-propelled vertex
+            else {                                                  // ... or a self-propelled vertex
                 sPVertices[vertexIndex] = {
                     // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
                     vertexIndex,                            // vertexIndex
@@ -578,6 +578,139 @@ void VertexModel::initOpenRegularHexagonalLattice(
             junctions[{halfEdgeIndex, pairHalfEdgeIndex}] = {
                 // junctions is MultiIntKeyDict<Junction> so add with initialiser-list (sent to Junction)
                 halfEdgeIndex};   // halfEdgeIndex
+        }
+    }
+
+    // cut corners
+    std::vector<long int> halfEdgesToNeighboursIndices;
+    for (long int col, line=0; line < nnCells; line++) {                // cut corners left and right
+        col = line%2 == 0 ? 0 : nnCells - 1;
+        position = vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
+            .getPosition();
+        if (col == 0) {                                                 // cut corners left
+            halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
+                vertexIndexMap[vertexIndex(col, line, 4)],
+                vertexIndexMap[vertexIndex(col, line, 5)]))->second;
+            mergeVertices(halfEdgeIndex);
+            halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
+                vertexIndexMap[vertexIndex(col, line, 5)],
+                vertexIndexMap[vertexIndex(col, line, 6)]))->second;
+            mergeVertices(halfEdgeIndex);
+            if (line == 0) {                                            // special care for bottom left corner
+                vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
+                    .setPosition({x0, y0 - 0.5*junctionLength});
+            }
+            else {
+                vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
+                    .setPosition(position);
+            }
+        }
+        else {
+            halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
+                vertexIndexMap[vertexIndex(col, line, 2)],
+                vertexIndexMap[vertexIndex(col, line, 1)]))->second;
+            mergeVertices(halfEdgeIndex);
+            halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
+                vertexIndexMap[vertexIndex(col, line, 1)],
+                vertexIndexMap[vertexIndex(col, line, 6)]))->second;
+            mergeVertices(halfEdgeIndex);
+            vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
+                .setPosition(position);
+        }
+        vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
+            .setUPosition(
+                vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
+                    .getPosition());
+        // move cell centre
+        halfEdgesToNeighboursIndices = getNeighbourVertices(
+            vertexIndexMap[vertexIndex(col, line, 0)])[1];
+        position = vertices[vertexIndexMap[vertexIndex(col, line, 0)]]
+            .getPosition();
+        std::vector<double> halfEdgeToNeighbour;
+        for (int i=0; i < (int) halfEdgesToNeighboursIndices.size(); i++) {
+            halfEdgeToNeighbour = getHalfEdgeVector(
+                halfEdgesToNeighboursIndices[i], false);
+            for (int dim=0; dim < 2; dim++) {
+                position[dim] += halfEdgeToNeighbour[dim]
+                    /halfEdgesToNeighboursIndices.size();
+            }
+        }
+        vertices[vertexIndexMap[vertexIndex(col, line, 0)]]
+            .setPosition(position);
+    }
+    for (long int col=0; col < nnCells; col++) {                        // cut corners top and bottom
+        for (long int line : std::vector<long int>({0, nnCells - 1})) {
+            if (line == 0 && col != 0) {                                // cut corners bottom
+                position = vertices[vertexIndexMap[vertexIndex(col, line, 1)]]
+                    .getPosition();
+                halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
+                    vertexIndexMap[vertexIndex(col, line, 6)],
+                    vertexIndexMap[vertexIndex(col, line, 1)]))->second;
+                mergeVertices(halfEdgeIndex);
+                vertices[vertexIndexMap[vertexIndex(col, line, 1)]]
+                    .setPosition(position);
+            vertices[vertexIndexMap[vertexIndex(col, line, 1)]]
+                .setUPosition(
+                    vertices[vertexIndexMap[vertexIndex(col, line, 1)]]
+                        .getPosition());
+            }
+            else if (line == nnCells - 1
+                && ((nnCells%2 == 0 && col != nnCells - 1)
+                    || (nnCells%2 != 0 && col != 0))) {                 // cut corners top
+                position = vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
+                    .getPosition();
+                halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
+                    vertexIndexMap[vertexIndex(col, line, 3)],
+                    vertexIndexMap[vertexIndex(col, line, 2)]))->second;
+                mergeVertices(halfEdgeIndex);
+                vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
+                    .setPosition(position);
+                vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
+                    .setUPosition(
+                        vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
+                            .getPosition());
+            }
+            else if (
+                (nnCells%2 != 0
+                    && line == nnCells - 1 && col == 0)
+                || (nnCells%2 == 0
+                    && line == nnCells - 1 && col == nnCells - 1)) {    // special care for top left/right corner
+                position[0] =
+                    vertices[vertexIndexMap[vertexIndex(col, line, 3)]]
+                        .getPosition()[0];
+                if (col == 0) {
+                    position[1] =
+                        vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
+                            .getPosition()[1];
+                }
+                else {
+                    position[1] =
+                        vertices[vertexIndexMap[vertexIndex(col, line, 4)]]
+                            .getPosition()[1];
+                }
+                vertices[vertexIndexMap[vertexIndex(col, line, 3)]]
+                    .setPosition(position);
+                vertices[vertexIndexMap[vertexIndex(col, line, 3)]]
+                    .setUPosition(
+                        vertices[vertexIndexMap[vertexIndex(col, line, 3)]]
+                            .getPosition());
+            }
+            // move cell centre
+            halfEdgesToNeighboursIndices = getNeighbourVertices(
+                vertexIndexMap[vertexIndex(col, line, 0)])[1];
+            position = vertices[vertexIndexMap[vertexIndex(col, line, 0)]]
+                .getPosition();
+            std::vector<double> halfEdgeToNeighbour;
+            for (int i=0; i < (int) halfEdgesToNeighboursIndices.size(); i++) {
+                halfEdgeToNeighbour = getHalfEdgeVector(
+                    halfEdgesToNeighboursIndices[i], false);
+                for (int dim=0; dim < 2; dim++) {
+                    position[dim] += halfEdgeToNeighbour[dim]
+                        /halfEdgesToNeighboursIndices.size();
+                }
+            }
+            vertices[vertexIndexMap[vertexIndex(col, line, 0)]]
+                .setPosition(position);
         }
     }
 
