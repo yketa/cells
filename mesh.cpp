@@ -293,7 +293,8 @@ std::tuple<long int, std::vector<long int>> Mesh::deleteEdge(
 
 std::tuple<long int, std::vector<long int>> Mesh::createEdge(
     long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
-    double const& angle, double const& length) {
+    double const& angle, double const& length,
+    std::string type0, std::string type1) {
 
     std::vector<long int> createdHalfEdgeIndices(0);
 
@@ -308,9 +309,11 @@ std::tuple<long int, std::vector<long int>> Mesh::createEdge(
         vertices.at(vertexIndex).getPosition();
     vertices.emplace(newVertexIndex, Vertex(
         // vertices is std::map so add with std::map::emplace
-        newVertexIndex,     // vertexIndex
-        position,           // position
-        halfEdgeIndex1));   // halfEdgeIndex
+        newVertexIndex,                     // vertexIndex
+        position,                           // position
+        halfEdgeIndex1,                     // halfEdgeIndex
+        false,                              // boundary
+        vertices[vertexIndex].getType()));  // type (inherit from parent vertex)
 
     // relabel origins and destinations of half of the half-edges
 
@@ -350,57 +353,63 @@ std::tuple<long int, std::vector<long int>> Mesh::createEdge(
     // first triangle
     halfEdges.emplace(newHalfEdgeIndex0, HalfEdge(
         // halfEdges is std::map so add with std::map::emplace
-        newHalfEdgeIndex0,                              // halfEdgeIndex
-        halfEdges.at(halfEdgeIndex0).getToIndex(),      // fromIndex
-        vertexIndex,                                    // toIndex
-        previousNewHalfEdgeIndex0,                      // previousIndex
-        nextNewHalfEdgeIndex0,                          // nextIndex
-        halfEdgeIndex0));                               // pairIndex
+        newHalfEdgeIndex0,                                                  // halfEdgeIndex
+        halfEdges.at(halfEdgeIndex0).getToIndex(),                          // fromIndex
+        vertexIndex,                                                        // toIndex
+        previousNewHalfEdgeIndex0,                                          // previousIndex
+        nextNewHalfEdgeIndex0,                                              // nextIndex
+        halfEdgeIndex0,                                                     // pairIndex
+        halfEdges[halfEdgeIndex0].getType()));                              // type
     halfEdges.emplace(previousNewHalfEdgeIndex0, HalfEdge(
-        previousNewHalfEdgeIndex0,                      // halfEdgeIndex
-        newVertexIndex,                                 // fromIndex
-        halfEdges.at(halfEdgeIndex0).getToIndex(),      // toIndex
-        nextNewHalfEdgeIndex0,                          // previousIndex
-        newHalfEdgeIndex0,                              // nextIndex
-        halfEdges.at(halfEdgeIndex0).getPairIndex()));  // pairIndex
+        previousNewHalfEdgeIndex0,                                          // halfEdgeIndex
+        newVertexIndex,                                                     // fromIndex
+        halfEdges.at(halfEdgeIndex0).getToIndex(),                          // toIndex
+        nextNewHalfEdgeIndex0,                                              // previousIndex
+        newHalfEdgeIndex0,                                                  // nextIndex
+        halfEdges.at(halfEdgeIndex0).getPairIndex(),                        // pairIndex
+        halfEdges[halfEdges.at(halfEdgeIndex0).getPairIndex()].getType())); // type
     halfEdges.emplace(nextNewHalfEdgeIndex0, HalfEdge(
-        nextNewHalfEdgeIndex0,                          // halfEdgeIndex
-        vertexIndex,                                    // fromIndex
-        newVertexIndex,                                 // toIndex
-        newHalfEdgeIndex0,                              // previousIndex
-        previousNewHalfEdgeIndex0,                      // nextIndex
-        nextNewHalfEdgeIndex1));                        // pairIndex
+        nextNewHalfEdgeIndex0,                                              // halfEdgeIndex
+        vertexIndex,                                                        // fromIndex
+        newVertexIndex,                                                     // toIndex
+        newHalfEdgeIndex0,                                                  // previousIndex
+        previousNewHalfEdgeIndex0,                                          // nextIndex
+        nextNewHalfEdgeIndex1,                                              // pairIndex
+        type0));                                                            // type
     halfEdges[halfEdges.at(halfEdgeIndex0).getPairIndex()].setPairIndex(
-        previousNewHalfEdgeIndex0);                     // relabel pair of old pair of halfEdgeIndex0
+        previousNewHalfEdgeIndex0);                                         // relabel pair of old pair of halfEdgeIndex0
     halfEdges[halfEdgeIndex0].setPairIndex(
-        newHalfEdgeIndex0);                             // relabel pair of halfEdgeIndex0
+        newHalfEdgeIndex0);                                                 // relabel pair of halfEdgeIndex0
 
     // second triangle
     halfEdges.emplace(newHalfEdgeIndex1, HalfEdge(
-        newHalfEdgeIndex1,                              // halfEdgeIndex
-        halfEdges.at(halfEdgeIndex1).getToIndex(),      // fromIndex
-        newVertexIndex,                                 // toIndex
-        previousNewHalfEdgeIndex1,                      // previousIndex
-        nextNewHalfEdgeIndex1,                          // nextIndex
-        halfEdgeIndex1));                               // pairIndex
+        newHalfEdgeIndex1,                                                  // halfEdgeIndex
+        halfEdges.at(halfEdgeIndex1).getToIndex(),                          // fromIndex
+        newVertexIndex,                                                     // toIndex
+        previousNewHalfEdgeIndex1,                                          // previousIndex
+        nextNewHalfEdgeIndex1,                                              // nextIndex
+        halfEdgeIndex1,                                                     // pairIndex
+        halfEdges[halfEdgeIndex1].getType()));                              // type
     halfEdges.emplace(previousNewHalfEdgeIndex1, HalfEdge(
-        previousNewHalfEdgeIndex1,                      // halfEdgeIndex
-        vertexIndex,                                    // fromIndex
-        halfEdges.at(halfEdgeIndex1).getToIndex(),      // toIndex
-        nextNewHalfEdgeIndex1,                          // previousIndex
-        newHalfEdgeIndex1,                              // nextIndex
-        halfEdges.at(halfEdgeIndex1).getPairIndex()));  // pairIndex
+        previousNewHalfEdgeIndex1,                                          // halfEdgeIndex
+        vertexIndex,                                                        // fromIndex
+        halfEdges.at(halfEdgeIndex1).getToIndex(),                          // toIndex
+        nextNewHalfEdgeIndex1,                                              // previousIndex
+        newHalfEdgeIndex1,                                                  // nextIndex
+        halfEdges.at(halfEdgeIndex1).getPairIndex(),                        // pairIndex
+        halfEdged[halfEdges.at(halfEdgeIndex1).getPairIndex()].getType())); // type
     halfEdges.emplace(nextNewHalfEdgeIndex1, HalfEdge(
-        nextNewHalfEdgeIndex1,                          // halfEdgeIndex
-        newVertexIndex,                                 // fromIndex
-        vertexIndex,                                    // toIndex
-        newHalfEdgeIndex1,                              // previousIndex
-        previousNewHalfEdgeIndex1,                      // nextIndex
-        nextNewHalfEdgeIndex0));                        // pairIndex
+        nextNewHalfEdgeIndex1,                                              // halfEdgeIndex
+        newVertexIndex,                                                     // fromIndex
+        vertexIndex,                                                        // toIndex
+        newHalfEdgeIndex1,                                                  // previousIndex
+        previousNewHalfEdgeIndex1,                                          // nextIndex
+        nextNewHalfEdgeIndex0,                                              // pairIndex
+        type1));                                                            // type
     halfEdges[halfEdges.at(halfEdgeIndex1).getPairIndex()].setPairIndex(
-        previousNewHalfEdgeIndex1);                     // relabel pair of old pair of halfEdgeIndex1
+        previousNewHalfEdgeIndex1);                                         // relabel pair of old pair of halfEdgeIndex1
     halfEdges[halfEdgeIndex1].setPairIndex(
-        newHalfEdgeIndex1);                             // relabel pair of halfEdgeIndex1
+        newHalfEdgeIndex1);                                                 // relabel pair of halfEdgeIndex1
 
     // move vertices apart
 
@@ -452,21 +461,19 @@ void Mesh::checkMesh() const {
             halfEdges.at(halfEdgeIndex).getNextIndex(),
             halfEdges.at(halfEdgeIndex).getPreviousIndex()};
 
-        if (getBoundary()) {
-            fromVertex =
-                halfEdges.at(halfEdgeIndex)
-                    .getFromIndex();
-            toVertex =
-                halfEdges.at(halfEdgeIndex)
-                    .getToIndex();
-            thirdVertex =
-                halfEdges.at(halfEdges.at(halfEdgeIndex).getNextIndex())
-                    .getToIndex();
-            boundary = (    // does the triangle has an outer boundary corner
-                vertices.at(fromVertex).getBoundary()
-                || vertices.at(toVertex).getBoundary()
-                || vertices.at(thirdVertex).getBoundary());
-        }
+        fromVertex =
+            halfEdges.at(halfEdgeIndex)
+                .getFromIndex();
+        toVertex =
+            halfEdges.at(halfEdgeIndex)
+                .getToIndex();
+        thirdVertex =
+            halfEdges.at(halfEdges.at(halfEdgeIndex).getNextIndex())
+                .getToIndex();
+        boundary = (    // does the triangle has an outer boundary corner
+            vertices.at(fromVertex).getBoundary()
+            || vertices.at(toVertex).getBoundary()
+            || vertices.at(thirdVertex).getBoundary());
 
         for (int i=0; i < 3; i++) {
 

@@ -1,0 +1,71 @@
+/*
+A simple implementation of a class factory.
+*/
+
+#ifndef CLASS_FACTORY_HPP
+#define CLASS_FACTORY_HPP
+
+#include <map>
+#include <string>
+#include <memory>
+
+template<class BaseType> class ClassFactory {
+/*
+The assumption is that one has a class hierarchy with a base class (BaseType)
+and its children (DerivedType). Class factory then creates a mapping (map)
+between a string (class name) and a smart pointer to an object of a given base
+or derived class.
+Adapted from code initially written by Rastko Sknepnek.
+*/
+
+    protected:
+
+        std::map<std::string, std::unique_ptr<BaseType>> factory_map;   // map of strings to objects in the factory
+
+    public:
+
+        // CONSULT
+
+        bool in(std::string const& key) const
+        /*
+        Indicate if key is in the factory.
+        */
+            { return (factory_map.find(key) != factory_map.end()); }
+
+        std::unique_ptr<BaseType>& get(std::string const& key)
+        /*
+        Return pointer to the object associated with the key.
+        */
+            { return factory_map[key]; }
+
+        std::map<std::string, std::unique_ptr<BaseType>>& map()
+        /*
+        Return the entire factory map.
+        */
+            { return factory_map; }
+
+        // SET
+
+        template<class DerivedType, typename... Args> void add(
+            std::string const& key, Args const& ...args)
+        /*
+        Add new object to the factory.
+        */
+            { factory_map[key] = std::make_unique<DerivedType>(args...); }
+
+        // REMOVE
+
+        void remove(std::string const& key) { factory_map.erase(key); }
+        /*
+        Remove object from the factory.
+        */
+
+        void clear() { factory_map.clear(); }
+        /*
+        Remove all entries.
+        */
+
+};
+
+#endif
+

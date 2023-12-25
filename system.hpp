@@ -175,14 +175,15 @@ class VertexModel : public Mesh {
         /*
         inherited from Mesh
         -------------------
-        bool const boundary;                    // bool Mesh::getBoundary
         std::map<long int, Vertex> vertices;    // std::map<long int, Vertex> Mesh::getVertices
         std::map<long int, HalfEdge> halfEdges; // std::map<long int, HalfEdge> Mesh::getHalfEdges
         std::vector<double> systemSize;         // std::vector<double> Mesh::getSystemSize
         */
 
-        std::vector<long int> cellVertexIndices(0);
-        std::vector<long int> junctionHalfEdgeIndices(0);
+        ClassFactory<JunctionForce> junctionForces;     // junction force classes
+        ClassFactory<CellForce> cellForces;             // cell-wide force classes
+        ClassFactory<VertexForce> vertexForces;         // individual vertex force classes
+        std::map<long int, std::vector<double>> forces; // force applied on each vertex
 
         long int const seed;    // random number generator seed
         Random random;      	// random number generator
@@ -290,118 +291,6 @@ class VertexModel : public Mesh {
             Distance between vertices below which these should be merge.
         epsilon :
             Create two vertices at distance `delta' + `epsilon'.
-        */
-
-        long int const mergeVertices(long int const& halfEdgeIndex);
-        /*
-        Merge two vertices.
-
-        Parameters
-        ----------
-        halfEdgeIntex :
-            Index of half-edge linking two vertices to be merged.
-
-        Returns
-        -------
-        fromMergeIndex :
-            Merged vertex index.
-        */
-
-        long int const createJunction(
-            long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
-            double const& angle, double const& length=1);
-        /*
-        Create a new vertex and junction.
-
-        Parameters
-        ----------
-        halfEdgeIndex0 :
-            Index of first half-edge going out of a vertex, and from whose pair
-            half-edge it will be separated after the introduction of a new
-            junction.
-        halfEdgeIndex1 :
-            Index of second half-edge going out of the same vertex, and from
-            whose pair half-edge it will be separated after the introduction of
-            a new junction.
-        angle :
-            Angle of the new junction with respect to the horizontal axis.
-        distance :
-            Length to set for the new junction.
-
-        Returns
-        -------
-        newVertexIndex :
-            New vertex index.
-        */
-
-        std::tuple<std::vector<long int>, std::vector<long int>>
-             initRegularTriangularLattice(
-                long int const& size=6, double const& junctionLength=1);
-        /*
-        Initialise a regular triangular lattice.
-
-        Parameters
-        ----------
-        size :
-            Number of vertices in both horizontal and vertical directions.
-            NOTE: Must be a multiple of 6.
-        junctionLength :
-            Length of nearest neighbour junctions.
-
-        Returns
-        -------
-        cellVertexIndices :
-            Indices of cell centres.
-        junctionHalfEdgeIndices :
-            Indices of half-edge corresponding to junctions.
-            NOTE: Junctions contain two half-edges and both are present.
-        */
-
-        std::tuple<std::vector<long int>, std::vector<long int>>
-            initOpenRegularTriangularLattice(
-                long int const& size=6, double const& junctionLength=1);
-        /*
-        Initialise a regular triangular lattice with a cell replaced with a
-        hole. (TESTING)
-
-        Parameters
-        ----------
-        size :
-            Number of vertices in both horizontal and vertical directions.
-            NOTE: Must be a multiple of 6.
-        junctionLength :
-            Length of nearest neighbour junctions.
-
-        Returns
-        -------
-        cellVertexIndices :
-            Indices of cell centres.
-        junctionHalfEdgeIndices :
-            Indices of half-edge corresponding to junctions.
-            NOTE: Junctions contain two half-edges and both are present.
-        */
-
-        std::tuple<std::vector<long int>, std::vector<long int>>
-            initOpenRegularHexagonalLattice(
-                long int const& nCells=1, double const& junctionLength=1);
-        /*
-        Initialise a regular square lattice with open outer bondary.
-
-        Parameters
-        ----------
-        nCells :
-            Number of cells.
-            NOTE: Must be the square of an integer.
-        junctionLength :
-            Length of nearest neighbour junctions.
-
-        Returns
-        -------
-        cellVertexIndices :
-            Indices of cell centres.
-        junctionHalfEdgeIndices :
-            Indices of half-edge corresponding to junctions.
-            NOTE: Junctions contain two half-edges and both are present.
         */
 
 };

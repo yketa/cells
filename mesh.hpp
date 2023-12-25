@@ -5,8 +5,9 @@ Objects to define the two-dimensional mesh with half-edge procedure.
 #ifndef MESH_HPP
 #define MESH_HPP
 
-#include <vector>
 #include <map>
+#include <string>
+#include <vector>
 
 class Vertex;
 class HalfEdge;
@@ -19,8 +20,9 @@ Individual nodes of the two-dimensional mesh.
 
     private:
 
-        long int const index;
-        bool const boundary;
+        long int const index;           // unique index of vertex
+        bool const boundary;            // designates an outer boundary
+        std::string const type;         // type of the vertex
 
         std::vector<double> position;   // position wrapped with respect to periodic boundary conditions
         std::vector<double> uposition;  // unwrapped position
@@ -28,12 +30,13 @@ Individual nodes of the two-dimensional mesh.
 
     public:
 
-        Vertex() : index(-1), boundary(false) {}
+        Vertex() : index(-1), boundary(false), type("") {}
         Vertex(long int const& index_,
             std::vector<double> const& position_,
             long int const& halfEdgeIndex_=-1,
-            bool const& boundary_=false) :
-                index(index_), boundary(boundary_),
+            bool const& boundary_=false,
+            std::string const& type_="") :
+                index(index_), boundary(boundary_), type(type_),
                 position(position_), uposition(position_),
                 halfEdgeIndex(halfEdgeIndex_) {}
         /*
@@ -48,14 +51,17 @@ Individual nodes of the two-dimensional mesh.
             association needs not to be bijective).
         boundary_ :
             Indicates that vertex is used to designate an outer boundary.
+        type_ :
+            Name of the type of vertex.
         */
 
         Vertex(long int const& index_,
             std::vector<double> const& position_,
             std::vector<double> const& uposition_,
             long int const& halfEdgeIndex_,
-            bool const& boundary_) :
-                index(index_), boundary(boundary_),
+            bool const& boundary_,
+            std::string const& type_) :
+                index(index_), boundary(boundary_), type(type_),
                 position(position_), uposition(uposition_),
                 halfEdgeIndex(halfEdgeIndex_) {}
 
@@ -63,6 +69,8 @@ Individual nodes of the two-dimensional mesh.
             { return index; }
         bool getBoundary() const
             { return boundary; }
+        std::string getType() const
+            { return type; }
         std::vector<double> getPosition() const
             { return position; }
         std::vector<double> getUPosition() const
@@ -86,22 +94,24 @@ Directed arrow between vertices (Vertex) of the two-dimensional mesh.
 
     private:
 
-        long int const index;
+        long int const index;   // unique index of the half-edge
+        std::string const type; // type of the half-edge
 
-        long int fromIndex;
-        long int toIndex;
-        long int previousIndex;
-        long int nextIndex;
-        long int pairIndex;
+        long int fromIndex;     // index of the origin vertex of the half-edge
+        long int toIndex;       // index of the destination vertex of the half-edge
+        long int previousIndex; // index of the previous half-edge in the triangle
+        long int nextIndex;     // index of the next half-edge in the triangle
+        long int pairIndex;     // index of the pair half-edge in the adjacent triangle at this half-edge
 
     public:
 
-        HalfEdge() : index(-1) {}
+        HalfEdge() : index(-1), type("") {}
         HalfEdge(long int const& index_,
             long int const& fromIndex_, long int const& toIndex_,
             long int const& previousIndex_=-1, long int const& nextIndex_=-1,
-            long int const& pairIndex_=-1)
-            : index(index_),
+            long int const& pairIndex_=-1,
+            std::string const& type_="")
+            : index(index_), type(type_),
                 fromIndex(fromIndex_), toIndex(toIndex_),
                 previousIndex(previousIndex_), nextIndex(nextIndex_),
                 pairIndex(pairIndex_) {}
@@ -116,16 +126,19 @@ Directed arrow between vertices (Vertex) of the two-dimensional mesh.
             Index of the destination vertex.
         previousIndex_ :
             Index of the associated `previous' half-edge going towards the
-            origin of this half-edge. (default: -1)
+            origin of this half-edge.
         nextIndex_ :
             Index of the associated `next' half-edge going outwards from the
-            destination of this half-edge. (default: -1)
+            destination of this half-edge.
         pairIndex_ :
             Index of the associated `pair' half-edge going from the destination
-            to the origin of this half-edge. (default: -1)
+            to the origin of this half-edge.
+        type_ :
+            Name of the type of vertex.
         */
 
         long int getIndex() const { return index; }
+        std::string getType() const { return type; }
         long int getFromIndex() const { return fromIndex; }
         long int getToIndex() const { return toIndex; }
         long int getPreviousIndex() const { return previousIndex; }
@@ -147,21 +160,18 @@ Two-dimensional ensembles of vertices and edges.
 
     protected:
 
-        bool const boundary;    // contains boundary vertices (these need to be checked differently)
-
         std::map<long int, Vertex> vertices;
         std::map<long int, HalfEdge> halfEdges;
         std::vector<double> systemSize{0, 0};
 
     public:
 
-        Mesh(bool const& boundary_=false) : boundary(boundary_) {}
+        Mesh() {}
 
         Mesh(                   // used to load state
             std::map<long int, Vertex> const& vertices_,
             std::map<long int, HalfEdge> const& halfEdges_,
-            std::vector<double> const& systemSize_,
-            bool const& boundary_=false) : Mesh(boundary_) {
+            std::vector<double> const& systemSize_) {
             // clear maps and vector
             vertices.clear();
             halfEdges.clear();
@@ -174,11 +184,8 @@ Two-dimensional ensembles of vertices and edges.
             systemSize.push_back(systemSize_[1]);
         }
         Mesh(Mesh const& m_) :  // copy constructor
-            Mesh(m_.getVertices(), m_.getHalfEdges(), m_.getSystemSize(),
-                m_.getBoundary()) {}
+            Mesh(m_.getVertices(), m_.getHalfEdges(), m_.getSystemSize() {}
 
-        bool getBoundary() const
-            { return boundary; }
         std::map<long int, Vertex> const& getVertices() const
             { return vertices; }
         std::map<long int, HalfEdge> const& getHalfEdges() const
@@ -298,7 +305,6 @@ Two-dimensional ensembles of vertices and edges.
         vertexIndex : int
             Index of the vertex.
 
-
         Returns
         -------
         neighbourVerticesIndices :
@@ -361,7 +367,8 @@ Two-dimensional ensembles of vertices and edges.
 
         std::tuple<long int, std::vector<long int>> createEdge(
             long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
-            double const& angle, double const& length=1);
+            double const& angle, double const& length=1,
+            std::string type0="", std::string type1="");
         /*
         Create edge by splitting one vertex.
 
@@ -377,8 +384,17 @@ Two-dimensional ensembles of vertices and edges.
             a new junction.
         angle :
             Angle of the new junction with respect to the horizontal axis.
-        distance :
+        length :
             Length to set for the new junction.
+        type0 :
+            Name of the type of half-edge for the half-edge going from the
+            splitted vertex to the created vertex.
+        type1 :
+            Name of the type of half-edge for the half-edge going from the
+            created vertex to the splitted vertex.
+        NOTE: Other created half-edges will inherit the type of their pair
+              half-edge, and the created vertex inheretit the type of the
+              splitted vertex.
 
         Returns
         -------

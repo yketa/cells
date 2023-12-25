@@ -34,27 +34,10 @@ void VertexModel::initRegularTriangularLattice(
             vertices.emplace(vertexIndex, Vertex(
                 // vertices is std::map so add with std::map::emplace
                 vertexIndex,
-                wrap(position),     // wrapped position of the vertex on the regular triangular lattice
-                6*vertexIndex + 0,  // index of a single half-edge going out of this vertex
-                false));            // there is no open boundary
-
-            // create cell or self-propelled vertex
-            if ((line - column)%3 == 0) {   // condition for vertex to be a cell centre
-                cells[vertexIndex] = {
-                    // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
-                    vertexIndex,                            // vertexIndex
-                    (junctionLength*junctionLength)         // A0
-                        *(3./2.)/std::tan(std::numbers::pi/6.),
-                    p0};                                    // p0
-            }
-            else {                          // ... or a self-propelled vertex
-                sPVertices[vertexIndex] = {
-                    // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
-                    vertexIndex,                            // vertexIndex
-                    2*std::numbers::pi*random.random01(),   // theta
-                    v0,                                     // v0
-                    Dr};                                    // Dr
-            }
+                wrap(position),                             // wrapped position of the vertex on the regular triangular lattice
+                6*vertexIndex + 0,                          // index of a single half-edge going out of this vertex
+                false,                                      // there is no open boundary
+                (line - column)%3 == 0 ? "centre" : ""));   // condition for vertex to be a cell centre
 
             // vertex indices for half-edge construction
             A = getIndex(line, column);
@@ -70,75 +53,64 @@ void VertexModel::initRegularTriangularLattice(
             // (0) from vertex (A) to right (B)
             halfEdges.emplace(6*A + 0, HalfEdge(
                 // vertices is std::map so add with std::map::emplace
-                6*A + 0,    // halfEdgeIndex
-                A,          // fromIndex
-                B,          // toIndex
-                6*A + 4,    // previousIndex
-                6*A + 2,    // nextIndex
-                6*A + 1));  // pairIndex
+                6*A + 0,                        // halfEdgeIndex
+                A,                              // fromIndex
+                B,                              // toIndex
+                6*A + 4,                        // previousIndex
+                6*A + 2,                        // nextIndex
+                6*A + 1,                        // pairIndex
+                ((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)
+                    ? "junction" : ""));        // type
             // (1) from right (B) to vertex (A)
             halfEdges.emplace(6*A + 1, HalfEdge(
-                6*A + 1,    // halfEdgeIndex
-                B,          // fromIndex
-                A,          // toIndex
-                6*G + 5,    // previousIndex
-                6*F + 3,    // nextIndex
-                6*A + 0));  // pairIndex
+                6*A + 1,                        // halfEdgeIndex
+                B,                              // fromIndex
+                A,                              // toIndex
+                6*G + 5,                        // previousIndex
+                6*F + 3,                        // nextIndex
+                6*A + 0,                        // pairIndex
+                ((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)
+                    ? "junctionPair" : ""));    // type
             // (2) from right (B) to top (C)
             halfEdges.emplace(6*A + 2, HalfEdge(
-                6*A + 2,    // halfEdgeIndex
-                B,          // fromIndex
-                C,          // toIndex
-                6*A + 0,    // previousIndex
-                6*A + 4,    // nextIndex
-                6*A + 3));  // pairIndex
+                6*A + 2,                        // halfEdgeIndex
+                B,                              // fromIndex
+                C,                              // toIndex
+                6*A + 0,                        // previousIndex
+                6*A + 4,                        // nextIndex
+                6*A + 3,                        // pairIndex
+                ((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)
+                    ? "junction" : ""));        //type
             // (3) from top (C) to right (B)
             halfEdges.emplace(6*A + 3, HalfEdge(
-                6*A + 3,    // halfEdgeIndex
-                C,          // fromIndex
-                B,          // toIndex
-                6*C + 1,    // previousIndex
-                6*B + 5,    // nextIndex
-                6*A + 2));  // pairIndex
+                6*A + 3,                        // halfEdgeIndex
+                C,                              // fromIndex
+                B,                              // toIndex
+                6*C + 1,                        // previousIndex
+                6*B + 5,                        // nextIndex
+                6*A + 2,                        // pairIndex
+                ((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)
+                    ? "junctionPair" : ""));    // type
             // (4) from top (C) to vertex (A)
             halfEdges.emplace(6*A + 4, HalfEdge(
-                6*A + 4,    // halfEdgeIndex
-                C,          // fromIndex
-                A,          // toIndex
-                6*A + 2,    // previousIndex
-                6*A + 0,    // nextIndex
-                6*A + 5));  // pairIndex
+                6*A + 4,                        // halfEdgeIndex
+                C,                              // fromIndex
+                A,                              // toIndex
+                6*A + 2,                        // previousIndex
+                6*A + 0,                        // nextIndex
+                6*A + 5,                        // pairIndex
+                ((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)
+                    ? "junction" : ""));        // type
             // (5) from vertex (A) to top (C)
             halfEdges.emplace(6*A + 5, HalfEdge(
-                6*A + 5,    // halfEdgeIndex
-                A,          // fromIndex
-                C,          // toIndex
-                6*E + 3,    // previousIndex
-                6*D + 1,    // nextIndex
-                6*A + 4));  // pairIndex
-
-            // create faces
-            // (0) right above vertex (A)
-            faces[{6*A + 0, 6*A + 2, 6*A + 4}] = {
-                // faces is MultiIntKeyDict<Face> so add with initialiser-list (sent to Face)
-                6*A + 0};   // halfEdgeIndex
-            faces[{6*A + 1, 6*F + 3, 6*G + 5}] = {
-                6*A + 1};   // halfEdgeIndex
-
-            // create junctions between vertices which are not cell centres
-            if (((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)) {
-                junctions[{6*A + 0, 6*A + 1}] = {
-                    // junctions is MultiIntKeyDict<Junction> so add with initialiser-list (sent to Junction)
-                    6*A + 0};   // halfEdgeIndex
-            }
-            if (((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)) {
-                junctions[{6*A + 2, 6*A + 3}] = {
-                    6*A + 2};   // halfEdgeIndex
-            }
-            if (((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)) {
-                junctions[{6*A + 4, 6*A + 5}] = {
-                    6*A + 4};   // halfEdgeIndex
-            }
+                6*A + 5,                        // halfEdgeIndex
+                A,                              // fromIndex
+                C,                              // toIndex
+                6*E + 3,                        // previousIndex
+                6*D + 1,                        // nextIndex
+                6*A + 4,                        // pairIndex
+                ((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)
+                    ? "junctionPair" : ""));    // type
         }
     }
 
@@ -149,7 +121,6 @@ void VertexModel::initOpenRegularTriangularLattice(
     long int const& size, double const& junctionLength) {
     // (TESTING) replace a single cell with a hole
 
-    assert(getBoundary());  // mesh must be set to check for boundaries
     assert(size%6 == 0);
 
     reset();                                                // reset vertices, junctions, and cells
@@ -178,26 +149,10 @@ void VertexModel::initOpenRegularTriangularLattice(
                 vertexIndex,
                 wrap(position),                                 // wrapped position of the vertex on the regular triangular lattice
                 6*vertexIndex + 0,                              // index of a single half-edge going out of this vertex
-                (line == size/2 - 1 && column == size/2 - 1))); // (TESTING) create 1 boundary vertex (here a hole)
-
-            // create cell or self-propelled vertex
-            if ((line - column)%3 == 0                              // condition for vertex to be a cell centre
-                && !(line == size/2 - 1 && column == size/2 - 1)) { // ignore created boundary vertex
-                cells[vertexIndex] = {
-                    // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
-                    vertexIndex,                                    // vertexIndex
-                    (junctionLength*junctionLength)                 // A0
-                        *(3./2.)/std::tan(std::numbers::pi/6.),
-                    p0};                                            // p0
-            }
-            else {                                                  // ... or a self-propelled vertex
-                sPVertices[vertexIndex] = {
-                    // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
-                    vertexIndex,                            // vertexIndex
-                    2*std::numbers::pi*random.random01(),   // theta
-                    v0,                                     // v0
-                    Dr};                                    // Dr
-            }
+                (line == size/2 - 1 && column == size/2 - 1),   // (TESTING) create 1 boundary vertex (here a hole)
+                (line - column)%3 == 0
+                    && !(line == size/2 - 1 && column == size/2 - 1)
+                        ? "centre" : ""));                      // condition for vertex to be a cell centre
 
             // vertex indices for half-edge construction
             A = getIndex(line, column);
@@ -213,75 +168,64 @@ void VertexModel::initOpenRegularTriangularLattice(
             // (0) from vertex (A) to right (B)
             halfEdges.emplace(6*A + 0, HalfEdge(
                 // vertices is std::map so add with std::map::emplace
-                6*A + 0,    // halfEdgeIndex
-                A,          // fromIndex
-                B,          // toIndex
-                6*A + 4,    // previousIndex
-                6*A + 2,    // nextIndex
-                6*A + 1));  // pairIndex
+                6*A + 0,                        // halfEdgeIndex
+                A,                              // fromIndex
+                B,                              // toIndex
+                6*A + 4,                        // previousIndex
+                6*A + 2,                        // nextIndex
+                6*A + 1,                        // pairIndex
+                ((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)
+                    ? "junction" : ""));        // type
             // (1) from right (B) to vertex (A)
             halfEdges.emplace(6*A + 1, HalfEdge(
-                6*A + 1,    // halfEdgeIndex
-                B,          // fromIndex
-                A,          // toIndex
-                6*G + 5,    // previousIndex
-                6*F + 3,    // nextIndex
-                6*A + 0));  // pairIndex
+                6*A + 1,                        // halfEdgeIndex
+                B,                              // fromIndex
+                A,                              // toIndex
+                6*G + 5,                        // previousIndex
+                6*F + 3,                        // nextIndex
+                6*A + 0,                        // pairIndex
+                ((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)
+                    ? "junctionPair" : ""));    // type
             // (2) from right (B) to top (C)
             halfEdges.emplace(6*A + 2, HalfEdge(
-                6*A + 2,    // halfEdgeIndex
-                B,          // fromIndex
-                C,          // toIndex
-                6*A + 0,    // previousIndex
-                6*A + 4,    // nextIndex
-                6*A + 3));  // pairIndex
+                6*A + 2,                        // halfEdgeIndex
+                B,                              // fromIndex
+                C,                              // toIndex
+                6*A + 0,                        // previousIndex
+                6*A + 4,                        // nextIndex
+                6*A + 3,                        // pairIndex
+                ((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)
+                    ? "junction" : ""));        //type
             // (3) from top (C) to right (B)
             halfEdges.emplace(6*A + 3, HalfEdge(
-                6*A + 3,    // halfEdgeIndex
-                C,          // fromIndex
-                B,          // toIndex
-                6*C + 1,    // previousIndex
-                6*B + 5,    // nextIndex
-                6*A + 2));  // pairIndex
+                6*A + 3,                        // halfEdgeIndex
+                C,                              // fromIndex
+                B,                              // toIndex
+                6*C + 1,                        // previousIndex
+                6*B + 5,                        // nextIndex
+                6*A + 2,                        // pairIndex
+                ((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)
+                    ? "junctionPair" : ""));    // type
             // (4) from top (C) to vertex (A)
             halfEdges.emplace(6*A + 4, HalfEdge(
-                6*A + 4,    // halfEdgeIndex
-                C,          // fromIndex
-                A,          // toIndex
-                6*A + 2,    // previousIndex
-                6*A + 0,    // nextIndex
-                6*A + 5));  // pairIndex
+                6*A + 4,                        // halfEdgeIndex
+                C,                              // fromIndex
+                A,                              // toIndex
+                6*A + 2,                        // previousIndex
+                6*A + 0,                        // nextIndex
+                6*A + 5,                        // pairIndex
+                ((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)
+                    ? "junction" : ""));        // type
             // (5) from vertex (A) to top (C)
             halfEdges.emplace(6*A + 5, HalfEdge(
-                6*A + 5,    // halfEdgeIndex
-                A,          // fromIndex
-                C,          // toIndex
-                6*E + 3,    // previousIndex
-                6*D + 1,    // nextIndex
-                6*A + 4));  // pairIndex
-
-            // create faces
-            // (0) right above vertex (A)
-            faces[{6*A + 0, 6*A + 2, 6*A + 4}] = {
-                // faces is MultiIntKeyDict<Face> so add with initialiser-list (sent to Face)
-                6*A + 0};   // halfEdgeIndex
-            faces[{6*A + 1, 6*F + 3, 6*G + 5}] = {
-                6*A + 1};   // halfEdgeIndex
-
-            // create junctions between vertices which are not cell centres
-            if (((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)) {
-                junctions[{6*A + 0, 6*A + 1}] = {
-                    // junctions is MultiIntKeyDict<Junction> so add with initialiser-list (sent to Junction)
-                    6*A + 0};   // halfEdgeIndex
-            }
-            if (((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)) {
-                junctions[{6*A + 2, 6*A + 3}] = {
-                    6*A + 2};   // halfEdgeIndex
-            }
-            if (((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)) {
-                junctions[{6*A + 4, 6*A + 5}] = {
-                    6*A + 4};   // halfEdgeIndex
-            }
+                6*A + 5,                        // halfEdgeIndex
+                A,                              // fromIndex
+                C,                              // toIndex
+                6*E + 3,                        // previousIndex
+                6*D + 1,                        // nextIndex
+                6*A + 4,                        // pairIndex
+                ((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)
+                    ? "junctionPair" : ""));    // type
         }
     }
 
@@ -290,8 +234,6 @@ void VertexModel::initOpenRegularTriangularLattice(
 
 void VertexModel::initOpenRegularHexagonalLattice(
     long int const& nCells, double const& junctionLength) {
-
-    assert(getBoundary());  // mesh must be set to check for boundaries
 
     long int const nnCells = sqrt(nCells);
     assert(nnCells*nnCells == nCells);
@@ -327,13 +269,10 @@ void VertexModel::initOpenRegularHexagonalLattice(
             vertices.emplace(vertexIndex(col, line, 0), Vertex(
                 // vertices is std::map so add with std::map::emplace
                 vertexIndex(col, line, 0),
-                wrap(position)));   // wrapped position of the vertex
-            cells[vertexIndex(col, line, 0)] = {
-                // cells is MultiIntKeyDict<Cell> so add with initialiser-list (sent to Cell)
-                vertexIndex(col, line, 0),
-                (junctionLength*junctionLength) // A0
-                    *(3./2.)/std::tan(std::numbers::pi/6.),
-                p0};                            // p0
+                wrap(position), // wrapped position of the vertex
+                -1,             // default half-edge index
+                false,          // cell centres are not boundary vertices
+                "centre"));     // cell centre type
             vertexIndexMap[vertexIndex(col, line, 0)] = // relations between vertices for initialisation
                 vertexIndex(col, line, 0);
 
@@ -462,11 +401,11 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     std::make_tuple(fromIndex, toIndex)));  // half-edge should not exist
                 halfEdges.emplace(triangle[0], HalfEdge(
                     // halfEdges is std::map so add with std::map::emplace
-                    triangle[0],    // halfEdgeIndex
-                    fromIndex,      // fromIndex
-                    toIndex,        // toIndex
-                    triangle[2],    // previousIndex
-                    triangle[1]));  // nextIndex
+                    triangle[0],                // halfEdgeIndex
+                    fromIndex,                  // fromIndex
+                    toIndex,                    // toIndex
+                    triangle[2],                // previousIndex
+                    triangle[1]));              // nextIndex
                 halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
                     triangle[0];
                 vertices[fromIndex].setHalfEdgeIndex(triangle[0]);  // this will be changed multiple times so is redundant
@@ -479,11 +418,15 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     std::make_tuple(fromIndex, toIndex)));  // half-edge should not exist
                 halfEdges.emplace(triangle[1], HalfEdge(
                     // halfEdges is std::map so add with std::map::emplace
-                    triangle[1],    // halfEdgeIndex
-                    fromIndex,      // fromIndex
-                    toIndex,        // toIndex
-                    triangle[0],    // previousIndex
-                    triangle[2]));  // nextIndex
+                    triangle[1],                // halfEdgeIndex
+                    fromIndex,                  // fromIndex
+                    toIndex,                    // toIndex
+                    triangle[0],                // previousIndex
+                    triangle[2],                // nextIndex
+                    -1,                         // default pairIndex
+                    !inMap(halfEdgeIndexMap,
+                        std::make_tuple(toIndex, fromIndex))
+                            ? "juncton" : "")); // type
                 halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
                     triangle[1];
                 vertices[fromIndex].setHalfEdgeIndex(triangle[1]);  // this will be changed multiple times so is redundant
@@ -496,18 +439,14 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     std::make_tuple(fromIndex, toIndex)));  // half-edge should not exist
                     halfEdges.emplace(triangle[2], HalfEdge(
                         // halfEdges is std::map so add with std::map::emplace
-                        triangle[2],    // halfEdgeIndex
-                        fromIndex,      // fromIndex
-                        toIndex,        // toIndex
-                        triangle[1],    // previousIndex
-                        triangle[0]));  // nextIndex
+                        triangle[2],            // halfEdgeIndex
+                        fromIndex,              // fromIndex
+                        toIndex,                // toIndex
+                        triangle[1],            // previousIndex
+                        triangle[0]));          // nextIndex
                     halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
                         triangle[2];
                     vertices[fromIndex].setHalfEdgeIndex(triangle[2]);  // this will be changed multiple times so is redundant
-                // face
-                faces[{triangle[0], triangle[1], triangle[2]}] = {
-                    // faces is MultiIntKeyDict<Face> so add with initialiser-list (sent to Face)
-                    triangle[0]};   // halfEdgeIndex
             }
         }
     }
@@ -571,14 +510,6 @@ void VertexModel::initOpenRegularHexagonalLattice(
         pairHalfEdgeIndex =
             halfEdgeIndexMap.find(std::make_tuple(toIndex, fromIndex))->second;
         halfEdges[halfEdgeIndex].setPairIndex(pairHalfEdgeIndex);
-        if (!vertices[fromIndex].getBoundary()  // do not create junction from boundary vertex
-            && !vertices[toIndex].getBoundary() // do not create junction to boundary vertex
-            && !cells.in(fromIndex)             // do not create junction from cell centre
-            && !cells.in(toIndex)) {            // do not create junction to cell centre
-            junctions[{halfEdgeIndex, pairHalfEdgeIndex}] = {
-                // junctions is MultiIntKeyDict<Junction> so add with initialiser-list (sent to Junction)
-                halfEdgeIndex};   // halfEdgeIndex
-        }
     }
 
     // cut corners
