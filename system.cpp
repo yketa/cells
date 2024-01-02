@@ -10,9 +10,9 @@ void VertexModel::integrate(double const& dt,
 
     // get forces
 
-    std::map<long int, std::vector<double>> const forces = getForces();
+    computeForces();
 
-    // integrate
+    // integrate positions
 
     long int vertexIndex;
     std::vector<double> uposition;
@@ -20,17 +20,12 @@ void VertexModel::integrate(double const& dt,
         vertexIndex = it->first;
         uposition = vertices.at(vertexIndex).getUPosition();
         for (int dim=0; dim < 2; dim++) {
-            uposition[dim] += forces.at(vertexIndex)[dim]*dt;           // Euler integration of position
+            uposition[dim] += forces.at(vertexIndex)[dim]*dt;   // Euler integration of position
         }
-        vertices[vertexIndex].setUPosition( // unwrapped position
+        vertices[vertexIndex].setUPosition(                     // unwrapped position
             uposition);
-        vertices[vertexIndex].setPosition(  // (wrapped) position
+        vertices[vertexIndex].setPosition(                      // (wrapped) position
             wrap(vertices[vertexIndex].getUPosition()));
-    }
-    for (SPVertex* sPVertex : sPVertices.getValues()) {
-        sPVertex->settheta(
-            sPVertex->gettheta()
-                + std::sqrt(2*sPVertex->getDr()*dt)*random.gauss());    // Euler integration of angle
     }
 
     // move cell centres
@@ -66,111 +61,30 @@ void VertexModel::integrate(double const& dt,
 
     doT1(delta, epsilon);
 
+    // integrate internal degrees of freedom
+
+    for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)
+        { (it->second)->integrate(dt); }
+    for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
+        { (it->second)->integrate(dt); }
+
     // update time
 
     time += dt;
 }
 
-std::map<long int,std::vector<double>> const VertexModel::getForces() {
+void VertexModel::computeForces() {
 
-    // VERTEX SELF-PROPULSION FORCE
+    // clear forces
+    forces.clear();
+    for (auto it=vertices.begin(); it != vertices.end(); ++it)
+        { forces[it->first] = {0, 0}; }
 
-    long int vertexIndex;
-    std::map<long int, std::vector<double>> sPForces;
-    double sp; std::vector<double> meanSP(2, 0);
-    long int const nSPVertices = sPVertices.size();
-    for (SPVertex* sPVertex : sPVertices.getValues()) { // loop over self-propelled vertices
-        vertexIndex = sPVertex->getVertexIndex();
-        sPForces[vertexIndex] = {0, 0};
-
-        for (int dim=0; dim < 2; dim++) {
-
-            sp = sPVertex->getv0()
-                *std::cos(sPVertex->gettheta() - dim*std::numbers::pi/2);
-            sPForces[vertexIndex][dim] = sp;            // add self-propulsion force
-            meanSP[dim] += sp/nSPVertices;              // compute average self-propulsion force
-        }
-    }
-
-    for (SPVertex* sPVertex : sPVertices.getValues()) {
-        vertexIndex = sPVertex->getVertexIndex();
-        for (int dim=0; dim < 2; dim++) {
-            sPForces[vertexIndex][dim] -= meanSP[dim];  // remove average self-propulsion force
-        }
-    }
-
-    // VERTEX MODEL INTERACTION FORCE
-
-    std::map<long int, std::vector<double>> forces;
-    for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-        forces[it->first] = {0, 0};                                 // initialise zero force at each vertex
-        if (sPVertices.in(it->first)) {
-            for (int dim=0; dim < 2; dim++) {
-                forces[it->first][dim] += sPForces[it->first][dim]; // add self-propulsion forces to self-propelled vertices
-            }
-        }
-    }
-
-    long int cellVertexIndex;
-    std::vector<long int> neighbourVerticesIndices(0); int numberNeighbours;
-    long int neighbourVertexIndex;
-    long int previousNeighbourVertexIndex, nextNeighbourVertexIndex;
-    std::vector<double> fromTo(0), fromToBis(0);
-    std::vector<double> crossFromTo(0), crossFromToBis(0);
-    for (Cell* cell : cells.getValues()) {          // loop over cells
-        cellVertexIndex = cell->getVertexIndex();
-
-        cell->setArea(      // update area
-            getVertexToNeighboursArea(cellVertexIndex));
-        cell->setPerimeter( // update perimeter
-            getVertexToNeighboursPerimeter(cellVertexIndex));
-
-        neighbourVerticesIndices = getNeighbourVertices(cellVertexIndex)[0];    // indices of neighbours of cell centre (i.e. cell corners) are in anticlockwise order
-        numberNeighbours = neighbourVerticesIndices.size();
-        for (int i=0; i < numberNeighbours; i++) {  // loop over vertices in the cell
-            neighbourVertexIndex = neighbourVerticesIndices[i];
-            assert(!cells.in(neighbourVertexIndex));
-
-            previousNeighbourVertexIndex =
-                neighbourVerticesIndices[pmod(i - 1, numberNeighbours)];
-            nextNeighbourVertexIndex =
-                neighbourVerticesIndices[pmod(i + 1, numberNeighbours)];
-
-            // area term
-
-            fromTo =    // vector from cell to previous vertex
-                wrapTo(cellVertexIndex, previousNeighbourVertexIndex,
-                    false);
-            crossFromTo = cross2z(fromTo);
-            fromToBis = // vector from cell to next vertex
-                wrapTo(cellVertexIndex, nextNeighbourVertexIndex,
-                    false);
-            crossFromToBis = cross2z(fromToBis);
-            for (int dim=0; dim < 2; dim++) {
-
-                forces[neighbourVertexIndex][dim] +=
-                    (cell->getkA()/2.)*(cell->getArea() - cell->getA0())*(
-                        crossFromTo[dim] - crossFromToBis[dim]);
-            }
-
-            // perimeter term
-
-            fromTo =    // unit vector from vertex to previous vertex
-                wrapTo(neighbourVertexIndex, previousNeighbourVertexIndex,
-                    true);
-            fromToBis = // unit vector from vertex to next vertex
-                wrapTo(neighbourVertexIndex, nextNeighbourVertexIndex,
-                    true);
-            for (int dim=0; dim < 2; dim++) {
-
-                forces[neighbourVertexIndex][dim] +=
-                    cell->getkP()*(cell->getPerimeter() - cell->getP0())*(
-                        fromTo[dim] + fromToBis[dim]);
-            }
-        }
-    }
-
-    return forces;
+    // compute forces
+    for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)
+        { (it->second)->addAllForces(); }
+    for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
+        { (it->second)->addAllForces(); }
 }
 
 void VertexModel::doT1(double const& delta, double const& epsilon) {
@@ -179,17 +93,18 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 
     std::vector<long int> halfEdgeIndices(0);
     long int fromMergeIndex, toMergeIndex;
-    for (Junction* junction : junctions.getValues()) {
-        fromMergeIndex =            // (first) vertex to be (potentially) merged into neighbour
-            halfEdges.at(junction->getHalfEdgeIndex()).getFromIndex();
-        toMergeIndex =              // (second) vertex towards which neighbour is (potentially) merged
-            halfEdges.at(junction->getHalfEdgeIndex()).getToIndex();
+    for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
+        if ((it->second).getType() != "junction") { continue; } // loop over junctions
+        fromMergeIndex =                                        // (first) vertex to be (potentially) merged into neighbour
+            halfEdges.at((it->second).getIndex()).getFromIndex();
+        toMergeIndex =                                          // (second) vertex towards which neighbour is (potentially) merged
+            halfEdges.at((it->second).getIndex()).getToIndex();
         if (vertices.at(fromMergeIndex).getBoundary()
             || vertices.at(toMergeIndex).getBoundary()) {
             continue;               // boundary vertex cannot be merged
         }
-        if (getEdgeLength(junction->getHalfEdgeIndex()) < delta) {
-            halfEdgeIndices.push_back(junction->getHalfEdgeIndex());
+        if (getEdgeLength((it->second).getIndex()) < delta) {
+            halfEdgeIndices.push_back((it->second).getIndex());
         }
     }
     random.shuffle(halfEdgeIndices);    // do T1s in a random order
@@ -283,8 +198,23 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 
         createEdge(createHalfEdgeIndex0, createHalfEdgeIndex1,
             angle, delta + epsilon,
-            "junction", "junctionPair");
+            "junction", "");
     }
 //     if (halfEdgeIndices.size() > 0) { checkMesh(); }
+}
+
+void VertexModel::checkMesh(std::vector<std::string> halfEdgeTypes) const {
+
+    for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
+        if (inVec(halfEdgeTypes, (it->second).getType())) {                 // type of half-edge is in helfEdgeTypes
+            if ((it->second).getType()
+                == halfEdges.at((it->second).getPairIndex()).getType()) {   // half-edge and pair have identical types
+                throw std::runtime_error("Pair half-edges have identical type "
+                    + (it->second).getType() + ".");
+            }
+        }
+    }
+
+    Mesh::checkMesh();
 }
 

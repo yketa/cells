@@ -157,9 +157,9 @@ to the same value.
 
             public:
 
-                const_key_iterator() : std::map<TT, TTT>::const_iterator() {};
+                const_key_iterator() : std::map<TT, TTT>::const_iterator() {}
                 const_key_iterator(std::map<TT, TTT>::const_iterator it_)
-                    : std::map<TT, TTT>::const_iterator(it_) {};
+                    : std::map<TT, TTT>::const_iterator(it_) {}
 
                 TT* const operator->() {
                     return (TT* const)

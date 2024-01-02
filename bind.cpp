@@ -15,8 +15,8 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include "mesh.hpp"
 #include "system.hpp"
 #include "tools.hpp"
-#include "pickle.hpp"
-#include "plot.hpp"
+// #include "pickle.hpp"
+// #include "plot.hpp"
 
 /*
 declare class template
@@ -72,10 +72,11 @@ template<class T> void declare_MultiIntKeyDict_class(
         .def("__len__",
             &MultiIntKeyDict<T>::size,
             "Number of values in the dictionary.")
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate_MultiIntKeyDict<T>,
-            &pybind11_setstate_MultiIntKeyDict<T>));
+//         // pickle
+//         .def(pybind11::pickle(
+//             &pybind11_getstate_MultiIntKeyDict<T>,
+//             &pybind11_setstate_MultiIntKeyDict<T>))
+        ;
 }
 
 PYBIND11_MODULE(bind, m) {
@@ -88,9 +89,9 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
-    m.def("getLinesHalfEdge", &getLinesHalfEdge);
-    m.def("getLinesJunction", &getLinesJunction);
-    m.def("getPolygonsCell", &getPolygonsCell);
+//     m.def("getLinesHalfEdge", &getLinesHalfEdge);
+//     m.def("getLinesJunction", &getLinesJunction);
+//     m.def("getPolygonsCell", &getPolygonsCell);
 
     /*
      *  [tools.hpp]
@@ -98,10 +99,6 @@ PYBIND11_MODULE(bind, m) {
      */
 
     declare_MultiIntKeyDict_class<long int>(m, "", "long int");
-    declare_MultiIntKeyDict_class<SPVertex>(m, "SPVertex", "SPVertex");
-    declare_MultiIntKeyDict_class<Cell>(m, "Cell", "Cell");
-    declare_MultiIntKeyDict_class<Face>(m, "Face", "Face");
-    declare_MultiIntKeyDict_class<Junction>(m, "Junction", "Junction");
 
     /*
      *  [mesh.hpp]
@@ -126,10 +123,11 @@ PYBIND11_MODULE(bind, m) {
             })
         .def_property_readonly("halfEdgeIndex",
             &Vertex::getHalfEdgeIndex)
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<Vertex>,
-            &pybind11_setstate<Vertex>));
+//         // pickle
+//         .def(pybind11::pickle(
+//             &pybind11_getstate<Vertex>,
+//             &pybind11_setstate<Vertex>))
+        ;
 
     pybind11::class_<HalfEdge>(m, "HalfEdge")
         // attributes
@@ -145,16 +143,18 @@ PYBIND11_MODULE(bind, m) {
             &HalfEdge::getNextIndex)
         .def_property_readonly("pairIndex",
             &HalfEdge::getPairIndex)
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<HalfEdge>,
-            &pybind11_setstate<HalfEdge>));
+//         // pickle
+//         .def(pybind11::pickle(
+//             &pybind11_getstate<HalfEdge>,
+//             &pybind11_setstate<HalfEdge>))
+        ;
 
     pybind11::class_<Mesh>(m, "Mesh")
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<Mesh>,
-            &pybind11_setstate<Mesh>));
+//         // pickle
+//         .def(pybind11::pickle(
+//             &pybind11_getstate<Mesh>,
+//             &pybind11_setstate<Mesh>))
+        ;
 
     /*
      *  [system.hpp]
@@ -164,93 +164,17 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
-    pybind11::class_<SPVertex>(m, "SPVertex", "Self-propelled vertex.")
-        // attributes
-        .def_property_readonly("vertexIndex",
-            &SPVertex::getVertexIndex)
-        .def_property_readonly("v0",
-            &SPVertex::getv0)
-        .def_property_readonly("Dr",
-            &SPVertex::getDr)
-        .def_property_readonly("theta",
-            &SPVertex::gettheta)
-        .def(pybind11::pickle(
-            &pybind11_getstate<SPVertex>,
-            &pybind11_setstate<SPVertex>))
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<SPVertex>,
-            &pybind11_setstate<SPVertex>));
-
-    pybind11::class_<Cell>(m, "Cell", "Physical cell.")
-        // attributes
-        .def_property_readonly("vertexIndex",
-            &Cell::getVertexIndex)
-        .def_property_readonly("area",
-            &Cell::getArea)
-        .def_property_readonly("kA",
-            &Cell::getkA)
-        .def_property_readonly("A0",
-            &Cell::getA0)
-        .def_property_readonly("perimeter",
-            &Cell::getPerimeter)
-        .def_property_readonly("kP",
-            &Cell::getkP)
-        .def_property_readonly("p0",
-            &Cell::getp0)
-        .def_property_readonly("P0",
-            &Cell::getP0)
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<Cell>,
-            &pybind11_setstate<Cell>));
-
-    pybind11::class_<Face>(m, "Face", "Physical face.")
-        // attributes
-        .def_property_readonly("halfEdgeIndex",
-            &Face::getHalfEdgeIndex)
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<Face>,
-            &pybind11_setstate<Face>));
-
-    pybind11::class_<Junction>(m, "Junction", "Physical junction.")
-        // attributes
-        .def_property_readonly("halfEdgeIndex",
-            &Junction::getHalfEdgeIndex)
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<Junction>,
-            &pybind11_setstate<Junction>));
-
     pybind11::class_<VertexModel, Mesh>(m, "VertexModel",
         "Python wrapper around C++ vertex model simulation object.")
         // constructor
         .def(pybind11::init
-            <long int const&, double const&, double const&, double const&,
-                bool const&>(),
+            <long int const&>(),
             "Parameters\n"
             "----------\n"
             "seed : int\n"
-            "    Random number generator seed. (default: 0)\n"
-            "v0 : float\n"
-            "    Vertex self-propulsion velocity. (default: 1e-1)\n"
-            "Dr : float\n"
-            "    Vertex propulsion rotational diffusion constant.\n"
-            "    (default: 1e-1)\n"
-            "p0 : float\n"
-            "    Dimensionless target perimeter of cell. (default: 3.81)\n"
-            "boundary : bool\n"
-            "    Turn on specific checks for boundary vertices.\n"
-            "    (default: False)",
-            pybind11::arg("seed")=0,
-            pybind11::arg("v0")=1e-1,
-            pybind11::arg("Dr")=1e-1,
-            pybind11::arg("p0")=3.81,
-            pybind11::arg("boundary")=false)
+            "    Random number generator seed. (default: 0)",
+            pybind11::arg("seed")=0)
         // attributes
-        .def_property_readonly("boundary",
-            &VertexModel::getBoundary)
         .def_property_readonly("vertices",
             &VertexModel::getVertices)
         .def_property_readonly("halfEdges",
@@ -260,20 +184,6 @@ PYBIND11_MODULE(bind, m) {
                 std::vector<double> const systemSize = self.getSystemSize();
                 return pybind11::array_t<double>({2}, &(systemSize[0]));
             })
-        .def_property_readonly("sPVertices",
-            &VertexModel::getSPVertices)
-        .def_property_readonly("cells",
-            &VertexModel::getCells)
-        .def_property_readonly("faces",
-            &VertexModel::getFaces)
-        .def_property_readonly("junctions",
-            &VertexModel::getJunctions)
-        .def_property_readonly("v0",
-            &VertexModel::getv0)
-        .def_property_readonly("Dr",
-            &VertexModel::getDr)
-        .def_property_readonly("p0",
-            &VertexModel::getp0)
         .def_property_readonly("seed",
             &VertexModel::getSeed)
         .def_property_readonly("time",
@@ -424,9 +334,10 @@ PYBIND11_MODULE(bind, m) {
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh,\n"
             "with anticlockwise triangles.")
-        // pickle
-        .def(pybind11::pickle(
-            &pybind11_getstate<VertexModel>,
-            &pybind11_setstate<VertexModel>));
+//         // pickle
+//         .def(pybind11::pickle(
+//             &pybind11_getstate<VertexModel>,
+//             &pybind11_setstate<VertexModel>))
+            ;
 }
 

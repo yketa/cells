@@ -34,7 +34,8 @@ tools.o: tools.hpp
 
 # LIBRARIES
 
-bind.so: CFLAGS+=-fPIC `$(PYTHON) -m pybind11 --includes` `$(PYTHON)-config --includes`
+bind.o: CFLAGS+=`$(PYTHON) -m pybind11 --includes` `$(PYTHON)-config --includes`
+bind.so: CFLAGS+=-fPIC
 bind.so: bind.o initialisation.o system.o mesh.o tools.o
 	$(CXX) -o $@ -shared $^ $(LDFLAGS)
 

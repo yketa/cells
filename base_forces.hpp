@@ -6,8 +6,13 @@ Base types for forces.
 #define BASE_FORCES_HPP
 
 #include <map>
+#include <string>
 
 #include "mesh.hpp"
+
+typedef std::map<long int, HalfEdge> HalfEdgesType;
+typedef std::map<long int, Vertex> VerticesType;
+typedef std::map<std::string, double> ParametersType;
 
 // GENERAL BASE
 
@@ -19,166 +24,142 @@ All forces.
 
     protected:
 
-        T& forces;  // reference to forces container
+        std::string const type;                         // type on which the force applies (if it is "" then it applies to all types)
+        std::map<std::string, double> const parameters; // force parameters
+        T& forces;                                      // reference to forces container
 
     public:
 
-        void reset();
+        // CLEAR
+
+        void clear();
         /*
-        Reset force values (and possibly contacts).
+        Clear force values.
         */
 
-        T const& getForces() { return forces; }
+        // GETTERS
+
+        std::string const getType() const
+            { return type; }
+        ParametersType const getParameters() const
+            { return parameters; }
+        T& getForces()
+            { return forces; }
+
+        // CONSTRUCTORS
+
+        BaseForce(
+            std::string const& type_,
+            ParametersType const& parameters_,
+            T& forces_) :
+            type(type_), parameters(parameters_), forces(forces_) {}
+
+        BaseForce(BaseForce<T> const& bF) : // copy constructor
+            BaseForce(bF.getType(), bF.getParameters(), bF.getForces()) {}
+
+        // METHODS
+
+        void integrate(double const& dt) {}
         /*
-        Return forces.
+        Integrate internal degrees of freedom.
         */
 
 };
 
-// JUNCTION FORCES
+// HALF-EDGE FORCES
 
 template<class T>
-class JunctionForce : public BaseForce<T> {
+class HalfEdgeForce : public BaseForce<T> {
 /*
-Force applied on vertices linked by a junction.
+Force which derives from the property of a half-edge.
 */
 
     protected:
 
-        std::map<long int, HalfEdge> const& halfEdges;  // reference to half-edge container
+        HalfEdgesType const& halfEdges;  // reference to half-edge container
 
     public:
 
-        JunctionForce(
-            T& forces_, std::map<long int, HalfEdge> const& halfEdges_)
-            : forces(forces_), halfEdges(halfEdges_) {}
+        HalfEdgeForce(
+            std::string const& type_,
+            ParametersType const& parameters_,
+            T& forces_,
+            HalfEdgesType const& halfEdges_) :
+            BaseForce<T>(type_, parameters_, forces_), halfEdges(halfEdges_) {}
 
-        template<typename... Args> void addForce(HalfEdge const& halfEdge,
-            Args const&... args);
+        HalfEdgeForce(HalfEdgeForce<T> const& hEF) :    // copy constructor
+            BaseForce<T>(hEF), halfEdges(hEF.getHalfEdges()) {}
+
+        HalfEdgesType const getHalfEdges() const
+            { return halfEdges; }
+
+        void addForce(HalfEdge const& halfEdge);
         /*
-        For a halfEdge going from vertex i to vertex j, add the computed force
-        to forces[i] and -force to forces[j].
+        Add to the force container the forces associated to the half-edge.
+        This is the customly defined force.
         */
 
-        template<typename... Args> void addAllForces(Args const&... args) {
+        void addAllForces() {
         /*
-        Add forces for all junctions, i.e. half-edges of type "junction".
+        Add to the force container the forces associated to all half-edges.
         */
-            std::map<long int, HalfEdge>::const_iterator it;
+            HalfEdgesType::const_iterator it;
             for (it=halfEdges.begin(); it != halfEdges.end(); ++it) {
-                if ((it->second).getType() == "junction") {
-                    addForce(it->second, args);
+                if ((it->second).getType() == this->type
+                    || this->type == "") {
+                    addForce(it->second);
                 }
             }
         }
-}
 
-// CELL FORCES
-
-template<class T>
-class CellForce : public BaseForce<T> {
-/*
-Force applied on vertices belonging to a cell.
-*/
-
-    protected:
-
-        std::map<long int, Vertex> const& vertices; // reference to vertex container
-
-    public:
-
-        CellForce(
-            T& forces_, std::map<long int, Vertex> const& vertices_)
-            : forces(forces_), vertices(vertices_) {}
-
-        template<typename... Args> void addForce(Vertex const& vertex,
-            Args const&... args);
-        /*
-        From a cell centre vertex, add force to all neighbours (i.e. cell
-        vertices).
-        */
-
-        template<typename... Args> void addAllForces(Args const&... args) {
-        /*
-        Add forces for all cell centres, i.e. vertices of type "centre".
-        */
-            std::map<long int, Vertex>::const_iterator it;
-            for (it=vertices.begin(); it != vertices.end(); ++it) {
-                if ((it->second).getType() == "centre") {
-                    addForce(it->second, args);
-                }
-            }
-        }
-}
+};
 
 // VERTEX FORCES
 
-// PAIRWISE FORCES
-
 template<class T>
-class PairwiseForce : public BaseForce<T> {
+class VertexForce : public BaseForce<T> {
 /*
-Force between pair of individuals.
+Force which derives from the property of a vertex.
 */
 
     protected:
 
-        bool const contacts;                // compute number of contacts
-        std::vector<int> nContacts(0);      // number of contacts of each individual
-        std::vector<int> sumNContacts(0);   // sum of the elements of nContacts
+        VerticesType const& vertices; // reference to vertex container
 
     public:
 
-        PairwiseForce(T& forces_, bool const& contacts_=false) :
-            forces(forces_), contacts(contacts_) {}
+        VertexForce(
+            std::string const& type_,
+            ParametersType const& parameters_,
+            T& forces_,
+            VerticesType const& vertices_) :
+            BaseForce<T>(type_, parameters_, forces_), vertices(vertices_) {}
 
-        template<typename... Args> void addForce(int const& i, int const& j,
-            bool const& reciprocal, Args const&... args);
+        VertexForce(VertexForce<T> const& vF) : // copy constructor
+            BaseForce<T>(vF), vertices(vF.getVertices()) {}
+
+        VerticesType const getVertices() const
+            { return vertices; }
+
+        template<typename... Args> void addForce(Vertex const& vertex,
+            Args const& ...args);
         /*
-        Add to forces[i] the force exerted by j on i, and if reciprocal force
-        add -forces[i] to forces[j].
-        Returns true if the force is non-zero and false otherwise (so that it
-        may be used to build contact matrices).
+        Add to the force container the forces associated to the vertex.
+        This is the customly defined force.
         */
 
-        void computeSumContacts() {
+        void addAllForces() {
         /*
-        Compute sum of the elements of nContacts.
+        Add to the force container the forces associated to all vertices.
         */
-        #ifdef _OPENMP
-        #pragma omp master  // this should be performed only once by the master thread
-        #endif
-            {
-                for (int i=0; i < (int) nContacts.size(); i++) {
-                    sumNContacts[i + 1] = sumNContacts[i] + nContacts[i];
+            VerticesType::const_iterator it;
+            for (it=vertices.begin(); it != vertices.end(); ++it) {
+                if ((it->second).getType() == this->type
+                    || this->type == "") {
+                    addForce(it->second);
                 }
-            } 
+            }
         }
-
-        std::vector<int> const& getNContacts() { return nContacts; }
-        /* Return number of contacts of each individual. */
-        std::vector<int> const& getSumNContacts() { return sumNContacts; }
-        /* Return sum of the elements of nContacts. */
-        
-};
-
-// INDIVIDAL FORCES
-
-template<class T>
-class IndividualForce : public BaseForce<T> {
-/*
-Force exerted on each individual.
-*/
-
-    public:
-
-        IndividualForce(T& forces_) : forces(forces_) {}
-
-        template<typename... Args> void addForce(int const& i,
-            Args const&... args);
-        /*
-        Add to forces[i] the force exerted on i.
-        */
 
 };
 

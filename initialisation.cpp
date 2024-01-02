@@ -10,7 +10,7 @@ void VertexModel::initRegularTriangularLattice(
 
     assert(size%6 == 0);
 
-    reset();                                                // reset vertices, junctions, and cells
+    clear();                                                // clear vertices and half-edges
     systemSize[0] = size*junctionLength;                    // length of the periodic box in the x-direction
     systemSize[1] = size*junctionLength*std::sqrt(3.)/2.;   // length of the periodic box in the y-direction
 
@@ -34,10 +34,10 @@ void VertexModel::initRegularTriangularLattice(
             vertices.emplace(vertexIndex, Vertex(
                 // vertices is std::map so add with std::map::emplace
                 vertexIndex,
-                wrap(position),                             // wrapped position of the vertex on the regular triangular lattice
-                6*vertexIndex + 0,                          // index of a single half-edge going out of this vertex
-                false,                                      // there is no open boundary
-                (line - column)%3 == 0 ? "centre" : ""));   // condition for vertex to be a cell centre
+                wrap(position),                                 // wrapped position of the vertex on the regular triangular lattice
+                6*vertexIndex + 0,                              // index of a single half-edge going out of this vertex
+                false,                                          // there is no open boundary
+                (line - column)%3 == 0 ? "centre" : "vertex")); // condition for vertex to be a cell centre
 
             // vertex indices for half-edge construction
             A = getIndex(line, column);
@@ -70,7 +70,7 @@ void VertexModel::initRegularTriangularLattice(
                 6*F + 3,                        // nextIndex
                 6*A + 0,                        // pairIndex
                 ((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)
-                    ? "junctionPair" : ""));    // type
+                    ? "" : ""));                // type
             // (2) from right (B) to top (C)
             halfEdges.emplace(6*A + 2, HalfEdge(
                 6*A + 2,                        // halfEdgeIndex
@@ -90,7 +90,7 @@ void VertexModel::initRegularTriangularLattice(
                 6*B + 5,                        // nextIndex
                 6*A + 2,                        // pairIndex
                 ((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)
-                    ? "junctionPair" : ""));    // type
+                    ? "" : ""));                // type
             // (4) from top (C) to vertex (A)
             halfEdges.emplace(6*A + 4, HalfEdge(
                 6*A + 4,                        // halfEdgeIndex
@@ -110,11 +110,11 @@ void VertexModel::initRegularTriangularLattice(
                 6*D + 1,                        // nextIndex
                 6*A + 4,                        // pairIndex
                 ((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)
-                    ? "junctionPair" : ""));    // type
+                    ? "" : ""));                // type
         }
     }
 
-    checkMesh();    // check mesh construction
+    checkMesh({"junction"});    // check mesh construction
 }
 
 void VertexModel::initOpenRegularTriangularLattice(
@@ -123,7 +123,7 @@ void VertexModel::initOpenRegularTriangularLattice(
 
     assert(size%6 == 0);
 
-    reset();                                                // reset vertices, junctions, and cells
+    clear();                                                // clear vertices and half-edges
     systemSize[0] = size*junctionLength;                    // length of the periodic box in the x-direction
     systemSize[1] = size*junctionLength*std::sqrt(3.)/2.;   // length of the periodic box in the y-direction
 
@@ -152,7 +152,7 @@ void VertexModel::initOpenRegularTriangularLattice(
                 (line == size/2 - 1 && column == size/2 - 1),   // (TESTING) create 1 boundary vertex (here a hole)
                 (line - column)%3 == 0
                     && !(line == size/2 - 1 && column == size/2 - 1)
-                        ? "centre" : ""));                      // condition for vertex to be a cell centre
+                        ? "centre" : "vertex"));                // condition for vertex to be a cell centre
 
             // vertex indices for half-edge construction
             A = getIndex(line, column);
@@ -185,7 +185,7 @@ void VertexModel::initOpenRegularTriangularLattice(
                 6*F + 3,                        // nextIndex
                 6*A + 0,                        // pairIndex
                 ((A/size - A%size)%3 != 0) && ((B/size - B%size)%3 != 0)
-                    ? "junctionPair" : ""));    // type
+                    ? "" : ""));                // type
             // (2) from right (B) to top (C)
             halfEdges.emplace(6*A + 2, HalfEdge(
                 6*A + 2,                        // halfEdgeIndex
@@ -205,7 +205,7 @@ void VertexModel::initOpenRegularTriangularLattice(
                 6*B + 5,                        // nextIndex
                 6*A + 2,                        // pairIndex
                 ((B/size - B%size)%3 != 0) && ((C/size - C%size)%3 != 0)
-                    ? "junctionPair" : ""));    // type
+                    ? "" : ""));                // type
             // (4) from top (C) to vertex (A)
             halfEdges.emplace(6*A + 4, HalfEdge(
                 6*A + 4,                        // halfEdgeIndex
@@ -225,11 +225,11 @@ void VertexModel::initOpenRegularTriangularLattice(
                 6*D + 1,                        // nextIndex
                 6*A + 4,                        // pairIndex
                 ((C/size - C%size)%3 != 0) && ((A/size - A%size)%3 != 0)
-                    ? "junctionPair" : ""));    // type
+                    ? "" : ""));                // type
         }
     }
 
-    checkMesh();    // check mesh construction
+    checkMesh({"junction"});    // check mesh construction
 }
 
 void VertexModel::initOpenRegularHexagonalLattice(
@@ -238,7 +238,7 @@ void VertexModel::initOpenRegularHexagonalLattice(
     long int const nnCells = sqrt(nCells);
     assert(nnCells*nnCells == nCells);
 
-    reset();                                    // reset vertices, junctions, and cells
+    clear();                                    // clear vertices and half-edges
     systemSize[0] = 3*nnCells*junctionLength;   // length of the periodic box in the x-direction
     systemSize[1] = 3*nnCells*junctionLength;   // length of the periodic box in the y-direction
 
@@ -303,14 +303,10 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     vertices.emplace(vertexIndex(col, line, k), Vertex(
                         // vertices is std::map so add with std::map::emplace
                         vertexIndex(col, line, k),
-                        wrap(position)));   // wrapped position of the vertex
-                    // crate self-propelled vertex
-                    sPVertices[vertexIndex(col, line, k)] = {
-                        // sPVertices is MultiIntKeyDict<SPVertex> so add with initialiser-list (sent to SPVertex)
-                        vertexIndex(col, line, k),              // vertexIndex
-                        2*std::numbers::pi*random.random01(),   // theta
-                        v0,                                     // v0
-                        Dr};                                    // Dr
+                        wrap(position), // wrapped position of the vertex
+                        -1,
+                        false,
+                        "centre"));
                     // relations between vertices for initialisation
                     vertexIndexMap[vertexIndex(col, line, k)] =
                         vertexIndex(col, line, k);
@@ -522,11 +518,11 @@ void VertexModel::initOpenRegularHexagonalLattice(
             halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
                 vertexIndexMap[vertexIndex(col, line, 4)],
                 vertexIndexMap[vertexIndex(col, line, 5)]))->second;
-            mergeVertices(halfEdgeIndex);
+            deleteEdge(halfEdgeIndex);
             halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
                 vertexIndexMap[vertexIndex(col, line, 5)],
                 vertexIndexMap[vertexIndex(col, line, 6)]))->second;
-            mergeVertices(halfEdgeIndex);
+            deleteEdge(halfEdgeIndex);
             if (line == 0) {                                            // special care for bottom left corner
                 vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
                     .setPosition({x0, y0 - 0.5*junctionLength});
@@ -540,11 +536,11 @@ void VertexModel::initOpenRegularHexagonalLattice(
             halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
                 vertexIndexMap[vertexIndex(col, line, 2)],
                 vertexIndexMap[vertexIndex(col, line, 1)]))->second;
-            mergeVertices(halfEdgeIndex);
+            deleteEdge(halfEdgeIndex);
             halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
                 vertexIndexMap[vertexIndex(col, line, 1)],
                 vertexIndexMap[vertexIndex(col, line, 6)]))->second;
-            mergeVertices(halfEdgeIndex);
+            deleteEdge(halfEdgeIndex);
             vertices[vertexIndexMap[vertexIndex(col, line, 6)]]
                 .setPosition(position);
         }
@@ -577,7 +573,7 @@ void VertexModel::initOpenRegularHexagonalLattice(
                 halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
                     vertexIndexMap[vertexIndex(col, line, 6)],
                     vertexIndexMap[vertexIndex(col, line, 1)]))->second;
-                mergeVertices(halfEdgeIndex);
+                deleteEdge(halfEdgeIndex);
                 vertices[vertexIndexMap[vertexIndex(col, line, 1)]]
                     .setPosition(position);
             vertices[vertexIndexMap[vertexIndex(col, line, 1)]]
@@ -593,7 +589,7 @@ void VertexModel::initOpenRegularHexagonalLattice(
                 halfEdgeIndex = halfEdgeIndexMap.find(std::make_tuple(
                     vertexIndexMap[vertexIndex(col, line, 3)],
                     vertexIndexMap[vertexIndex(col, line, 2)]))->second;
-                mergeVertices(halfEdgeIndex);
+                deleteEdge(halfEdgeIndex);
                 vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
                     .setPosition(position);
                 vertices[vertexIndexMap[vertexIndex(col, line, 2)]]
@@ -645,5 +641,5 @@ void VertexModel::initOpenRegularHexagonalLattice(
         }
     }
 
-    checkMesh();    // check mesh construction
+    checkMesh({"junction"});    // check mesh construction
 }

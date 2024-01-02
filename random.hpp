@@ -32,12 +32,13 @@ Adapted from code initially written by Robert L. Jack.
 
     public:
 
-        Random(int const& seed=0) : generator() { generator.seed(seed); }
+        Random(long int const& seed=0) : generator() { generator.seed(seed); }
         Random(RNDG const& rndeng) : generator(rndeng) {}
+        Random(Random const& random_) : Random(random_.getGenerator()) {}   // copy constructor
 
         ~Random() { delete intmax; delete real01; delete normal; }
 
-        RNDG getGenerator() { return generator; }
+        RNDG const getGenerator() const { return generator; }
         void setGenerator(RNDG const& rndeng) { generator = rndeng; }
         // std::normal_distribution<double>* const getNormal() { return normal; }
 

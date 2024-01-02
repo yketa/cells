@@ -5,174 +5,20 @@ Objects for simulation.
 #ifndef SYSTEM_HPP
 #define SYSTEM_HPP
 
+#include "class_factory.hpp"
+#include "forces.hpp"
 #include "mesh.hpp"
 #include "random.hpp"
 #include "tools.hpp"
 
-class SPVertex;
-class Cell;
-class Face;
-class Junction;
-class VertexModel;
-
-/*
- *  PHYSICS OBJECTS
- *
- */
-
-class SPVertex {
-/*
-Physical self-propelled vertex.
-*/
-
-    private:
-
-        long int const vertexIndex;
-        double const v0 = 0;    // self-propulsion velocity
-        double const Dr = 0;    // rotational diffusion constant
-        double theta = 0;       // angle of self-propulsion
-
-    public:
-
-        SPVertex() : vertexIndex(-1) {}
-        SPVertex(long int const& vertexIndex_, double const& theta_=0,
-            double const& v0_=1e-1, double const& Dr_=1e-1)
-            : vertexIndex(vertexIndex_), v0(v0_), Dr(Dr_), theta(theta_) {}
-        /*
-        Parameters
-        ----------
-        vertexIndex_ :
-            Unique index for the self-propelled vertex identical to index of
-            vertex.
-        theta_ :
-            Initial self-propulsion direction.
-        v0_ :
-            Self-propulsion velocity.
-        Dr_ :
-            Rotational diffusion constant.
-        */
-
-        long int getVertexIndex() const { return vertexIndex; }
-        double getv0() const { return v0; }
-        double getDr() const { return Dr; }
-        double gettheta() const { return theta; }
-
-        void settheta(double const& t) { theta = t; }
-
-};
-
-class Cell {
-/*
-Physical cell enclosed by junctions (HalfEdge) between vertices (Vertex) of the
-mesh.
-*/
-
-    private:
-
-        long int const vertexIndex;
-
-        double area = -1;       // area of cell
-        double const kA = 0;    // area stiffness
-        double const A0 = 0;    // target area of cell
-        double perimeter = -1;  // perimeter of cell
-        double const kP = 0;    // perimeter stiffness
-        double const p0 = 0;    // dimensionless target perimeter of cell
-
-    public:
-
-        Cell() : vertexIndex(-1) {}
-        Cell(long int const& vertexIndex_,
-            double const& A0_, double const& p0_=3.81,
-            double const& kA_=1, double const& kP_=1)
-            : vertexIndex(vertexIndex_), kA(kA_), A0(A0_), kP(kP_), p0(p0_) {}
-        /*
-        Parameters
-        ----------
-        vertexIndex_ :
-            Unique index for the cell identical to index of vertex.
-        A0_ :
-            Target area of cell.
-        p0_ :
-            Dimensionless target perimeter of cell.
-        kA_ :
-            Area stiffness.
-        kP_ :
-            Perimeter stiffness.
-        */
-
-        long int getVertexIndex() const { return vertexIndex; }
-        double getArea() const { return area; }
-        double getkA() const { return kA; }
-        double getA0() const { return A0; }
-        double getPerimeter() const { return perimeter; }
-        double getkP() const { return kP; }
-        double getp0() const { return p0; }
-        double getP0() const { return p0*std::sqrt(A0); }
-
-        void setArea(double const& a) { area = a; }
-        void setPerimeter(double const& p) { perimeter = p; }
-
-};
-
-class Face {
-/*
-Triangle enclosed by three vertices.
-*/
-
-    private:
-
-        long int const halfEdgeIndex;
-
-    public:
-
-        Face() : halfEdgeIndex(-1) {}
-        Face(long int const& halfEdgeIndex_) : halfEdgeIndex(halfEdgeIndex_) {}
-        /*
-        Parameters
-        ----------
-        halfEdgeIndex_ :
-            Unique index of a helf-edge belonging to the face.
-        */
-
-        long int getHalfEdgeIndex() const { return halfEdgeIndex; }
-
-};
-
-class Junction {
-/*
-Physical link between two vertices.
-*/
-
-    private:
-
-        long int const halfEdgeIndex;
-
-    public:
-
-        Junction() : halfEdgeIndex(-1) {}
-        Junction(long int const& halfEdgeIndex_)
-            : halfEdgeIndex(halfEdgeIndex_) {}
-        /*
-        Parameters
-        ----------
-        halfEdgeIndex_ :
-            Unique index of a helf-edge belonging to the junction.
-        */
-
-        long int getHalfEdgeIndex() const { return halfEdgeIndex; }
-
-};
-
-/*
- *  SIMULATION OBJECTS
- *
- */
+typedef std::map<long int, std::vector<double>> ForcesType;
 
 class VertexModel : public Mesh {
 
     private:
 
         /*
+        [mesh.hpp]
         inherited from Mesh
         -------------------
         std::map<long int, Vertex> vertices;    // std::map<long int, Vertex> Mesh::getVertices
@@ -180,85 +26,105 @@ class VertexModel : public Mesh {
         std::vector<double> systemSize;         // std::vector<double> Mesh::getSystemSize
         */
 
-        ClassFactory<JunctionForce> junctionForces;     // junction force classes
-        ClassFactory<CellForce> cellForces;             // cell-wide force classes
-        ClassFactory<VertexForce> vertexForces;         // individual vertex force classes
-        std::map<long int, std::vector<double>> forces; // force applied on each vertex
+        /*
+        [class_factory.hpp]
+        ClassFactory objects contain std::unique_ptr which cannot be copied.
+        https://stackoverflow.com/questions/41060167
+        */
+        ClassFactory<HalfEdgeForce<ForcesType>> halfEdgeForces; // forces deriving from half-edge properties
+        ClassFactory<VertexForce<ForcesType>> vertexForces;     // forces deriving from vertex properties
+        ForcesType forces;                                      // force applied on each vertex
 
         long int const seed;    // random number generator seed
         Random random;      	// random number generator
 
-        double time = 0;
+        double time = 0;    // internal time
         long int nT1 = 0;   // number of T1s
 
     public:
 
-        VertexModel(long int const& seed_=0, bool const& boundary_=false)
-            : Mesh(boundary_), seed(seed_), random(seed) {}
+        // CLEAR
+
+        void clear() {
+        /*
+        Clear all data.
+        */
+            Mesh::clear();
+            time = 0;
+            nT1 = 0;
+        }
+
+        // GETTERS
+
+        ClassFactory<HalfEdgeForce<ForcesType>> const& getHalfEdgeForces()
+            const
+            { return halfEdgeForces; }
+        ClassFactory<VertexForce<ForcesType>> const& getVertexForces()
+            const
+            { return vertexForces; }
+        ForcesType& getForces()
+            { return forces; }
+
+        long int getSeed() const { return seed; }
+        Random& getRandom() { return random; }
+        Random const& getConstRandom() const { return random; }
+
+        double getTime() const { return time; }
+        long int getnT1() const { return nT1; }
+
+        // CONSTRUCTORS
+
+        VertexModel(long int const& seed_=0) : seed(seed_), random(seed) {}
         /*
         Parameters
         ----------
         seed_ :
             Random number generator seed.
-        boundary_ :
-            System contains boundary vertices.
         */
 
-        VertexModel(                            // used to load state
+        VertexModel(                            // used to initiate state
             Mesh const& mesh_,
-            std::vector<long int> const& cellVertexIndices_,
-            std::vector<long int> const& junctionHalfEdgeIndices_,
-            long int const& seed_, double const time_, long int const nT1_) :
-            // geometrical objects (mesh)
+//             ClassFactory<HalfEdgeForce<ForcesType>> const& halfEdgeForces_,
+//             ClassFactory<VertexForce<ForcesType>> const& vertexForces_,
+            Random const& random_, double const time_, long int const nT1_) :
+            // geometrical objects (Mesh)
             Mesh(mesh_),
-            // physical objects
-            cellVertexIndices(cellVertexIndices_),
-            junctionHalfEdgeIndices(junctionHalfEdgeIndices_),
+//             // forces objects
+//             halfEdgeForces(halfEdgeForces_), vertexForces(vertexForces_),
             // integration quantities
-            seed(seed_), time(time_), nT1(nT1_) {}
-        VertexModel(VertexModel const& vm_) :   // copy constructor
+            seed(-1), random(random_), time(time_), nT1(nT1_) {}
+
+        VertexModel(VertexModel const& vM) :   // copy constructor
             VertexModel(
-                // geometrical objects (mesh)
-                vm_,
-                // physical objects
-                vm_.getSPVertices(), vm_.getCells(), vm_.getFaces(),
-                    vm_.getJunctions(),
-                // physical parameters
-                vm_.getv0(), vm_.getDr(), vm_.getp0(),
+                // geometrical objects (Mesh)
+                vM,
+//                 // force objects
+//                 vM.getHalfEdgeForces(), vM.getVertexForces(),
                 // integration quantities
-                vm_.getSeed(), vm_.getTime(), vm_.getnT1()) {}
+                vM.getConstRandom(), vM.getTime(), vM.getnT1()) {}
 
-        std::vector<long int> const& getCellVertexIndices() const
-            { return cellVertexIndices; }
-        std::vector<long int> const& getJunctionHalfEdgeIndices() const
-            { return junctionHalfEdgeIndices; }
+        // FORCE "SETTERS"
 
-        long int getSeed() const { return seed; }
+        template<class ForceType, typename... Args> void addHalfEdgeForce(
+            std::string const& name, Args const& ...args)
+            { halfEdgeForces.add<ForceType>(name, args...); }
+        void removeHalfEdgeForce(
+            std::string const& name)
+            { halfEdgeForces.remove(name); }
 
-        double getTime() const { return time; }
-        long int getnT1() const { return nT1; }
+        template<class ForceType, typename... Args> void addVertexForce(
+            std::string const& name, Args const& ...args)
+            { vertexForces.add<ForceType>(name, args...); }
+        void removeVertexForce(
+            std::string const& name)
+            { vertexForces.remove(name); }
 
-        void reset() {
-        /*
-        Clear all data.
-        */
-            vertices.clear();
-            halfEdges.clear();
-            systemSize.clear();
-            systemSize.push_back(0); systemSize.push_back(0);
-            sPVertices.clear();
-            cells.clear();
-            faces.clear();
-            junctions.clear();
-            time = 0;
-            nT1 = 0;
-        }
+        // METHODS
 
         void integrate(double const& dt=0,
             double const& delta=0.1, double const& epsilon=0.1);
         /*
-        Integrate one time step of self-propelled vertex model and check for
-        and perform T1s.
+        Compute forces, integrate one time step, and perform T1s.
 
         Parameters
         ----------
@@ -270,15 +136,9 @@ class VertexModel : public Mesh {
             Create two vertices at distance `delta' + `epsilon' after T1.
         */
 
-        std::map<long int,std::vector<double>> const getForces();
+        void computeForces();
         /*
-        Compute forces on vertices from vertex model.
-
-        Returns
-        -------
-        forces :
-            Dictionary which associates vertex indices to force applied on the
-            vertex.
+        Compute forces on vertices from forces objects.
         */
 
         void doT1(double const& delta=0.1, double const& epsilon=0.1);
@@ -291,6 +151,57 @@ class VertexModel : public Mesh {
             Distance between vertices below which these should be merge.
         epsilon :
             Create two vertices at distance `delta' + `epsilon'.
+        */
+
+        void checkMesh(
+            std::vector<std::string> helfEdgeTypes=std::vector<std::string>())
+            const;
+        /*
+        Check mesh with Mesh::checkMesh and that types in `helfEdgeTypes' are
+        not defined identically for both half-edges of a single edge.
+        */
+
+        void initRegularTriangularLattice(
+                long int const& size=6, double const& junctionLength=1);
+        /*
+        Initialise a regular triangular lattice.
+
+        Parameters
+        ----------
+        size :
+            Number of vertices in both horizontal and vertical directions.
+            NOTE: Must be a multiple of 6.
+        junctionLength :
+            Length of nearest neighbour junctions.
+        */
+
+        void initOpenRegularTriangularLattice(
+                long int const& size=6, double const& junctionLength=1);
+        /*
+        Initialise a regular triangular lattice with a cell replaced with a
+        hole. (TESTING)
+
+        Parameters
+        ----------
+        size :
+            Number of vertices in both horizontal and vertical directions.
+            NOTE: Must be a multiple of 6.
+        junctionLength :
+            Length of nearest neighbour junctions.
+        */
+
+        void initOpenRegularHexagonalLattice(
+                long int const& nCells=1, double const& junctionLength=1);
+        /*
+        Initialise a regular square lattice with open outer bondary.
+
+        Parameters
+        ----------
+        nCells :
+            Number of cells.
+            NOTE: Must be the square of an integer.
+        junctionLength :
+            Length of nearest neighbour junctions.
         */
 
 };

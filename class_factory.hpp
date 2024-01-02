@@ -24,6 +24,11 @@ Adapted from code initially written by Rastko Sknepnek.
 
     public:
 
+        // CONSTRUCTOR AND DESTRUCTOR
+
+        ClassFactory() = default;
+        ~ClassFactory() = default;
+
         // CONSULT
 
         bool in(std::string const& key) const
@@ -38,16 +43,21 @@ Adapted from code initially written by Rastko Sknepnek.
         */
             { return factory_map[key]; }
 
-        std::map<std::string, std::unique_ptr<BaseType>>& map()
+        std::map<std::string, std::unique_ptr<BaseType>> const& map()
         /*
         Return the entire factory map.
         */
             { return factory_map; }
 
+        std::map<std::string, std::unique_ptr<BaseType>>::iterator
+            begin() { return factory_map.begin(); }
+        std::map<std::string, std::unique_ptr<BaseType>>::iterator
+            end() { return factory_map.end(); }
+
         // SET
 
         template<class DerivedType, typename... Args> void add(
-            std::string const& key, Args const& ...args)
+            std::string const& key, Args const&... args)
         /*
         Add new object to the factory.
         */
@@ -55,15 +65,17 @@ Adapted from code initially written by Rastko Sknepnek.
 
         // REMOVE
 
-        void remove(std::string const& key) { factory_map.erase(key); }
+        void remove(std::string const& key)
         /*
         Remove object from the factory.
         */
+            { factory_map.erase(key); }
 
-        void clear() { factory_map.clear(); }
+        void clear()
         /*
         Remove all entries.
         */
+            { factory_map.clear(); }
 
 };
 

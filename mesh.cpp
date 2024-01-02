@@ -397,7 +397,7 @@ std::tuple<long int, std::vector<long int>> Mesh::createEdge(
         nextNewHalfEdgeIndex1,                                              // previousIndex
         newHalfEdgeIndex1,                                                  // nextIndex
         halfEdges.at(halfEdgeIndex1).getPairIndex(),                        // pairIndex
-        halfEdged[halfEdges.at(halfEdgeIndex1).getPairIndex()].getType())); // type
+        halfEdges[halfEdges.at(halfEdgeIndex1).getPairIndex()].getType())); // type
     halfEdges.emplace(nextNewHalfEdgeIndex1, HalfEdge(
         nextNewHalfEdgeIndex1,                                              // halfEdgeIndex
         newVertexIndex,                                                     // fromIndex
