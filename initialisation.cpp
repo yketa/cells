@@ -306,7 +306,7 @@ void VertexModel::initOpenRegularHexagonalLattice(
                         wrap(position), // wrapped position of the vertex
                         -1,
                         false,
-                        "centre"));
+                        "vertex"));
                     // relations between vertices for initialisation
                     vertexIndexMap[vertexIndex(col, line, k)] =
                         vertexIndex(col, line, k);
@@ -420,9 +420,9 @@ void VertexModel::initOpenRegularHexagonalLattice(
                     triangle[0],                // previousIndex
                     triangle[2],                // nextIndex
                     -1,                         // default pairIndex
-                    !inMap(halfEdgeIndexMap,
-                        std::make_tuple(toIndex, fromIndex))
-                            ? "juncton" : "")); // type
+                    inMap(halfEdgeIndexMap,
+                        std::make_tuple(toIndex, fromIndex)) ?
+                            "" : "junction"));  // type
                 halfEdgeIndexMap[std::make_tuple(fromIndex, toIndex)] =
                     triangle[1];
                 vertices[fromIndex].setHalfEdgeIndex(triangle[1]);  // this will be changed multiple times so is redundant

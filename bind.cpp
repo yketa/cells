@@ -12,11 +12,12 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include <vector>
 #include <map>
 
+#include "forces.hpp"
 #include "mesh.hpp"
 #include "system.hpp"
 #include "tools.hpp"
 // #include "pickle.hpp"
-// #include "plot.hpp"
+#include "plot.hpp"
 
 /*
 declare class template
@@ -89,9 +90,9 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
-//     m.def("getLinesHalfEdge", &getLinesHalfEdge);
-//     m.def("getLinesJunction", &getLinesJunction);
-//     m.def("getPolygonsCell", &getPolygonsCell);
+    m.def("getLinesHalfEdge", &getLinesHalfEdge);
+    m.def("getLinesJunction", &getLinesJunction);
+    m.def("getPolygonsCell", &getPolygonsCell);
 
     /*
      *  [tools.hpp]
@@ -111,6 +112,8 @@ PYBIND11_MODULE(bind, m) {
             &Vertex::getIndex)
         .def_property_readonly("boundary",
             &Vertex::getBoundary)
+        .def_property_readonly("type",
+            &Vertex::getType)
         .def_property_readonly("position",
             [](Vertex const& self) {
                 std::vector<double> const position = self.getPosition();
@@ -133,6 +136,8 @@ PYBIND11_MODULE(bind, m) {
         // attributes
         .def_property_readonly("index",
             &HalfEdge::getIndex)
+        .def_property_readonly("type",
+            &HalfEdge::getType)
         .def_property_readonly("fromIndex",
             &HalfEdge::getFromIndex)
         .def_property_readonly("toIndex",
@@ -174,7 +179,7 @@ PYBIND11_MODULE(bind, m) {
             "seed : int\n"
             "    Random number generator seed. (default: 0)",
             pybind11::arg("seed")=0)
-        // attributes
+        // attributes [Mesh (mesh.hpp)]
         .def_property_readonly("vertices",
             &VertexModel::getVertices)
         .def_property_readonly("halfEdges",
@@ -184,13 +189,20 @@ PYBIND11_MODULE(bind, m) {
                 std::vector<double> const systemSize = self.getSystemSize();
                 return pybind11::array_t<double>({2}, &(systemSize[0]));
             })
+        // attributes [VertexModel (system.hpp)]
+        .def_property_readonly("halfEdgeForces",
+            [](VertexModel const& self)
+                { return (self.getHalfEdgeForces()).map(); })
+        .def_property_readonly("vertexForces",
+            [](VertexModel const& self)
+                { return (self.getVertexForces()).map(); })
         .def_property_readonly("seed",
             &VertexModel::getSeed)
         .def_property_readonly("time",
             &VertexModel::getTime)
         .def_property_readonly("nT1",
             &VertexModel::getnT1)
-        // methods
+        // methods [Mesh (mesh.hpp)]
         .def("wrap",
             [](VertexModel const& self, pybind11::array_t<double> const& pos) {
                 double const* posPTR =
@@ -242,8 +254,14 @@ PYBIND11_MODULE(bind, m) {
             "    Difference vector.",
             pybind11::arg("fromPos"),
             pybind11::arg("toPos"))
-//         .def("reset",
-//             &VertexModel::reset)
+        .def("clear",
+            &VertexModel::clear,
+            "Clear all data.")
+        .def("checkMesh",
+            &VertexModel::checkMesh,
+            "Check that the vertices and half-edges define a planar mesh,\n"
+            "with anticlockwise triangles.")
+        // methods [VertexModel (system.hpp)]
         .def("nintegrate",
             [](VertexModel& self,
                 long int const& niter, double const& dt,
@@ -252,8 +270,8 @@ PYBIND11_MODULE(bind, m) {
                     self.integrate(dt, delta, epsilon);
                 }
             },
-            "Integrate self-propelled vertex model and check for and perform\n"
-            "T1s (at each step).\n"
+            "Compute forces and integrate dynamics. T1s are performed at\n"
+            "each time step.\n"
             "\n"
             "Parameters\n"
             "----------\n"
@@ -272,23 +290,33 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("delta")=0.1,
             pybind11::arg("epsilon")=0.1)
         .def("getForces",
-            &VertexModel::getForces,
-            "Compute forces on vertices from vertex model."
+            [](VertexModel& self)
+                { self.computeForces(); return self.getForces(); },
+            "Compute forces on vertices."
             "\n"
             "Returns\n"
             "-------\n"
             "forces : {int: list} dict\n"
             "    Dictionary which associates vertex indices to force applied\n"
-            "     on the vertex.")
-//         .def("mergeVertices",
-//             &VertexModel::mergeVertices,
-//             pybind11::arg("halfEdgeIndex"))
-//         .def("createJunction",
-//             &VertexModel::createJunction,
-//             pybind11::arg("halfEdgeIndex0"),
-//             pybind11::arg("halfEdgeIndex1"),
-//             pybind11::arg("angle"),
-//             pybind11::arg("length")=1)
+            "    on the vertex.")
+        // forces methods [VertexForce (base_forces.hpp, forces.hpp)]
+        .def("addPerimeterForce",
+            &VertexModel::addVertexForce<PerimeterForce,
+                double const&, double const&>,
+            "Add perimeter force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for force.\n"
+            "kP : float\n"
+            "    Perimeter elasticity.\n"
+            "P0 : float\n"
+            "    Target perimeter.",
+            pybind11::arg("name"),
+            pybind11::arg("kP"),
+            pybind11::arg("P0"))
+        // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",
             &VertexModel::initRegularTriangularLattice,
             "Initialise a regular triangular lattice.\n"
@@ -330,10 +358,6 @@ PYBIND11_MODULE(bind, m) {
             "    Length of nearest neighbour junctions. (default: 1)",
             pybind11::arg("nCells")=1,
             pybind11::arg("junctionLength")=1)
-        .def("checkMesh",
-            &VertexModel::checkMesh,
-            "Check that the vertices and half-edges define a planar mesh,\n"
-            "with anticlockwise triangles.")
 //         // pickle
 //         .def(pybind11::pickle(
 //             &pybind11_getstate<VertexModel>,

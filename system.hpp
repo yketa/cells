@@ -26,11 +26,6 @@ class VertexModel : public Mesh {
         std::vector<double> systemSize;         // std::vector<double> Mesh::getSystemSize
         */
 
-        /*
-        [class_factory.hpp]
-        ClassFactory objects contain std::unique_ptr which cannot be copied.
-        https://stackoverflow.com/questions/41060167
-        */
         ClassFactory<HalfEdgeForce<ForcesType>> halfEdgeForces; // forces deriving from half-edge properties
         ClassFactory<VertexForce<ForcesType>> vertexForces;     // forces deriving from vertex properties
         ForcesType forces;                                      // force applied on each vertex
@@ -84,13 +79,13 @@ class VertexModel : public Mesh {
 
         VertexModel(                            // used to initiate state
             Mesh const& mesh_,
-//             ClassFactory<HalfEdgeForce<ForcesType>> const& halfEdgeForces_,
-//             ClassFactory<VertexForce<ForcesType>> const& vertexForces_,
+            ClassFactory<HalfEdgeForce<ForcesType>> const& halfEdgeForces_,
+            ClassFactory<VertexForce<ForcesType>> const& vertexForces_,
             Random const& random_, double const time_, long int const nT1_) :
             // geometrical objects (Mesh)
             Mesh(mesh_),
-//             // forces objects
-//             halfEdgeForces(halfEdgeForces_), vertexForces(vertexForces_),
+            // forces objects
+            halfEdgeForces(halfEdgeForces_), vertexForces(vertexForces_),
             // integration quantities
             seed(-1), random(random_), time(time_), nT1(nT1_) {}
 
@@ -98,23 +93,21 @@ class VertexModel : public Mesh {
             VertexModel(
                 // geometrical objects (Mesh)
                 vM,
-//                 // force objects
-//                 vM.getHalfEdgeForces(), vM.getVertexForces(),
+                // force objects
+                vM.getHalfEdgeForces(), vM.getVertexForces(),
                 // integration quantities
                 vM.getConstRandom(), vM.getTime(), vM.getnT1()) {}
 
         // FORCE "SETTERS"
 
         template<class ForceType, typename... Args> void addHalfEdgeForce(
-            std::string const& name, Args const& ...args)
-            { halfEdgeForces.add<ForceType>(name, args...); }
+            std::string const& name, Args ...args);
         void removeHalfEdgeForce(
             std::string const& name)
             { halfEdgeForces.remove(name); }
 
         template<class ForceType, typename... Args> void addVertexForce(
-            std::string const& name, Args const& ...args)
-            { vertexForces.add<ForceType>(name, args...); }
+            std::string const& name, Args ...args);
         void removeVertexForce(
             std::string const& name)
             { vertexForces.remove(name); }

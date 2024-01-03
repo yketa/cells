@@ -225,19 +225,23 @@ def plot(vm, fig=None, ax=None):
     #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1) # all half-edges
     ax.plot(*getLinesJunction(vm), color="red", lw=3)   # all junctions
 
+    cells = np.array(
+        [i for i in vm.vertices if vm.vertices[i].type == "centre"])
+
     polygons = PatchCollection(list(map(                # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))))
-    polygons.set_color(list(map(
-        lambda i: scalarMap.to_rgba(vm.cells[i].area/vm.cells[i].A0 - 1),   # colour according to area
-        vm.cells)))
+#     polygons.set_color(list(map(
+#         lambda i: scalarMap.to_rgba(cells[i].area/cells[i].A0 - 1),   # colour according to area
+#         cells)))
     ax.add_collection(polygons)
 
-    ax.set_title(
-        r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i,$"
-            % (vm.time, vm.nT1, len(vm.cells))
-        + r"$v_0=%1.e, D_r=%.1e, p_0=%.2f$"
-            % (vm.v0, vm.Dr, vm.p0))
+    ax.set_title(r"t=%.3f" % vm.time)
+#     ax.set_title(
+#         r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i,$"
+#             % (vm.time, vm.nT1, len(cells))
+#         + r"$v_0=%1.e, D_r=%.1e, p_0=%.2f$"
+#             % (vm.v0, vm.Dr, vm.p0))
 
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)

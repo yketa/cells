@@ -93,7 +93,7 @@ Force which derives from the property of a half-edge.
         HalfEdgesType const getHalfEdges() const
             { return halfEdges; }
 
-        void addForce(HalfEdge const& halfEdge);
+        void addForce(HalfEdge const& halfEdge) {}
         /*
         Add to the force container the forces associated to the half-edge.
         This is the customly defined force.
@@ -141,8 +141,7 @@ Force which derives from the property of a vertex.
         VerticesType const getVertices() const
             { return vertices; }
 
-        template<typename... Args> void addForce(Vertex const& vertex,
-            Args const& ...args);
+        void addForce(Vertex const& vertex) {}
         /*
         Add to the force container the forces associated to the vertex.
         This is the customly defined force.

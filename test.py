@@ -42,13 +42,18 @@ if __name__ == "__main__":
 
     # INITIALISATION
 
-    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0, args.open)
+    vm = VertexModel(args.seed)
+
     if args.open:
         vm.initOpenRegularHexagonalLattice(nCells=args.N)
 #         vm.initOpenRegularTriangularLattice(size=args.n)
     else:
         vm.initRegularTriangularLattice(size=args.n)
     fig, ax = plot(vm)
+
+    # FORCES
+
+    vm.addPerimeterForce("perimeter", 1, 1)
 
     # RUN
 
