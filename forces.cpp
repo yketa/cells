@@ -16,5 +16,5 @@ template<> void VertexModel::addVertexForce<
     vertexForces.add<PerimeterForce>(
         name,                       // (unique) user-defined name for forcess
         kP, P0,                     // user-defined parameters
-        *this, forces, vertices);   // VertexModel attributes
+        this, &forces, &vertices);  // VertexModel attributes
 }
