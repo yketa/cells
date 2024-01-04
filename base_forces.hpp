@@ -43,8 +43,8 @@ All forces.
             { return type; }
         ParametersType const getParameters() const
             { return parameters; }
-        T& getForces()
-            { return *forces; }
+        T* getForces()
+            { return forces; }
 
         // CONSTRUCTORS
 

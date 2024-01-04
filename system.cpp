@@ -20,11 +20,11 @@ void VertexModel::integrate(double const& dt,
         vertexIndex = it->first;
         uposition = vertices.at(vertexIndex).getUPosition();
         for (int dim=0; dim < 2; dim++) {
-            uposition[dim] += forces.at(vertexIndex)[dim]*dt;   // Euler integration of position
+            uposition[dim] += forces[vertexIndex][dim]*dt;  // Euler integration of position
         }
-        vertices[vertexIndex].setUPosition(                     // unwrapped position
+        vertices[vertexIndex].setUPosition(                 // unwrapped position
             uposition);
-        vertices[vertexIndex].setPosition(                      // (wrapped) position
+        vertices[vertexIndex].setPosition(                  // (wrapped) position
             wrap(vertices[vertexIndex].getUPosition()));
     }
 

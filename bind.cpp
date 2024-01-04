@@ -174,7 +174,17 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("type",
             &BaseForce<ForcesType>::getType)
         .def_property_readonly("parameters",
-            &BaseForce<ForcesType>::getParameters);
+            &BaseForce<ForcesType>::getParameters)
+        // methods
+        .def("integrate",
+            &BaseForce<ForcesType>::integrate,
+            "Integrate internal degrees of freedom.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "dt : float\n"
+            "    Integration time step.",
+            pybind11::arg("dt"));
 
     pybind11::class_<HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<HalfEdgeForce<ForcesType>>>(
@@ -185,6 +195,21 @@ PYBIND11_MODULE(bind, m) {
         std::shared_ptr<VertexForce<ForcesType>>>(
         m, "VertexForce",
         "Python wrapper around C++ half-edge-based force computation object.");
+
+    /*
+     *  [forces.hpp]
+     *
+     */
+
+    pybind11::class_<ActiveBrownianForce,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<ActiveBrownianForce>>(
+        m, "ActiveBrownianForce",
+        "Python wrapper around C++ Active Brownian force computation object.")
+        .def_property_readonly("theta",
+            &ActiveBrownianForce::getTheta)
+        .def_property_readonly("abForces",
+            &ActiveBrownianForce::getAbForces);
 
     /*
      *  [system.hpp]
@@ -279,6 +304,35 @@ PYBIND11_MODULE(bind, m) {
             "    Difference vector.",
             pybind11::arg("fromPos"),
             pybind11::arg("toPos"))
+        .def("getVertexToNeighboursArea",
+            &VertexModel::getVertexToNeighboursArea,
+            "Area encapsulated by the neighbours of a vertex (shoelace\n"
+            "formula).\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "area : double\n"
+            "    Area encapsulated by neighbours.",
+            pybind11::arg("vertexIndex"))
+        .def("getVertexToNeighboursPerimeter",
+            &VertexModel::getVertexToNeighboursPerimeter,
+            "Perimeter encapsulated by the neighbours of a vertex.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "perimeter : double\n"
+            "    Perimeter encapsulated by neighbours.",
+            pybind11::arg("vertexIndex"))
         .def("clear",
             &VertexModel::clear,
             "Clear all data.")

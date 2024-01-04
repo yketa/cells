@@ -206,6 +206,18 @@ def plot(vm, fig=None, ax=None):
         Axes subplot.
     """
 
+    # forces parameters
+
+    hasForces = (
+        "perimeter" in vm.vertexForces
+        and "area" in vm.vertexForces
+        and "abp" in vm.vertexForces)
+    if hasForces:
+        A0 = vm.vertexForces["area"].parameters["A0"]
+        p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
+        v0 = vm.vertexForces["abp"].parameters["v0"]
+        Dr = 1./vm.vertexForces["abp"].parameters["taup"]
+
     # initialise figure
 
     if type(fig) == type(None) or type(ax) == type(None):
@@ -225,23 +237,25 @@ def plot(vm, fig=None, ax=None):
     #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1) # all half-edges
     ax.plot(*getLinesJunction(vm), color="red", lw=3)   # all junctions
 
-    cells = np.array(
-        [i for i in vm.vertices if vm.vertices[i].type == "centre"])
+    cells = [i for i in vm.vertices if vm.vertices[i].type == "centre"]
+    areas = np.array(list(map(
+        lambda i: vm.getVertexToNeighboursArea(i),
+        cells)))
 
-    polygons = PatchCollection(list(map(                # all cells
+    polygons = PatchCollection(list(map(    # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))))
-#     polygons.set_color(list(map(
-#         lambda i: scalarMap.to_rgba(cells[i].area/cells[i].A0 - 1),   # colour according to area
-#         cells)))
-    ax.add_collection(polygons)
+    if hasForces:
+        polygons.set_color(list(map(        # colour according to area
+            lambda area: scalarMap.to_rgba(area/A0 - 1),
+            areas)))
+        ax.add_collection(polygons)
 
-    ax.set_title(r"t=%.3f" % vm.time)
-#     ax.set_title(
-#         r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i,$"
-#             % (vm.time, vm.nT1, len(cells))
-#         + r"$v_0=%1.e, D_r=%.1e, p_0=%.2f$"
-#             % (vm.v0, vm.Dr, vm.p0))
+    ax.set_title(
+        r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
+            % (vm.time, vm.nT1, len(cells))
+        + ("" if not(hasForces) else
+            r"$, v_0=%1.e, D_r=%.1e, p_0=%.2f$" % (v0, Dr, p0)))
 
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)

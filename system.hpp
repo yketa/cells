@@ -57,7 +57,8 @@ class VertexModel : public Mesh {
         ClassFactory<VertexForce<ForcesType>> const& getVertexForces()
             const
             { return vertexForces; }
-        ForcesType& getForces()
+        ForcesType const& getForces()
+            const
             { return forces; }
 
         long int getSeed() const { return seed; }
