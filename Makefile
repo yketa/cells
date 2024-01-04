@@ -24,15 +24,15 @@ clean:
 %.o: %.cpp
 	$(CXX) -o $@ -c $< $(CFLAGS)
 
-bind.o: mesh.hpp system.hpp tools.hpp pickle.hpp plot.hpp
+bind.o: base_forces.hpp class_factory.hpp forces.hpp mesh.hpp pickle.hpp plot.hpp random.hpp system.hpp tools.hpp
 
-forces.o: forces.hpp system.hpp
+forces.o: base_forces.hpp forces.hpp mesh.hpp random.hpp system.hpp tools.hpp
 
 initialisation.o: system.hpp tools.hpp
 
 mesh.o: mesh.hpp tools.hpp
 
-system.o: system.hpp base_forces.hpp class_factory.hpp forces.hpp random.hpp tools.hpp
+system.o: base_forces.hpp class_factory.hpp forces.hpp mesh.hpp random.hpp system.hpp tools.hpp
 
 tools.o: tools.hpp
 

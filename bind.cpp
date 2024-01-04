@@ -162,6 +162,31 @@ PYBIND11_MODULE(bind, m) {
         ;
 
     /*
+     *  [base_forces.hpp]
+     *
+     */
+
+    pybind11::class_<BaseForce<ForcesType>,
+        std::shared_ptr<BaseForce<ForcesType>>>(
+        m, "BaseForce",
+        "Python wrapper around C++ force computation object.")
+        // attributes
+        .def_property_readonly("type",
+            &BaseForce<ForcesType>::getType)
+        .def_property_readonly("parameters",
+            &BaseForce<ForcesType>::getParameters);
+
+    pybind11::class_<HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<HalfEdgeForce<ForcesType>>>(
+        m, "HalfEdgeForce",
+        "Python wrapper around C++ vertex-based force computation object.");
+
+    pybind11::class_<VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<VertexForce<ForcesType>>>(
+        m, "VertexForce",
+        "Python wrapper around C++ half-edge-based force computation object.");
+
+    /*
      *  [system.hpp]
      *
      *  Also defines some wrappers for functions inherited from Mesh in
@@ -299,7 +324,25 @@ PYBIND11_MODULE(bind, m) {
             "forces : {int: list} dict\n"
             "    Dictionary which associates vertex indices to force applied\n"
             "    on the vertex.")
-        // forces methods [VertexForce (base_forces.hpp, forces.hpp)]
+        .def("removeHalfEdgeForce",
+            &VertexModel::removeHalfEdgeForce,
+            "Remove half-edge force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Name of the force to remove.",
+            pybind11::arg("name"))
+        .def("removeVertexForce",
+            &VertexModel::removeVertexForce,
+            "Remove vertex force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Name of the force to remove.",
+            pybind11::arg("name"))
+        // add forces methods [HalfEdgeForce, VertexForce (base_forces.hpp, forces.hpp, forces.cpp)]
         .def("addPerimeterForce",
             &VertexModel::addVertexForce<PerimeterForce,
                 double const&, double const&>,
@@ -308,7 +351,7 @@ PYBIND11_MODULE(bind, m) {
             "Parameters\n"
             "----------\n"
             "name : str\n"
-            "    Unique name for force.\n"
+            "    Unique name for the force.\n"
             "kP : float\n"
             "    Perimeter elasticity.\n"
             "P0 : float\n"
@@ -316,6 +359,38 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("kP"),
             pybind11::arg("P0"))
+        .def("addAreaForce",
+            &VertexModel::addVertexForce<AreaForce,
+                double const&, double const&>,
+            "Add area force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "kA : float\n"
+            "    Area elasticity.\n"
+            "A0 : float\n"
+            "    Target area.",
+            pybind11::arg("name"),
+            pybind11::arg("kA"),
+            pybind11::arg("A0"))
+        .def("addActiveBrownianForce",
+            &VertexModel::addVertexForce<ActiveBrownianForce,
+                double const&, double const&>,
+            "Add perimeter force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "v0 : float\n"
+            "    Self-propulsion velocity.\n"
+            "taup : float\n"
+            "    Persistence time.",
+            pybind11::arg("name"),
+            pybind11::arg("v0"),
+            pybind11::arg("taup"))
         // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",
             &VertexModel::initRegularTriangularLattice,

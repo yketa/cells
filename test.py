@@ -4,6 +4,8 @@ from cells.vm import plot
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter,\
     BooleanOptionalAction
 
+import numpy as np
+
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
@@ -53,7 +55,10 @@ if __name__ == "__main__":
 
     # FORCES
 
-    vm.addPerimeterForce("perimeter", 1, 1)
+    A0 = (3./2.)/np.tan(np.pi/6)    # area of a regular hexagon with edge length 1
+    vm.addPerimeterForce("perimeter", 1, args.p0*np.sqrt(A0))
+    vm.addAreaForce("area", 1, A0)
+    vm.addActiveBrownianForce("abp", args.v0, 1./args.Dr)
 
     # RUN
 

@@ -125,8 +125,8 @@ Active Brownian self-propulsion force acting on vertices.
     public:
 
         ActiveBrownianForce(
-            double const& v0_, double const& taup_, Random* random_,
-            ForcesType* forces_, VerticesType* vertices_) :
+            double const& v0_, double const& taup_,
+            Random* random_, ForcesType* forces_, VerticesType* vertices_) :
             VertexForce<ForcesType>("vertex",
                 {{"v0", v0_}, {"taup", taup_}},
                 forces_, vertices_),
