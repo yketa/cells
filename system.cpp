@@ -85,6 +85,20 @@ void VertexModel::computeForces() {
         { (it->second)->addAllForces(); }
     for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
         { (it->second)->addAllForces(); }
+
+    // remove centre of mass force
+    if (true) {
+        long int const numberVertices = forces.size();
+        double avForce[2] = {0, 0};
+        for (int dim=0; dim < 2; dim++) {
+            for (auto it=forces.begin(); it != forces.end(); ++it) {
+                avForce[dim] += forces[it->first][dim]/numberVertices;
+            }
+            for (auto it=forces.begin(); it != forces.end(); ++it) {
+                forces[it->first][dim] -= avForce[dim];
+            }
+        }
+    }
 }
 
 void VertexModel::doT1(double const& delta, double const& epsilon) {

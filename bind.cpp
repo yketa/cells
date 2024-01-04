@@ -207,9 +207,7 @@ PYBIND11_MODULE(bind, m) {
         m, "ActiveBrownianForce",
         "Python wrapper around C++ Active Brownian force computation object.")
         .def_property_readonly("theta",
-            &ActiveBrownianForce::getTheta)
-        .def_property_readonly("abForces",
-            &ActiveBrownianForce::getAbForces);
+            &ActiveBrownianForce::getTheta);
 
     /*
      *  [system.hpp]

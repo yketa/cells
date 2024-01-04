@@ -128,8 +128,6 @@ Active Brownian self-propulsion force acting on vertices.
 
         Random* random;                                     // random number generator
         std::map<long int, double> theta;                   // orientation of self-propulsion force
-        std::map<long int, std::vector<double>> abForces;   // actual forces
-        bool const woCOM = true;                            // substract centre of mass force
 
     public:
 
@@ -142,10 +140,7 @@ Active Brownian self-propulsion force acting on vertices.
             random(random_)
             { integrate(0); }
 
-        std::map<long int, double> const& getTheta() const
-            { return theta; }
-        std::map<long int, std::vector<double>> const& getAbForces() const
-            { return abForces; }
+        std::map<long int, double> const& getTheta() const { return theta; }
 
         void setTheta(std::map<long int, double> const& theta_)
             { theta = theta_; }
@@ -156,48 +151,28 @@ Active Brownian self-propulsion force acting on vertices.
 //                 << std::endl;
             for (int dim=0; dim < 2; dim++) {
                 (*forces)[vertex.getIndex()][dim] +=
-                    abForces[vertex.getIndex()][dim];
+                    parameters.at("v0")*cos(theta[vertex.getIndex()]
+                        - dim*std::numbers::pi/2.);
             }
         }
 
         void integrate(double const& dt) override {
-
             // index correspondence between vertices, orientations, and forces
             for (auto it=theta.begin(); it != theta.end(); ++it) {
                 if (!inMap(*vertices, it->first)) { // vertex index not present anymore
                     theta.erase(it->first);
-                    abForces.erase(it->first);
                 }
             }
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if (!inMap(theta, it->first)        // new vertex index
                     && (it->second).getType() == type) {
                     theta[it->first] = 2.*std::numbers::pi*random->random01();
-                    abForces[it->first] = {0, 0};
                 }
             }
-
-            // force computation
-            double avForce[2] = {0, 0};
+            // integration
             for (auto it=theta.begin(); it != theta.end(); ++it) {
                 theta[it->first] +=
                     sqrt(2.*dt/parameters.at("taup"))*random->gauss();
-                for (int dim=0; dim < 2; dim++) {
-                    abForces[it->first][dim] =  // active Brownian force
-                        parameters.at("v0")*cos(theta[it->first]
-                            - dim*std::numbers::pi/2.);
-                    if (woCOM) {                // centre of mass force
-                        avForce[dim] += abForces[it->first][dim];
-                    }
-                }
-            }
-            if (woCOM) {                        // remove centre of mass force
-                for (int dim=0; dim < 2; dim++) {
-                    avForce[dim] /= theta.size();
-                    for (auto it=theta.begin(); it != theta.end(); ++it) {
-                        abForces[it->first][dim] -= avForce[dim];
-                    }
-                }
             }
         }
 
