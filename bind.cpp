@@ -14,71 +14,10 @@ https://pybind11.readthedocs.io/en/stable/index.html
 
 #include "forces.hpp"
 #include "mesh.hpp"
+#include "system_pickle.hpp"
 #include "system.hpp"
 #include "tools.hpp"
-// #include "pickle.hpp"
 #include "plot.hpp"
-
-/*
-declare class template
-https://stackoverflow.com/questions/66227840
-https://stackoverflow.com/questions/47487888
-iterating through object
-https://stackoverflow.com/questions/49257947
-*/
-
-template<class T> void declare_MultiIntKeyDict_class(
-    pybind11::module& m, std::string const& nameT, std::string const& typeT) {
-
-    std::string const type =
-        "MultiIntKeyDict" + nameT;
-    std::string const doc =
-        "Python wrapper around C++ MultiIntKeyDict<" + typeT + ">.";
-    pybind11::class_<MultiIntKeyDict<T>>(m, type.c_str(), doc.c_str())
-        //.doc("Python wrapper around C++ MultiIntKeyDict<" + nameT + ">.")
-//         // constructor
-//         .def(pybind11::init<>())
-        // attributes
-        .def_property_readonly("keys",
-            &MultiIntKeyDict<T>::getKeys)
-        .def_property_readonly("data",
-            &MultiIntKeyDict<T>::getData)
-        // methods
-        .def("__contains__",
-            &MultiIntKeyDict<T>::in,
-            "Is key in dictionary?",
-            pybind11::is_operator())
-        .def("__getitem__",
-            [](MultiIntKeyDict<T>& self, long int const& i) {
-                return (T) self[i];
-            },
-            "Get value associated to key.",
-            pybind11::is_operator())
-//         .def("__setitem__",
-//             [](MultiIntKeyDict<T>& self, long int const& i, T const& v) {
-//                 self[i] = v;
-//             },
-//             pybind11::is_operator())
-//         .def("__delitem__",
-//             [](MultiIntKeyDict<T>& self, long int const& i) {
-//                 self.erase(i);
-//             },
-//             pybind11::is_operator())
-        .def("__iter__",
-            [](MultiIntKeyDict<T> const& self) {
-                return pybind11::make_iterator(self.begin(), self.end());
-            },
-            "Iterator over keys.",
-            pybind11::keep_alive<0, 1>())
-        .def("__len__",
-            &MultiIntKeyDict<T>::size,
-            "Number of values in the dictionary.")
-//         // pickle
-//         .def(pybind11::pickle(
-//             &pybind11_getstate_MultiIntKeyDict<T>,
-//             &pybind11_setstate_MultiIntKeyDict<T>))
-        ;
-}
 
 PYBIND11_MODULE(bind, m) {
     m.doc() =
@@ -93,13 +32,6 @@ PYBIND11_MODULE(bind, m) {
     m.def("getLinesHalfEdge", &getLinesHalfEdge);
     m.def("getLinesJunction", &getLinesJunction);
     m.def("getPolygonsCell", &getPolygonsCell);
-
-    /*
-     *  [tools.hpp]
-     *
-     */
-
-    declare_MultiIntKeyDict_class<long int>(m, "", "long int");
 
     /*
      *  [mesh.hpp]
@@ -126,11 +58,10 @@ PYBIND11_MODULE(bind, m) {
             })
         .def_property_readonly("halfEdgeIndex",
             &Vertex::getHalfEdgeIndex)
-//         // pickle
-//         .def(pybind11::pickle(
-//             &pybind11_getstate<Vertex>,
-//             &pybind11_setstate<Vertex>))
-        ;
+        // pickle
+        .def(pybind11::pickle(
+            &pybind11_getstate<Vertex>,
+            &pybind11_setstate<Vertex>));
 
     pybind11::class_<HalfEdge>(m, "HalfEdge")
         // attributes
@@ -148,17 +79,17 @@ PYBIND11_MODULE(bind, m) {
             &HalfEdge::getNextIndex)
         .def_property_readonly("pairIndex",
             &HalfEdge::getPairIndex)
-//         // pickle
-//         .def(pybind11::pickle(
-//             &pybind11_getstate<HalfEdge>,
-//             &pybind11_setstate<HalfEdge>))
+        // pickle
+        .def(pybind11::pickle(
+            &pybind11_getstate<HalfEdge>,
+            &pybind11_setstate<HalfEdge>))
         ;
 
     pybind11::class_<Mesh>(m, "Mesh")
-//         // pickle
-//         .def(pybind11::pickle(
-//             &pybind11_getstate<Mesh>,
-//             &pybind11_setstate<Mesh>))
+        // pickle
+        .def(pybind11::pickle(
+            &pybind11_getstate<Mesh>,
+            &pybind11_setstate<Mesh>))
         ;
 
     /*
@@ -206,8 +137,10 @@ PYBIND11_MODULE(bind, m) {
         std::shared_ptr<ActiveBrownianForce>>(
         m, "ActiveBrownianForce",
         "Python wrapper around C++ Active Brownian force computation object.")
-        .def_property_readonly("theta",
-            &ActiveBrownianForce::getTheta);
+        .def_property("theta",
+            &ActiveBrownianForce::getTheta,
+            [](ActiveBrownianForce& self, std::map<long int, double> theta_)
+                { self.setTheta(theta_); });
 
     /*
      *  [system.hpp]
@@ -485,10 +418,9 @@ PYBIND11_MODULE(bind, m) {
             "    Length of nearest neighbour junctions. (default: 1)",
             pybind11::arg("nCells")=1,
             pybind11::arg("junctionLength")=1)
-//         // pickle
-//         .def(pybind11::pickle(
-//             &pybind11_getstate<VertexModel>,
-//             &pybind11_setstate<VertexModel>))
-            ;
+        // pickle
+        .def(pybind11::pickle(
+            &pybind11_getstate<VertexModel>,
+            &pybind11_setstate<VertexModel>));
 }
 

@@ -20,19 +20,20 @@ clean:
 	rm -f *.o *.so
 
 # OBJECT FILES
+# dependencies to be checked with `$(CXX) -MM $<`
 
 %.o: %.cpp
 	$(CXX) -o $@ -c $< $(CFLAGS)
 
-bind.o: base_forces.hpp class_factory.hpp forces.hpp mesh.hpp pickle.hpp plot.hpp random.hpp system.hpp tools.hpp
+bind.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp system_pickle.hpp base_pickle.hpp class_factory.hpp system.hpp plot.hpp
 
-forces.o: base_forces.hpp forces.hpp mesh.hpp random.hpp system.hpp tools.hpp
+forces.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp system.hpp class_factory.hpp
 
-initialisation.o: system.hpp tools.hpp
+initialisation.o: system.hpp class_factory.hpp forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp
 
 mesh.o: mesh.hpp tools.hpp
 
-system.o: base_forces.hpp class_factory.hpp forces.hpp mesh.hpp random.hpp system.hpp tools.hpp
+system.o: system.hpp class_factory.hpp forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp
 
 tools.o: tools.hpp
 

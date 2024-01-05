@@ -62,8 +62,7 @@ class VertexModel : public Mesh {
             { return forces; }
 
         long int getSeed() const { return seed; }
-        Random& getRandom() { return random; }
-        Random const& getConstRandom() const { return random; }
+        Random const& getRandom() const { return random; }
 
         double getTime() const { return time; }
         long int getnT1() const { return nT1; }
@@ -80,24 +79,28 @@ class VertexModel : public Mesh {
 
         VertexModel(                            // used to initiate state
             Mesh const& mesh_,
-            ClassFactory<HalfEdgeForce<ForcesType>> const& halfEdgeForces_,
-            ClassFactory<VertexForce<ForcesType>> const& vertexForces_,
-            Random const& random_, double const time_, long int const nT1_) :
+//             ClassFactory<HalfEdgeForce<ForcesType>> const& halfEdgeForces_,
+//             ClassFactory<VertexForce<ForcesType>> const& vertexForces_,
+            long int const& seed_, Random const& random_,
+            double const time_, long int const nT1_) :
             // geometrical objects (Mesh)
             Mesh(mesh_),
-            // forces objects
-            halfEdgeForces(halfEdgeForces_), vertexForces(vertexForces_),
+//             // forces objects
+//             halfEdgeForces(halfEdgeForces_), vertexForces(vertexForces_),
             // integration quantities
-            seed(-1), random(random_), time(time_), nT1(nT1_) {}
+            seed(seed_), random(random_), time(time_), nT1(nT1_) {}
 
         VertexModel(VertexModel const& vM) :   // copy constructor
-            VertexModel(
-                // geometrical objects (Mesh)
-                vM,
-                // force objects
-                vM.getHalfEdgeForces(), vM.getVertexForces(),
-                // integration quantities
-                vM.getConstRandom(), vM.getTime(), vM.getnT1()) {}
+            // geometrical objects (Mesh)
+            Mesh(vM),
+            // force objects
+            halfEdgeForces(vM.getHalfEdgeForces()),
+            vertexForces(vM.getVertexForces()),
+            // integration quantities
+            seed(vM.getSeed()),
+            random(vM.getRandom()),
+            time(vM.getTime()),
+            nT1(vM.getnT1()) {}
 
         // FORCE "SETTERS"
 

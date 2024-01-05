@@ -61,6 +61,10 @@ Adapted from code initially written by Rastko Sknepnek.
             begin() { return factory_map.begin(); }
         std::map<std::string, std::shared_ptr<BaseType>>::iterator
             end() { return factory_map.end(); }
+        std::map<std::string, std::shared_ptr<BaseType>>::const_iterator
+            const_begin() const { return factory_map.begin(); }
+        std::map<std::string, std::shared_ptr<BaseType>>::const_iterator
+            const_end() const { return factory_map.end(); }
 
         // SET
 

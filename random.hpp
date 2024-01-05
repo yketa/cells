@@ -22,9 +22,9 @@ Adapted from code initially written by Robert L. Jack.
         RNDG generator;
         // std::default_random_engine generator; // (old) period = 1,686,629,820
 
-        int const max = 0x7fffffff;
+        int const _max = 0x7fffffff;
         std::uniform_int_distribution<int>* const intmax
-            = new std::uniform_int_distribution<int>(0, max);
+            = new std::uniform_int_distribution<int>(0, _max);
         std::uniform_real_distribution<double>* const real01
             = new std::uniform_real_distribution<double>(0.0, 1.0);
         std::normal_distribution<double>* const normal
@@ -32,15 +32,21 @@ Adapted from code initially written by Robert L. Jack.
 
     public:
 
+        // CONSTRUCTORS AND DESTRUCTORS
+
         Random(long int const& seed=0) : generator() { generator.seed(seed); }
         Random(RNDG const& rndeng) : generator(rndeng) {}
         Random(Random const& random_) : Random(random_.getGenerator()) {}   // copy constructor
 
         ~Random() { delete intmax; delete real01; delete normal; }
 
+        // GETTERS AND SETTERS
+
         RNDG const getGenerator() const { return generator; }
         void setGenerator(RNDG const& rndeng) { generator = rndeng; }
         // std::normal_distribution<double>* const getNormal() { return normal; }
+
+        // METHODS
 
         double const random01()                                     // get random double in [0, 1] w/ uniform distribution
             { return (*real01)(generator); }
@@ -59,8 +65,12 @@ Adapted from code initially written by Robert L. Jack.
         template<class T> T const pick(std::vector<T> const& vec)   // randomly pick element of std::vector
             { return vec[randomInt(vec.size())]; }
 
-        friend std::ostream& operator << (std::ostream& os, Random const& rnd)  // overload << operator
-            { os << "**RANDOM GENERATOR**"; return os; }
+        // OPERATORS
+
+        friend std::ostream& operator<<(std::ostream& os, Random const& rnd)    // overload << operator
+            { os << rnd.generator; return os; }
+        friend std::istream& operator>>(std::istream& is, Random& rnd)          // overload << operator
+            { is >> rnd.generator; return is; }
 
 };
 

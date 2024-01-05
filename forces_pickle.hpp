@@ -5,11 +5,11 @@ Provide pickling ability for C++ force computation objects via pybind11.
 #ifndef FORCES_PICKLE_HPP
 #define FORCES_PICKLE_HPP
 
-#include <pybind11/pybind11.h>                                                  
+#include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "base_pickle.hpp"
 #include "forces.hpp"
-#include "pickle.hpp"
 #include "system.hpp"
 
 /*
@@ -17,16 +17,15 @@ Provide pickling ability for C++ force computation objects via pybind11.
  *
  */
 
-template<> pybind11::tuple pybind11_getstate_forces<
-    VertexForce<ForcesType>, PerimeterForce>(
-        std::shared_ptr<VertexForce<ForcesType>> const& obj);               // use default behaviour
+// template specialisation
+template pybind11::tuple pybind11_getstate_vertex_forces<PerimeterForce>
+    (std::shared_ptr<VertexForce<ForcesType>> const&);
+template void pybind11_setstate_vertex_forces<PerimeterForce>
+    (pybind11::tuple const&, VertexModel&);
 
-template<> void pybind11_setstate_forces<
-    VertexForce<ForcesType>, PerimeterForce>(
-        pybind11::tuple const& t, VertexModel& vm);                         // use default behaviour
-
+// forces binding to VertexModel from parameters
 template<>
-void VertexModel::addVertexForce<PerimeterForce, ParametersType const&>(    // forces binding to VertexModel from parameters
+void VertexModel::addVertexForce<PerimeterForce, ParametersType const&>(
     std::string const& name, ParametersType const& parameters) {
     addVertexForce<PerimeterForce, double const&, double const&>(
         name, parameters.at("kP"), parameters.at("P0"));
@@ -37,16 +36,15 @@ void VertexModel::addVertexForce<PerimeterForce, ParametersType const&>(    // f
  *
  */
 
-template<> pybind11::tuple pybind11_getstate_forces<
-    VertexForce<ForcesType>, AreaForce>(
-        std::shared_ptr<VertexForce<ForcesType>> const& obj);               // use default behaviour
+// template specialisation
+template pybind11::tuple pybind11_getstate_vertex_forces<AreaForce>
+    (std::shared_ptr<VertexForce<ForcesType>> const&);
+template void pybind11_setstate_vertex_forces<AreaForce>
+    (pybind11::tuple const&, VertexModel&);
 
-template<> void pybind11_setstate_forces<
-    VertexForce<ForcesType>, AreaForce>(
-        pybind11::tuple const& t, VertexModel& vm);                         // use default behaviour
-
+// forces binding to VertexModel from parameters
 template<>
-void VertexModel::addVertexForce<AreaForce, ParametersType const&>(         // forces binding to VertexModel from parameters
+void VertexModel::addVertexForce<AreaForce, ParametersType const&>(
     std::string const& name, ParametersType const& parameters) {
     addVertexForce<AreaForce, double const&, double const&>(
         name, parameters.at("kA"), parameters.at("A0"));
@@ -57,14 +55,14 @@ void VertexModel::addVertexForce<AreaForce, ParametersType const&>(         // f
  *
  */
 
-template<> pybind11::tuple pybind11_getstate_forces<
+template<> pybind11::tuple pybind11_getstate_forces<                            // override default behaviour
     VertexForce<ForcesType>, ActiveBrownianForce>(
         std::shared_ptr<VertexForce<ForcesType>> const& obj) {
     return pybind11::make_tuple(
         obj->getType(), obj->getParameters(), obj->getTheta());
 }
 
-template<> void pybind11_setstate_forces<
+template<> void pybind11_setstate_forces<                                       // override default behaviour
     VertexForce<ForcesType>, ActiveBrownianForce>(
         pybind11::tuple const& t, VertexModel& vm) {
     // check

@@ -9,91 +9,77 @@ pybind11.
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <vector>
 #include <map>
+#include <sstream>
+#include <vector>
 
-#include "pickle.hpp"
+#include "base_pickle.hpp"
 #include "mesh.hpp"
+#include "random.hpp"
 #include "system.hpp"
 #include "tools.hpp"
 
-/*
- *  long int
- *
- */
+// std::map<T, TT>
 
-template<>
-pybind11::tuple pybind11_getstate<long int>(long int const& i)
-    { return pybind11::make_tuple(i); }
-
-template<>
-long int pybind11_setstate<long int>(pybind11::tuple const& t)
-    { checkSize(t, 1); return t[0].cast<long int>(); }
-
-/*
- *  std::map<long int, TT>
- *
- */
-
-template<class TT> std::map<long int, pybind11::tuple>
-    pybind11_getstate_map(std::map<long int, TT> const& map) {
-    // extract data from TT
-    std::map<long int, pybind11::tuple> data;
-    for (auto it=map.begin(); it != map.end(); ++it) {
-        data.emplace(it->first, pybind11_getstate<TT>(it->second));
+template<class T, class TT>
+pybind11::tuple pybind11_getstate_map(std::map<T, TT> const& obj) {
+    // convert data
+    std::map<pybind11::tuple, pybind11::tuple> data;
+    for (auto it=obj.begin(); it != obj.end(); ++it) {
+        data.emplace(
+            pybind11_getstate<T>(it->first),
+            pybind11_getstate<TT>(it->second));
     }
     // return data
-    return data;
+    return pybind11::make_tuple(data);
 }
 
-template<class TT> std::map<long int, TT>
-    pybind11_setstate_map(std::map<long int, pybind11::tuple> const& data) {
-    // convert data from TT
-    std::map<long int, TT> map;
+template<class T, class TT>
+std::map<T, TT> pybind11_setstate_map(pybind11::tuple const& t) {
+    // check
+    checkSize(t, 1);
+    // convert data
+    std::map<pybind11::tuple, pybind11::tuple> const data =
+        t[0].cast<std::map<pybind11::tuple, pybind11::tuple>>();
+    std::map<T, TT> obj;
     for (auto it=data.begin(); it != data.end(); ++it) {
-        map.emplace(it->first, pybind11_setstate<TT>(it->second));
+        obj.emplace(
+            pybind11_setstate<T>(it->first),
+            pybind11_setstate<TT>(it->second));
     }
-    // return map
-    return map;
+    // return object
+    return obj;
 }
 
 /*
- *  [tools.hpp]
+ *  [random.hpp]
  *
  */
 
-// MultiIntKeyDict<TT>
+// Random
 
-template<class TT> pybind11::tuple pybind11_getstate_MultiIntKeyDict(
-    MultiIntKeyDict<TT> const& mikd) {
-    // copy data from MultiIntKeyDict
-    std::map<long int, long int> const mikd_keys = mikd.getKeys();
-    std::map<long int, TT> const mikd_data = mikd.getData();
-    long int const mikd_maxIndex = mikd.getMaxIndex();
-    // extract data from TT
-    std::map<long int, pybind11::tuple> data =
-        pybind11_getstate_map<TT>(mikd_data);
-    // return ensemble of data
-    return pybind11::make_tuple(
-        mikd_keys, data, mikd_maxIndex);
+template<>
+pybind11::tuple pybind11_getstate<Random>(Random const& rnd) {
+    // extract to string stream
+    std::stringstream ss;
+    ss << rnd;
+    // save as bytes
+    // https://github.com/htm-community/htm.core/issues/160
+    return pybind11::make_tuple(pybind11::bytes(ss.str()));
 }
 
-template<class TT> MultiIntKeyDict<TT> pybind11_setstate_MultiIntKeyDict(
-    pybind11::tuple const& t) {
+template<>
+Random pybind11_setstate<Random>(pybind11::tuple const& t) {
     // check
-    checkSize(t, 3);
-    // get data
-    std::map<long int, long int> const mikd_keys =
-        t[0].cast<std::map<long int, long int>>();
-    std::map<long int, pybind11::tuple> const data =
-        t[1].cast<std::map<long int, pybind11::tuple>>();
-    std::map<long int, TT> const mikd_data =
-        pybind11_setstate_map<TT>(data);
-    long int const mikd_maxIndex =
-        t[2].cast<long int>();
-    // create MultiIntKeyDict with data
-    MultiIntKeyDict<TT> mikd(mikd_keys, mikd_data, mikd_maxIndex);
-    return mikd;
+    checkSize(t, 1);
+    // convert data to string stream
+    pybind11::bytes const b = t[0].cast<pybind11::bytes>();
+    std::istringstream ss(b);
+    // create and set random generator from string stream
+    Random random;
+    ss >> random;
+    // return object
+    return random;
 }
 
 /*
@@ -148,7 +134,7 @@ pybind11::tuple pybind11_getstate<HalfEdge>(HalfEdge const& he) {
 
 template<>
 HalfEdge pybind11_setstate<HalfEdge>(pybind11::tuple const& t) {
-    checkSize(t, 6);
+    checkSize(t, 7);
     long int const index = t[0].cast<long int>();
     long int const fromIndex = t[1].cast<long int>();
     long int const toIndex = t[2].cast<long int>();
@@ -165,8 +151,8 @@ HalfEdge pybind11_setstate<HalfEdge>(pybind11::tuple const& t) {
 template<>
 pybind11::tuple pybind11_getstate<Mesh>(Mesh const& m) {
     return pybind11::make_tuple(
-        pybind11_getstate_map<Vertex>(m.getVertices()),
-        pybind11_getstate_map<HalfEdge>(m.getHalfEdges()),
+        pybind11_getstate_map<long int, Vertex>(m.getVertices()),
+        pybind11_getstate_map<long int, HalfEdge>(m.getHalfEdges()),
         m.getSystemSize());
 }
 
@@ -174,14 +160,75 @@ template<>
 Mesh pybind11_setstate<Mesh>(pybind11::tuple const& t) {
     checkSize(t, 3);
     std::map<long int, Vertex> const vertices =
-        pybind11_setstate_map<Vertex>
-            (t[0].cast<std::map<long int, pybind11::tuple>>());
+        pybind11_setstate_map<long int, Vertex>(
+            t[0].cast<pybind11::tuple>());
     std::map<long int, HalfEdge> const halfEdges =
-        pybind11_setstate_map<HalfEdge>
-            (t[1].cast<std::map<long int, pybind11::tuple>>());
+        pybind11_setstate_map<long int, HalfEdge>(
+            t[1].cast<pybind11::tuple>());
     std::vector<double> const systemSize =
         t[2].cast<std::vector<double>>();
     return Mesh(vertices, halfEdges, systemSize);
+}
+
+/*
+ *  [class_factory.hpp, base_forces.hpp]
+ *  Specific functions to save to and load class factories of force computation
+ *  objects from pickle.
+ *  ATTENTION: The setters only work if the class factory elements have all the
+ *             same derived type.
+ *
+ */
+
+// ClassFactory<VertexForce<ForcesType>>
+
+template<class DerivedType>
+pybind11::tuple pybind11_getstate_class_factory_vertex_forces(      // python __getstate__
+    ClassFactory<VertexForce<ForcesType>> const& obj) {
+    std::map<std::string, pybind11::tuple> data;
+    for (auto it=obj.const_begin(); it != obj.const_end(); ++it) {
+        data.emplace(
+            it->first,
+            pybind11_getstate_vertex_forces<DerivedType>(it->second));
+    }
+    return pybind11::make_tuple(data);
+}
+
+template<class DerivedType>
+void pybind11_setstate_class_factory_vertex_forces(                 // python __setstate__
+    pybind11::tuple const& t, VertexModel& vm) {
+    // get data
+    std::map<std::string, pybind11::tuple> const data =
+        t[0].cast<std::map<std::string, pybind11::tuple>>();
+    // add force
+    for (auto it=data.begin(); it != data.end(); ++it) {
+        pybind11_setstate_vertex_forces<DerivedType>(it->second, vm);
+    }
+}
+
+// ClassFactory<HalfEdgeForce<ForcesType>>
+
+template<class DerivedType>
+pybind11::tuple pybind11_getstate_class_factory_half_edge_forces(   // python __getstate__
+    ClassFactory<HalfEdgeForce<ForcesType>> const& obj) {
+    std::map<std::string, pybind11::tuple> data;
+    for (auto it=obj.const_begin(); it != obj.const_end(); ++it) {
+        data.emplace(
+            it->first,
+            pybind11_getstate_half_edge_forces<DerivedType>(it->second));
+    }
+    return pybind11::make_tuple(data);
+}
+
+template<class DerivedType>
+void pybind11_setstate_class_factory_half_edge_forces(              // python __setstate__
+    pybind11::tuple const& t, VertexModel& vm) {
+    // get data
+    std::map<std::string, pybind11::tuple> const data =
+        t[0].cast<std::map<std::string, pybind11::tuple>>();
+    // add force
+    for (auto it=data.begin(); it != data.end(); ++it) {
+        pybind11_setstate_half_edge_forces<DerivedType>(it->second, vm);
+    }
 }
 
 /*
@@ -195,44 +242,27 @@ template<>
 pybind11::tuple pybind11_getstate<VertexModel>(VertexModel const& vm) {
     return pybind11::make_tuple(
         pybind11_getstate<Mesh>(vm),
-        pybind11_getstate_MultiIntKeyDict<SPVertex>(vm.getSPVertices()),
-        pybind11_getstate_MultiIntKeyDict<Cell>(vm.getCells()),
-        pybind11_getstate_MultiIntKeyDict<Face>(vm.getFaces()),
-        pybind11_getstate_MultiIntKeyDict<Junction>(vm.getJunctions()),
-        vm.getv0(),
-        vm.getDr(),
-        vm.getp0(),
+        // ATTENTION: this does not save forces objects
         vm.getSeed(),
+        pybind11_getstate<Random>(vm.getRandom()),
         vm.getTime(),
         vm.getnT1());
 }
 
 template<>
 VertexModel pybind11_setstate<VertexModel>(pybind11::tuple const& t) {
-    checkSize(t, 11);
+    checkSize(t, 5);
     Mesh const mesh =
-        pybind11_setstate<Mesh>
-            (t[0].cast<pybind11::tuple>());
-    MultiIntKeyDict<SPVertex> const sPVertices =
-        pybind11_setstate_MultiIntKeyDict<SPVertex>
-            (t[1].cast<pybind11::tuple>());
-    MultiIntKeyDict<Cell> const cells =
-        pybind11_setstate_MultiIntKeyDict<Cell>
-            (t[2].cast<pybind11::tuple>());
-    MultiIntKeyDict<Face> const faces =
-        pybind11_setstate_MultiIntKeyDict<Face>
-            (t[3].cast<pybind11::tuple>());
-    MultiIntKeyDict<Junction> const junctions =
-        pybind11_setstate_MultiIntKeyDict<Junction>
-            (t[4].cast<pybind11::tuple>());
-    double const v0 = t[5].cast<double>();
-    double const Dr = t[6].cast<double>();
-    double const p0 = t[7].cast<double>();
-    long int const seed = t[8].cast<long int>();
-    double const time = t[9].cast<double>();
-    long int const nT1 = t[10].cast<long int>();
-    return VertexModel(mesh, sPVertices, cells, faces, junctions,
-        v0, Dr, p0, seed, time, nT1);
+        pybind11_setstate<Mesh>(t[0].cast<pybind11::tuple>());
+    long int const seed =
+        t[1].cast<long int>();
+    Random const random =
+        pybind11_setstate<Random>(t[2].cast<pybind11::tuple>());
+    double const time =
+        t[3].cast<double>();
+    long int const nT1 =
+        t[4].cast<long int>();
+    return VertexModel(mesh, seed, random, time, nT1);
 }
 
 #endif
