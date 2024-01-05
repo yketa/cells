@@ -126,8 +126,8 @@ Active Brownian self-propulsion force acting on vertices.
 
     protected:
 
-        Random* random;                                     // random number generator
-        std::map<long int, double> theta;                   // orientation of self-propulsion force
+        Random* random;                     // random number generator
+        std::map<long int, double> theta;   // orientation of self-propulsion force
 
     public:
 
@@ -140,8 +140,8 @@ Active Brownian self-propulsion force acting on vertices.
             random(random_)
             { integrate(0); }
 
-        std::map<long int, double> const& getTheta() const { return theta; }
-
+        std::map<long int, double> const& getTheta() const
+            { return theta; }
         void setTheta(std::map<long int, double> const& theta_)
             { theta = theta_; }
 
@@ -157,7 +157,7 @@ Active Brownian self-propulsion force acting on vertices.
         }
 
         void integrate(double const& dt) override {
-            // index correspondence between vertices, orientations, and forces
+            // index correspondence between vertices and orientations
             for (auto it=theta.begin(); it != theta.end(); ++it) {
                 if (!inMap(*vertices, it->first)) { // vertex index not present anymore
                     theta.erase(it->first);
@@ -173,6 +173,73 @@ Active Brownian self-propulsion force acting on vertices.
             for (auto it=theta.begin(); it != theta.end(); ++it) {
                 theta[it->first] +=
                     sqrt(2.*dt/parameters.at("taup"))*random->gauss();
+            }
+        }
+
+};
+
+class OrnsteinUhlenbeckTension : public HalfEdgeForce<ForcesType> {
+/*
+Ornstein-Uhlenbeck tension acting on junctions.
+*/
+
+    protected:
+
+        Mesh* mesh;                         // mesh object
+        Random* random;                     // random number generator
+        std::map<long int, double> tension; // orientation of self-propulsion force
+
+    public:
+
+        OrnsteinUhlenbeckTension(
+            double const& t0_, double const& taup_,
+            Mesh* mesh_, Random* random_,
+            ForcesType* forces_, HalfEdgesType* halfEdges_) :
+            HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
+                {{"t0", t0_}, {"taup", taup_}},
+                forces_, halfEdges_),
+            mesh(mesh_), random(random_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getTension() const
+            { return tension; }
+        void setTension(std::map<long int, double> const& tension_)
+            { tension = tension_; }
+
+        void addForce(HalfEdge const& halfEdge) override {
+            long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
+            long int const toIndex = halfEdge.getToIndex();         // destination vertex
+            std::vector<double> const fromTo =
+                mesh->getHalfEdgeVector(halfEdge.getIndex(), true); // unit half-edge vector
+            double force;
+            for (int dim=0; dim < 2; dim++) {
+                force = tension[halfEdge.getIndex()]*fromTo[dim];
+                (*forces)[fromIndex][dim] += force;
+                (*forces)[toIndex][dim] -= force;
+            }
+        }
+
+        void integrate(double const& dt) override {
+            // index correspondence between half-edges and tensions
+            for (auto it=tension.begin(); it != tension.end(); ++it) {
+                if (!inMap(*halfEdges, it->first)) {    // half-edge index not present anymore
+                    tension.erase(it->first);
+                }
+            }
+            for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
+                if (!inMap(tension, it->first)          // new half-edge index
+                    && (it->second).getType() == type) {
+                    tension[it->first] = parameters.at("t0")*random->gauss();
+                }
+            }
+            // integration
+            for (auto it=tension.begin(); it != tension.end(); ++it) {
+                tension[it->first] =
+                    (1 - dt/parameters.at("taup"))*tension[it->first]
+                        + sqrt(
+                            2.*pow(parameters.at("t0"), 2)
+                            *dt/parameters.at("taup"))
+                                *random->gauss();
             }
         }
 

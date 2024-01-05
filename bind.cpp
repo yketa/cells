@@ -142,6 +142,18 @@ PYBIND11_MODULE(bind, m) {
             [](ActiveBrownianForce& self, std::map<long int, double> theta_)
                 { self.setTheta(theta_); });
 
+    pybind11::class_<OrnsteinUhlenbeckTension,
+        HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<OrnsteinUhlenbeckTension>>(
+        m, "OrnsteinUhlenbeckTension",
+        "Python wrapper around C++ Ornstein-Uhlenbeck tension computation\n"
+        "object.")
+        .def_property("tension",
+            &OrnsteinUhlenbeckTension::getTension,
+            [](OrnsteinUhlenbeckTension& self,
+                std::map<long int, double> tension_)
+                { self.setTension(tension_); });
+
     /*
      *  [system.hpp]
      *
@@ -331,7 +343,7 @@ PYBIND11_MODULE(bind, m) {
         .def("addPerimeterForce",
             &VertexModel::addVertexForce<PerimeterForce,
                 double const&, double const&>,
-            "Add perimeter force.\n"
+            "Add cell perimeter restoring force.\n"
             "\n"
             "Parameters\n"
             "----------\n"
@@ -347,7 +359,7 @@ PYBIND11_MODULE(bind, m) {
         .def("addAreaForce",
             &VertexModel::addVertexForce<AreaForce,
                 double const&, double const&>,
-            "Add area force.\n"
+            "Add cell area restoring force.\n"
             "\n"
             "Parameters\n"
             "----------\n"
@@ -363,7 +375,7 @@ PYBIND11_MODULE(bind, m) {
         .def("addActiveBrownianForce",
             &VertexModel::addVertexForce<ActiveBrownianForce,
                 double const&, double const&>,
-            "Add perimeter force.\n"
+            "Add active Brownian force on vertices.\n"
             "\n"
             "Parameters\n"
             "----------\n"
@@ -375,6 +387,22 @@ PYBIND11_MODULE(bind, m) {
             "    Persistence time.",
             pybind11::arg("name"),
             pybind11::arg("v0"),
+            pybind11::arg("taup"))
+        .def("addOrnsteinUhlenbeckTension",
+            &VertexModel::addHalfEdgeForce<OrnsteinUhlenbeckTension,
+                double const&, double const&>,
+            "Add Ornstein-Uhlenbeck tension on junctions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "t0 : float\n"
+            "    Standard deviation of tension.\n"
+            "taup : float\n"
+            "    Persistence time.",
+            pybind11::arg("name"),
+            pybind11::arg("t0"),
             pybind11::arg("taup"))
         // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",

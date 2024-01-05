@@ -20,7 +20,7 @@ if __name__ == "__main__":
         help="[close] number of vertices in each direction (! multiple of 6)")
     parser.add_argument("-v0", type=float, default=1e-1,
         help="vertex self-propulsion velocity")
-    parser.add_argument("-Dr", type=float, default=1e-1,
+    parser.add_argument("-Dr", type=float, default=1e2,
         help="vertex propulsion rotational diffusion constant")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
@@ -55,10 +55,11 @@ if __name__ == "__main__":
 
     # FORCES
 
-    A0 = (3./2.)/np.tan(np.pi/6.)   # area of a regular hexagon with edge length 1
-    vm.addPerimeterForce("perimeter", 1, args.p0*np.sqrt(A0))
-    vm.addAreaForce("area", 1, A0)
-    vm.addActiveBrownianForce("abp", args.v0, 1./args.Dr)
+#     A0 = (3./2.)/np.tan(np.pi/6.)   # area of a regular hexagon with edge length 1
+#     vm.addPerimeterForce("perimeter", 1, args.p0*np.sqrt(A0))
+#     vm.addAreaForce("area", 1, A0)
+#     vm.addActiveBrownianForce("abp", args.v0, 1./args.Dr)
+    vm.addOrnsteinUhlenbeckTension("out", args.v0, 1./args.Dr)
 
     # RUN
 
