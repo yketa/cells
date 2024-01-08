@@ -36,14 +36,14 @@ the line (xi, yi) -- (xi', yi') corresponds to the i-th half-edge in `vm'.
     return lines;
 }
 
-std::vector<std::vector<double>> getLinesJunction(
+std::vector<std::vector<std::vector<double>>> getLinesJunction(
     VertexModel& vm) {
 /*
-Return vector [[x0, x0'], [y0, y0'], ..., [xN-1, xN-1'], [yN-1, yN-1']] where
-the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
+Return vector [[[x0, y0], [x0', y0']], ..., [[xN-1, yN-1], [xN-1', yN-1']]]
+where the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
 */
 
-    std::vector<std::vector<double>> lines(0);
+    std::vector<std::vector<std::vector<double>>> lines(0);
 
     std::map<long int, Vertex> const vertices = vm.getVertices();
     std::map<long int, HalfEdge> const halfEdges = vm.getHalfEdges();
@@ -59,8 +59,9 @@ the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
             fromPos = (vertices.at((halfEdges.at(index)).getFromIndex()))
                 .getPosition();                                     // position of origin vertex
             disp = vm.getHalfEdgeVector(index, false);              // displacement to destination vertex
-            lines.push_back({fromPos[0], fromPos[0] + disp[0]});    // x-coordinates of line
-            lines.push_back({fromPos[1], fromPos[1] + disp[1]});    // y-coordinates of line
+            lines.push_back({
+                {fromPos[0], fromPos[1]},
+                {fromPos[0] + disp[0], fromPos[1] + disp[1]}});
         }
     }
 

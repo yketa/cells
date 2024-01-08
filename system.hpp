@@ -49,7 +49,7 @@ class VertexModel : public Mesh {
             nT1 = 0;
         }
 
-        // GETTERS
+        // GETTERS AND SETTERS
 
         ClassFactory<HalfEdgeForce<ForcesType>> const& getHalfEdgeForces()
             const
@@ -66,6 +66,9 @@ class VertexModel : public Mesh {
 
         double getTime() const { return time; }
         long int getnT1() const { return nT1; }
+
+        void copyRandom(VertexModel const& vm)
+            { random.setGenerator(vm.getRandom().getGenerator()); }
 
         // CONSTRUCTORS
 

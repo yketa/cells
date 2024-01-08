@@ -172,6 +172,15 @@ PYBIND11_MODULE(bind, m) {
             "seed : int\n"
             "    Random number generator seed. (default: 0)",
             pybind11::arg("seed")=0)
+        .def(pybind11::init
+            <VertexModel const&>(),
+            "Copy constructor for VertexModel.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vm : VertexModel\n"
+            "    Instance of VertexModel to copy.",
+            pybind11::arg("vm"))
         // attributes [Mesh (mesh.hpp)]
         .def_property_readonly("vertices",
             &VertexModel::getVertices)
@@ -282,7 +291,14 @@ PYBIND11_MODULE(bind, m) {
         .def("checkMesh",
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh,\n"
-            "with anticlockwise triangles.")
+            "with anticlockwise triangles.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeTypes : list of str\n"
+            "    These types should not be defined identically for both\n"
+            "    half-edges of a single pair.",
+            pybind11::arg("helfEdgeTypes")=std::vector<std::string>())
         // methods [VertexModel (system.hpp)]
         .def("nintegrate",
             [](VertexModel& self,
@@ -339,6 +355,16 @@ PYBIND11_MODULE(bind, m) {
             "name : str\n"
             "    Name of the force to remove.",
             pybind11::arg("name"))
+        .def("copyRandom",
+            &VertexModel::copyRandom,
+            "Copy random number generator from different instance of\n"
+            "VertexModel.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vm : VertexModel\n"
+            "    Instance to copy the random number generator from.",
+            pybind11::arg("vm"))
         // add forces methods [HalfEdgeForce, VertexForce (base_forces.hpp, forces.hpp, forces.cpp)]
         .def("addPerimeterForce",
             &VertexModel::addVertexForce<PerimeterForce,

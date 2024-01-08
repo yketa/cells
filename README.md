@@ -3,9 +3,9 @@
 
 Python/C++ integration of vertex models. Developed under the supervision of Silke Henkes.
 
-## Compilation and running
+## Requirements and compiling
 
-Compilation of the shared library with `make bind.so` requires [`pybind11`](https://pybind11.readthedocs.io) (`python -m pip install pybind11`) and `g++` or an equivalent C++ compiler.
+Compilation of the shared library with `make bind.so` requires [`pybind11`](https://pybind11.readthedocs.io) (`python -m pip install pybind11`) and a C++ compiler (e.g. `g++`).
 
 Python scripts are written for `python3.*` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`, e.g. by executing
 ```
@@ -13,9 +13,15 @@ echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
 ```
 from this directory.
 
-Test with `python test.py` requires `numpy` and `matplotlib`. These can be installed with `python -m pip install -r requirements.txt`.
+Python routines `run.py` and `vm.py` require `numpy` and `matplotlib`. These can be installed with `python -m pip install -r requirements.txt`.
 
-## C++ scripts structure
+## Running
+
+There are two default routines to simulate vertex models: `run.py` plots in real time a simulation of a vertex model, and `vm.py` saves simulations of vertex models. It is noteworthy that `vm.py` also defines objects and functions to access and plot vertex model data (and on which `run.py` relies).
+
+Both routines rely on `init.py` which parses command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
+
+## C++ scripts
 
 ### Vertex model
 
@@ -35,5 +41,7 @@ Proper definitions of forces belong in `forces.hpp`, with `forces.cpp` providing
 
 ### Pickling
 
-Work in progress...
+`VertexModel` instances can be pickled via Python (see `system_pickle.hpp`). However this pickling does not save the state nor the definitions of the forces, which then have to be redefined after unpickling.
+
+![polygonal tiling](cells.svg)
 

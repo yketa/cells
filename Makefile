@@ -3,8 +3,9 @@ SHELL:=/bin/bash
 # COMPILATION PARAMETERS
 
 # default C++ compiler should already be available in Makefile through variable $(CXX)
+# -g flag should not affect performance (https://stackoverflow.com/questions/10988318)
 PYTHON=python   # python executable
-CFLAGS=-std=c++20 -O3 -Wall
+CFLAGS=-std=c++20 -O3 -Wall -g
 LDFLAGS=
 MPIFLAGS=-fopenmp
 

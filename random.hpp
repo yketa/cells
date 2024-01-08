@@ -42,7 +42,7 @@ Adapted from code initially written by Robert L. Jack.
 
         // GETTERS AND SETTERS
 
-        RNDG const getGenerator() const { return generator; }
+        RNDG const& getGenerator() const { return generator; }
         void setGenerator(RNDG const& rndeng) { generator = rndeng; }
         // std::normal_distribution<double>* const getNormal() { return normal; }
 
@@ -69,7 +69,7 @@ Adapted from code initially written by Robert L. Jack.
 
         friend std::ostream& operator<<(std::ostream& os, Random const& rnd)    // overload << operator
             { os << rnd.generator; return os; }
-        friend std::istream& operator>>(std::istream& is, Random& rnd)          // overload << operator
+        friend std::istream& operator>>(std::istream& is, Random& rnd)          // overload >> operator
             { is >> rnd.generator; return is; }
 
 };

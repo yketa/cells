@@ -48,8 +48,9 @@ Specific functions to save to and load force computation objects from pickle.
 
 template<class DerivedType>
 pybind11::tuple pybind11_getstate_vertex_forces(                // python __getstate__
+    std::string const& name,
     std::shared_ptr<VertexForce<ForcesType>> const& obj) {      // default behaviour
-    return pybind11::make_tuple(obj->getType(), obj->getParameters());
+    return pybind11::make_tuple(name, obj->getParameters());
 }
 
 template<class DerivedType>                                        
@@ -58,19 +59,20 @@ void pybind11_setstate_vertex_forces(                           // python __sets
     // check
     checkSize(t, 2);
     // get data
-    std::string const type = t[0].cast<std::string>();
+    std::string const name = t[0].cast<std::string>();
     std::map<std::string, double> const parameters = t[1].cast<std::string>();
     // add force
     vm.addVertexForce<DerivedType, ParametersType const&>(
-        type, parameters);
+        name, parameters);
 }
 
 // HalfEdgeForce<ForcesType>
 
 template<class DerivedType>
 pybind11::tuple pybind11_getstate_half_edge_forces(             // python __getstate__
+    std::string const& name,
     std::shared_ptr<HalfEdgeForce<ForcesType>> const& obj) {    // default behaviour
-    return pybind11::make_tuple(obj->getType(), obj->getParameters());
+    return pybind11::make_tuple(name, obj->getParameters());
 }
 
 template<class DerivedType>                                        
@@ -79,11 +81,11 @@ void pybind11_setstate_half_edge_forces(                        // python __sets
     // check
     checkSize(t, 2);
     // get data
-    std::string const type = t[0].cast<std::string>();
+    std::string const name = t[0].cast<std::string>();
     std::map<std::string, double> const parameters = t[1].cast<std::string>();
     // add force
     vm.addHalfEdgeForce<DerivedType, ParametersType const&>(
-        type, parameters);
+        name, parameters);
 }
 
 #endif

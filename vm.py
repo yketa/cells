@@ -1,19 +1,18 @@
 """
-Run simulation of vertex model. Define objects and functions to read data file
-and plot vertex model object.
+Define objects and functions to read data file and plot vertex model object.
+When executed this runs and saves a simulation of the vertex model.
 """
 
 from cells.bind import VertexModel
 from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
 from cells.exponents import float_to_letters
+from cells.init import init_vm
 
 import sys
 from math import ceil
 
 from datetime import datetime
 import atexit, signal
-
-import argparse
 
 import numpy as np
 from collections import OrderedDict
@@ -24,8 +23,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.collections import PatchCollection
+from matplotlib.collections import PatchCollection, LineCollection
 
 # READ SIMULATION
 
@@ -153,7 +151,7 @@ class Read:
     def __len__(self):              # number of frames
         return self.frames.__len__()
 
-def filename(N, v0, Dr, p0, identifier):
+def filename(N, identifier):
     """
     Standard filename for simulation file.
 
@@ -161,12 +159,8 @@ def filename(N, v0, Dr, p0, identifier):
     ----------
     N : int
         Number of vertices.
-    v0 : float
-        Vertex self-propulsion velocity.
-    Dr : float
-        Vertex propulsion rotational diffusion constant.
-    p0 : float
-        Dimensionless target perimeter of cell.
+    identifier : int
+        Unique integer identifier for file.
 
     Returns
     -------
@@ -174,14 +168,19 @@ def filename(N, v0, Dr, p0, identifier):
         File name.
     """
 
-    return ("N%s_v0%s_Dr%s_p0%s_%%%s.p"
-        % tuple(map(float_to_letters, (N, v0, Dr, p0, identifier))))
+    return ("N%s_%%%s.p"
+        % tuple(map(float_to_letters, (N, identifier))))
 
 # PLOT VERTEX MODEL OBJECT
 
-cmap = plt.cm.jet                       # colourmap (colourmap without white for TESTING)
-norm = Normalize(-0.05, 0.05)           # interval of value represented by colourmap
-scalarMap = ScalarMappable(norm, cmap)  # conversion from scalar value to colour
+# area colourbar
+cmap_area = plt.cm.bwr                                          # colourmap
+norm_area = Normalize(-0.05, 0.05)                              # interval of value represented by colourmap
+scalarMap_area = ScalarMappable(norm_area, cmap_area)           # conversion from scalar value to colour
+# tension colourbar
+cmap_tension = plt.cm.Spectral                                  # colourmap
+norm_tension = Normalize(-1.5, 1.5)                             # interval of value represented by colourmap
+scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)  # conversion from scalar value to colour
 
 def plot(vm, fig=None, ax=None):
     """
@@ -208,23 +207,29 @@ def plot(vm, fig=None, ax=None):
 
     # forces parameters
 
-    hasForces = (
-        "perimeter" in vm.vertexForces
-        and "area" in vm.vertexForces
-        and "abp" in vm.vertexForces)
-    if hasForces:
+    if "area" in vm.vertexForces:
         A0 = vm.vertexForces["area"].parameters["A0"]
+    if "area" in vm.vertexForces and "perimeter" in vm.vertexForces:
         p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
+    if "abp" in vm.vertexForces:
         v0 = vm.vertexForces["abp"].parameters["v0"]
-        Dr = 1./vm.vertexForces["abp"].parameters["taup"]
+        taup = vm.vertexForces["abp"].parameters["taup"]
+    if "out" in vm.halfEdgeForces:
+        t0 = vm.halfEdgeForces["out"].parameters["t0"]
+        taup = vm.halfEdgeForces["out"].parameters["taup"]
 
     # initialise figure
 
     if type(fig) == type(None) or type(ax) == type(None):
         fig, ax = plt.subplots()
-        cax = make_axes_locatable(ax).append_axes("right", size="5%", pad=0.05)
-        colormap = mpl.colorbar.ColorbarBase(cax,
-            cmap=cmap, norm=norm, orientation="vertical")
+        if "area" in vm.vertexForces:
+            cbar_area = plt.colorbar(
+                mappable=scalarMap_area, ax=ax, shrink=0.5)
+            cbar_area.set_label(r"$A_i/A_0 - 1$", rotation=270)
+        if "out" in vm.halfEdgeForces:
+            cbar_tension = plt.colorbar(
+                mappable=scalarMap_tension, ax=ax, shrink=0.5)
+            cbar_tension.set_label(r"$t_i/t_0 - 1$", rotation=270)
 
     # plot
 
@@ -234,28 +239,46 @@ def plot(vm, fig=None, ax=None):
     ax.set_ylim([0, vm.systemSize[1]])
     ax.set_aspect("equal")
 
-    #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1) # all half-edges
-    ax.plot(*getLinesJunction(vm), color="red", lw=3)   # all junctions
+    # junctions and half-edges
+    lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=3)    # all junctions
+    if "t0" in locals():
+        junctions = [i for i in sorted(vm.halfEdges)
+            if vm.halfEdges[i].type == "junction"]
+        tensions = np.concatenate(list(map(
+            lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
+            junctions)))
+        lines.set_color(list(map(
+            lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
+            tensions)))
+    ax.add_collection(lines)
+    #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1)                          # all half-edges
 
-    cells = [i for i in vm.vertices if vm.vertices[i].type == "centre"]
-    areas = np.array(list(map(
-        lambda i: vm.getVertexToNeighboursArea(i),
-        cells)))
-
-    polygons = PatchCollection(list(map(    # all cells
+    # cells
+    polygons = PatchCollection(
+        list(map(                           # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
-            getPolygonsCell(vm))))
-    if hasForces:
+            getPolygonsCell(vm))),
+        facecolors="none")
+    cells = [i for i in sorted(vm.vertices)
+        if vm.vertices[i].type == "centre"]
+    if "A0" in locals():
+        areas = np.array(list(map(
+            lambda i: vm.getVertexToNeighboursArea(i),
+            cells)))
         polygons.set_color(list(map(        # colour according to area
-            lambda area: scalarMap.to_rgba(area/A0 - 1),
+            lambda area: scalarMap_area.to_rgba(area/A0 - 1),
             areas)))
-        ax.add_collection(polygons)
+    ax.add_collection(polygons)
 
-    ax.set_title(
-        r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
-            % (vm.time, vm.nT1, len(cells))
-        + ("" if not(hasForces) else
-            r"$, v_0=%1.e, D_r=%.1e, p_0=%.2f$" % (v0, Dr, p0)))
+    title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
+        % (vm.time, vm.nT1, len(cells)))
+    if "p0" in locals():
+        title += r"$, p_0=%.2f$" % p0
+    if "v0" in locals():
+        title += r"$, v_0=%.1e, \tau_p=%.1e$" % (v0, taup)
+    if "t0" in locals():
+        title += r"$, t_0=%1.e, \tau_p=%.1e$" % (t0, taup)
+    ax.set_title(title)
 
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)
@@ -265,6 +288,8 @@ def plot(vm, fig=None, ax=None):
 # SIMULATION
 
 if __name__ == "__main__":
+
+    args, vm = init_vm()
 
     # COMPUTATION TIME
 
@@ -279,58 +304,10 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, exit_handler)
     atexit.register(exit_handler)
 
-    # PARAMETERS
-    # `python -m cells.vertex_model -h` to display arguments and default values
-
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # physics
-    parser.add_argument("-N", type=int, default=9,
-        help="[open] total number of cells (! square number)")
-    parser.add_argument("-n", type=int, default=6,
-        help="[close] number of vertices in each direction (! multiple of 6)")
-    parser.add_argument("-v0", type=float, default=1e-1,
-        help="vertex self-propulsion velocity")
-    parser.add_argument("-Dr", type=float, default=1e-1,
-        help="vertex propulsion rotational diffusion constant")
-    parser.add_argument("-p0", type=float, default=3.81,
-        help="dimensionless target perimeter of cell")
-    parser.add_argument("-open", "-o",
-        action=argparse.BooleanOptionalAction,
-        help="turn on specific checks for boundary vertices")
-    # algorithm
-    parser.add_argument("-seed", type=int, default=0,
-        help="random number generator seed")
-    parser.add_argument("-delta", type=float, default=0.1,
-        help="length below which to perform T1")
-    parser.add_argument("-epsilon", type=float, default=0.1,
-        help="create junction with length epsilon above threshold after T1")
-    # integration
-    parser.add_argument("-dt", type=float, default=1e-2,
-        help="intergation time step")
-    parser.add_argument("-init", type=int, default=0,
-        help="number of initial iterations")
-    parser.add_argument("-niter", type=int, default=1000,
-        help="number of production iterations")
-    # saving
-    parser.add_argument("-dtmin", type=int, default=1,
-        help="lag time between each frame or [-log-frames] minimum lag time")
-    parser.add_argument("-dtmax", type=int, default=500,
-        help="[-log-frames] maximum lag time")
-    parser.add_argument("-nmax", type=int, default=50,
-        help="[-log-frames] (maximum) number of lag times")
-    parser.add_argument("-intmax", type=int, default=20,
-        help="[-log-frames] (maximum) number of initial times")
-    parser.add_argument("-log-frames", "-log",
-        action=argparse.BooleanOptionalAction,
-        help="compute logarithmically spaced frames")
-    parser.add_argument("-id", type=int, default=0,
-        help="numerical identifier for simulation file")
-
-    args = parser.parse_args()
+    # METADATA
 
     metadata = {        # metadata for simulation file
-        "filename": filename(args.n**2, args.v0, args.Dr, args.p0, args.id),
+        "filename": filename(len(vm.vertices), args.id),
         "dt": args.dt,  # used to check computed times
         "args": args,   # save all arguments
     }
@@ -376,18 +353,9 @@ if __name__ == "__main__":
 
     # SIMULATION
 
-    # initialisation of mesh
-    vm = VertexModel(args.seed, args.v0, args.Dr, args.p0, args.open)
-    if args.open:
-        vm.initOpenRegularHexagonalLattice(nCells=args.N)
-#         vm.initOpenRegularTriangularLattice(size=args.n)
-    else:
-        vm.initRegularTriangularLattice(size=args.n)
-
-    # simulation of vertex model
     for t in np.diff(metadata["frames"], prepend=0):
-        vm.nintegrate(t, metadata["dt"], args.delta, args.epsilon)
-        vm.checkMesh()
+        vm.nintegrate(t, args.dt, args.delta, args.epsilon)
+        vm.checkMesh(["junction"])
         with open(metadata["filename"], "ab") as dump:
             pickle.dump(vm, dump)
 

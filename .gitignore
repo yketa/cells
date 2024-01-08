@@ -1,7 +1,6 @@
 __pycache__
 .*.swp
-test
-test.*pp
+test*
 *.o
 *.so
 old
