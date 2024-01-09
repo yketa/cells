@@ -48,7 +48,7 @@ def init_vm():
     if args.abp:
         vm.addActiveBrownianForce("abp", args.v0, args.taup)
     if args.out:
-        vm.addOrnsteinUhlenbeckTension("out", args.t0, args.taup)
+        vm.addOrnsteinUhlenbeckTension("out", args.t0, args.st0, args.taup)
 
     return args, vm
 
@@ -98,7 +98,9 @@ def parse_args():
     parser.add_argument("-out",
         action=BooleanOptionalAction,
         help="add perimeter force")
-    parser.add_argument("-t0", type=float, default=1e-1,
+    parser.add_argument("-t0", type=float, default=1,
+        help="active tension mean")
+    parser.add_argument("-st0", type=float, default=1e-1,
         help="active tension standard deviation")
 
     # ALGORITHM

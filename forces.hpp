@@ -181,6 +181,7 @@ Active Brownian self-propulsion force acting on vertices.
 class OrnsteinUhlenbeckTension : public HalfEdgeForce<ForcesType> {
 /*
 Ornstein-Uhlenbeck tension acting on junctions.
+http://arxiv.org/abs/2309.04818
 */
 
     protected:
@@ -192,11 +193,11 @@ Ornstein-Uhlenbeck tension acting on junctions.
     public:
 
         OrnsteinUhlenbeckTension(
-            double const& t0_, double const& taup_,
+            double const& t0_, double const& st0_, double const& taup_,
             Mesh* mesh_, Random* random_,
             ForcesType* forces_, HalfEdgesType* halfEdges_) :
             HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
-                {{"t0", t0_}, {"taup", taup_}},
+                {{"t0", t0_}, {"st0", st0_}, {"taup", taup_}},
                 forces_, halfEdges_),
             mesh(mesh_), random(random_)
             { integrate(0); }
@@ -229,13 +230,15 @@ Ornstein-Uhlenbeck tension acting on junctions.
             for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
                 if (!inMap(tension, it->first)          // new half-edge index
                     && (it->second).getType() == type) {
-                    tension[it->first] = parameters.at("t0")*random->gauss();
+                    tension[it->first] = parameters.at("t0")
+                        + parameters.at("st0")*random->gauss();
                 }
             }
             // integration
             for (auto it=tension.begin(); it != tension.end(); ++it) {
                 tension[it->first] =
                     (1 - dt/parameters.at("taup"))*tension[it->first]
+                        + (dt/parameters.at("st0"))*parameters.at("t0")
                         + sqrt(
                             2.*pow(parameters.at("t0"), 2)
                             *dt/parameters.at("taup"))

@@ -51,13 +51,14 @@ template<> void VertexModel::addHalfEdgeForce<
     // derived force class
     OrnsteinUhlenbeckTension,
     // argument types
-    double const&, double const&>(
+    double const&, double const&, double const&>(
     // user-defined arguments
-    std::string const& name, double const& t0, double const& taup) {
+    std::string const& name,
+    double const& t0, double const& st0, double const& taup) {
     // set force
     halfEdgeForces.add<OrnsteinUhlenbeckTension>(
         name,                                   // (unique) user-defined name for forcess
-        t0, taup,                               // user-defined parameters
+        t0, st0, taup,                          // user-defined parameters
         this, &random, &forces, &halfEdges);    // VertexModel attributes
 }
 

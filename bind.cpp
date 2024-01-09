@@ -416,7 +416,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("taup"))
         .def("addOrnsteinUhlenbeckTension",
             &VertexModel::addHalfEdgeForce<OrnsteinUhlenbeckTension,
-                double const&, double const&>,
+                double const&, double const&, double const&>,
             "Add Ornstein-Uhlenbeck tension on junctions.\n"
             "\n"
             "Parameters\n"
@@ -429,6 +429,7 @@ PYBIND11_MODULE(bind, m) {
             "    Persistence time.",
             pybind11::arg("name"),
             pybind11::arg("t0"),
+            pybind11::arg("st0"),
             pybind11::arg("taup"))
         // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",
