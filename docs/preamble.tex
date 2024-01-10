@@ -1,0 +1,53 @@
+\usepackage{amsmath,amsfonts,amssymb,graphicx,hyperref,listings,xcolor,float}
+\usepackage[ddmmyyyy, 24hr]{datetime}
+
+% tikz
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usetikzlibrary{arrows.meta,arrows}
+
+% (pseudo-)algorithms [seems to need `lualatex` when this is actually used in the document]
+% https://tex.stackexchange.com/questions/70181
+\usepackage{algcompatible,newfloat,etoolbox}
+\AtEndEnvironment{algorithm}{\noindent\hrulefill\par\nobreak\vskip-5pt}
+\DeclareFloatingEnvironment[fileext=loa, listname=List of Algorithms, name=ALG., placement=tbhp]{algorithm}
+% https://tex.stackexchange.com/questions/353132
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
+% https://tex.stackexchange.com/questions/180212
+\algrenewcommand{\algorithmiccomment}[2][.6\linewidth]{\leavevmode\hfill\makebox[#1][l]{\triangleright~{\em#2}}}
+% https://tex.stackexchange.com/questions/184827
+\providecommand{\LINECOMMENT}[1]{\STATEx//~{\em#1}}
+
+% colours
+% seaborn `colorblind' palette
+% https://seaborn.pydata.org/tutorial/color_palettes.html
+\definecolor{purple}{HTML}{CC78BC}
+\definecolor{green}{HTML}{029E73}
+\definecolor{blue}{HTML}{0173B2}
+\definecolor{lightblue}{HTML}{56B4E9}
+\definecolor{yellow}{HTML}{DE8F05}
+\definecolor{brown}{HTML}{CA9161}
+\definecolor{red}{HTML}{D55E00}
+\definecolor{grey}{HTML}{949494}
+\definecolor{pink}{HTML}{FBAFE4}
+\definecolor{lightyellow}{HTML}{ECE133}
+
+% header/footer
+% https://tex.stackexchange.com/questions/117402
+\usepackage{fancyhdr} 
+\cfoot{\thepage}
+\pagestyle{fancy}
+% https://tex.stackexchange.com/questions/40172
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead{}
+
+%%%%% MACROS
+
+\def\scale{0.8}
+\providecommand\RETURN{\STATE\textbf{return}~}
+\providecommand\ASSERT{\STATE\textbf{assert}~}
+\providecommand\BREAK{\STATE\textbf{break}~}
+\providecommand\TRUE{\textsc{true}}
+\providecommand\FALSE{\textsc{false}}
+

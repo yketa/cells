@@ -1,0 +1,70 @@
+\documentclass[aps, superscriptaddress, notitlepage]{revtex4-1}
+\input{preamble}
+
+%%%%% DOCUMENT
+
+\begin{document}
+
+%%%%% TITLE
+
+\title{Forces in vertex models}
+\author{Yann-Edwin Keta}
+\date{\today, \currenttime}
+\maketitle
+
+%%%%% CONTENT
+
+\section{Cell potential energy}
+
+We introduce for each cell $i$ a reference perimeter $P^0_i$ and a reference area $A^0_i$, and for each of its cell corner $\mu \in \Omega_i$ a force whose effect is to bring the cell's perimeter $P_i$ and area $A_i$ to their reference quantities. A possible force derives from the following potential energy \cite{farhadifar2007influence,fletcher2014vertex,bi2016motilitydriven,sknepnek2023generating}
+\begin{equation}
+E_{\mathrm{VM}} = \sum_{\text{cells } i} \left[\frac{1}{2} K_i (A_i - A_i^0)^2 + \frac{1}{2} \Gamma_i (P_i - P_i^0)^2\right],
+\label{eq:evm}
+\end{equation}
+where $K_i$ and $\Gamma_i$ are respectively area and perimeter elastic constants. We denote $\boldsymbol{r}_{\mu}$, $\boldsymbol{r}_i$ the position of vertices $\mu, i$ (see Fig.~\ref{fig:fmu}). The cell's perimeter can be written
+\begin{equation}
+P_i = \sum_{\mu \in \Omega_i} |\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|,
+\end{equation}
+and the cell's area can be computed with the shoelace formula
+\begin{equation}
+A_i = \sum_{\mu \in \Omega_i} \frac{1}{2} [(\boldsymbol{r}_{\mu} - \boldsymbol{r}_{i}) \times (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{i})] \cdot \hat{\boldsymbol{e}}_z.
+\end{equation}
+Note that, by convention of ordering of cell corners, each term in this sum \textit{must be} positive. With these notations, we thus write the force acting on vertex $\mu$
+\begin{equation}
+\boldsymbol{F}_{\mathrm{VM},\mu} = -\nabla_{\mu} E_{\mathrm{VM}},
+\label{eq:fmugrade}
+\end{equation}
+where $\nabla_{\mu} \equiv \partial/\partial \boldsymbol{r}_{\mu}$. We compute
+\begin{equation}
+\nabla_{\mu} \left(|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|\right) = \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|},
+\end{equation}
+as well as
+\begin{equation}
+\nabla_{\mu} \left([(\boldsymbol{r}_{\mu} - \boldsymbol{r}_i) \times (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i)] \cdot \hat{\boldsymbol{e}}_z\right) = (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z
+\end{equation}
+to write \eqref{eq:fmugrade} in its full form
+\begin{equation}
+\begin{aligned}
+\boldsymbol{F}_{\mathrm{VM},\mu} &= - \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) \left[(\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z - (\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_i) \times \hat{\boldsymbol{e}}_z\right]\\
+&\qquad\qquad\qquad\qquad+ \Gamma_i (P_i - P^0_i) \left[\frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|} + \frac{\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}}{|\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}|}\right]\bigg]\\
+&= \sum_{\text{cells i},~ \mu \in \Omega_i} \bigg[\frac{1}{2} K_i (A_i - A^0_i) {\color{blue} \underbrace{(\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu + 1}) \times \hat{\boldsymbol{e}}_z}_{\text{towards cell interior}}} + \Gamma_i (P_i - P^0_i) \bigg[{\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu - 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}} + {\color{purple} \underbrace{\frac{\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}}{|\boldsymbol{r}_{\mu + 1} - \boldsymbol{r}_{\mu}|}}_{\text{towards neighbour}}}\bigg]\bigg],
+\end{aligned}
+\end{equation}
+where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworthy that, with potential \eqref{eq:evm}, the force acting on each cell centre is zero
+\begin{equation}
+\boldsymbol{F}_{\mathrm{VM}, i} = - \nabla_i E_{\mathrm{VM}} = - \frac{1}{2} K_i (A_i - A^0_i) \sum_{\mu \in \Omega_i} (\boldsymbol{r}_{\mu} - \boldsymbol{r}_{\mu - 1}) \times \hat{\boldsymbol{e}}_z = 0.
+\end{equation}
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[scale=\scale]
+\input{figs/fmu}
+\end{tikzpicture}
+\caption{Vertex representation of a single cell. By convention, cell centres are denoted by latin indices, and cell corners are denotes by greek indices. We denote $\Omega_i$ the ensemble of cell corners $\mu$ of the cell whose centre is $i$. By convention, $\mu + 1$ (respectively $\mu - 1$) denotes the next cell corner of $i$ after $\mu$ in anticlockwise (respectively clockwise) order.}
+\label{fig:fmu}
+\end{figure}
+
+\bibliography{ref}
+
+\end{document}
+

@@ -8,7 +8,7 @@ Python library written in C++ to integrate vertex models.
 
 Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install pybind11`) and a C++20 compiler.
 
-Python scripts are written for `python3.*` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`, e.g. by executing
+Python scripts are written for `python3` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`, e.g. by executing
 ```
 echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
 ```
@@ -18,15 +18,24 @@ Python routines `run.py` and `vm.py` require `numpy` and `matplotlib`. These can
 
 ## Running
 
-There are two default routines to simulate vertex models: `run.py` plots in real time a simulation of a vertex model, and `vm.py` saves simulations of vertex models. It is noteworthy that `vm.py` also defines objects and functions to access and plot vertex model data (and on which `run.py` relies).
+There are two default routines to simulate vertex models (VMs): `run.py` plots in real time a simulation of a vertex model, and `vm.py` saves simulations of vertex models. It is noteworthy that `vm.py` also defines objects and functions to access and plot vertex model data (and on which `run.py` relies).
+
+### Arguments
 
 Both routines rely on `init.py` which parses command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
+
+### Examples
+
+```
+python run.py -out -area -perimeter # visualise VM with Ornstein-Uhlenbeck tension, and area and perimeter elastic forces
+python run.py -abp -area -periodic  # visualise VM with active Brownian vertices, area elastic force, and periodic boundary conditions
+```
 
 ## C++ scripts
 
 ### Vertex model
 
-This vertex model implementation is separated in two parts. First `mesh.*pp` contains the implementation of the geometrical features of the model, which relies on vertices which are linked together by directed half-edges enabling to move accross the mesh (see `docs/avm.pdf`). Second `system.*pp` provides a general `VertexModel` class to integrate the dynamics.
+This vertex model implementation is separated in two parts. First `mesh.*pp` contains the implementation of the geometrical features of the model, which relies on vertices which are linked together by directed half-edges enabling to move accross the mesh (see `docs/mesh.pdf`). Second `system.*pp` provides a general `VertexModel` class to integrate the dynamics.
 
 `VertexModel` methods to initialise configurations are defined in `initialisation.cpp`.
 
@@ -36,10 +45,11 @@ This vertex model implementation is separated in two parts. First `mesh.*pp` con
 
 ### Forces
 
-Forces are defined separately and are attached to the `VertexModel` class following a class factory method (see `class_factory.hpp`) which enables to add and remove different forces. There are two general classes of forces enabled (see `base_forces.hpp`): forces which are computed for all vertices (`VertexForce` class), and forces which are computed for all half-edges (`HalfEdgeForce` class).
+Forces are defined separately and are attached to the `VertexModel` class following a class factory method (see `class_factory.hpp`) which enables to add and remove different forces. There are two general classes of forces enabled (see `base_forces.hpp`): forces which are computed for all vertices of a given type (`VertexForce` class), and forces which are computed for all half-edges of a given type (`HalfEdgeForce` class).
 
 Proper definitions of forces belong in `forces.hpp`, with `forces.cpp` providing definitions of `VertexModel` methods to add them. Finally, these are exposed to Python in `bind.cpp`.
 
+Descriptions of some forces can be found in `docs/forces.pdf`.
 
 ### Pickling
 
