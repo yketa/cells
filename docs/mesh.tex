@@ -25,7 +25,7 @@
 \label{fig:schematic}
 \end{figure}
 
-A \textit{cell centre} is enclosed by \textit{cell corners} (or \textit{vertices}). These are linked between themselves by \textit{junctions}. We will assume (i) that cells are always convex so that the mesh remains planar, and (ii) that no edge joins two cell centres. The ensemble of the vertices and the edges that link them constitutes the \textit{geometric mesh}. The specification of the cell centres and the junctions between non-cell-centres defines the \textit{physical mesh}.
+A \textit{cell centre} is enclosed by \textit{cell corners} (or \textit{vertices}). These are linked between themselves by \textit{junctions}. We will assume (i) that cells are always convex, (ii) that the mesh remains planar, and (iii) that no edge joins two cell centres. The ensemble of the vertices and the edges that link them constitutes the \textit{geometric mesh}. The specification of the cell centres and the junctions between non-cell-centres defines the \textit{physical mesh}.
 
 \section{Half-edge construction}
 
@@ -63,7 +63,7 @@ T1 transitions correspond to changes of neighbours of 4 cells resulting in a mod
 
 It is noteworthy that states (A) and (C) (Fig.~\ref{fig:t1}) are described within the half-edge construction with the same number of half-edges and vertices. Therefore it is possible to implement a direct change from (A) to (C) through a clever relabelling of objects. We propose here to implement the two steps (1) and (2) separately in order to enable also the stabilisation of higher order vertices.
 
-Merging two vertices amounts, in the half-edge construction, to deleting 2 triangles (\textit{i.e.}, 2 sets of 3 half-edges) among which one junction as well as one vertex. We represent this operation in Fig.~\ref{fig:delete}, where the junction to delete is $[\mu, \nu]$ ($\mu$ is merged into $\nu$) and the triangles to delete are shaded. Relations between half-edges, as well as the knowledge for each vertex of a half-edge going out of itself, imply that we need to relabel and reaffect half-edges and vertices before deleting anything in order for the construction to remain consistent at the end of the operation. We describe the procedure in Alg.~\ref{alg:delete}. Note that this procedure does not rely on physical properties of the edges, and is thus purely geometrical in the mesh sense.
+Merging two vertices amounts, in the half-edge construction, to deleting 2 triangles (\textit{i.e.}, 2 sets of 3 half-edges) among which one edge as well as one vertex. We represent this operation in Fig.~\ref{fig:delete}, where the edge to delete is $[\mu, \nu]$ ($\mu$ is merged into $\nu$) and the triangles to delete are shaded. Relations between half-edges, as well as the knowledge for each vertex of a half-edge going out of itself, imply that we need to relabel and reaffect half-edges and vertices before deleting anything in order for the construction to remain consistent at the end of the operation. We describe the procedure in Alg.~\ref{alg:delete}. Note that this procedure does not rely on physical properties of the edges, and is thus purely geometrical in the mesh sense.
 
 \begin{figure}[!t]
 \centering
@@ -117,22 +117,46 @@ Merging two vertices amounts, in the half-edge construction, to deleting 2 trian
 \end{algorithmic}
 \end{algorithm}
 
-Creating a junction involves the same steps as merging vertices but in reverse order, \textit{i.e.} first create a vertex and 6 half-edges, then relabelling and affecting half-edges and vertices in the system. To identify unequivocally the topology around the new junction in the half-edge construction, it is necessary to specify two distinct half-edges going out of a same vertex. We represent this operation in Fig.~\ref{fig:create}, where vertex $\xi$ is created from vertex $\nu$ and half-edges {\color{green}$\nu \to k$} and {\color{yellow}$\nu \to l$}.
+Creating an edge involves the same steps as deleting an edge but in reverse order, \textit{i.e.} first create a vertex and 6 half-edges, then relabelling and affecting half-edges and vertices in the system. To identify unequivocally the topology around the new edge in the half-edge construction, it is necessary to specify two distinct half-edges going out of a same vertex. We represent this operation in Fig.~\ref{fig:create}, where vertex $\xi$ is created from vertex $\nu$ and half-edges {\color{green}$\nu \to k$} and {\color{yellow}$\nu \to l$}.
 
-We can now use these algorithms (to merge vertices and create junction) in order to perform the T1 transition of Fig.~\ref{fig:t1} (see Alg.~\ref{alg:t1}). Apart from the junction to delete, additional information needed to do this transition are the direction of new junction as well as its length. A possible choice is to create the junction orthogonal to the original junction.
+We can now use these algorithms (to delete an edge and create a new one) in order to perform the T1 transition of Fig.~\ref{fig:t1} (see Alg.~\ref{alg:t1}). We discard the stabilisation of four-fold vertices \cite{spencer2017vertex} then, apart from the junction to delete, additional information needed to do this transition are the direction of new junction as well as its length. A possible choice is to create the junction orthogonal to the original junction.
 
 \begin{algorithm}[H]
 \caption{Perform T1 (see \textsc{System::doT1} in \href{../system.cpp}{\textsc{system.cpp}}).}
 \label{alg:t1}
 \begin{algorithmic}[1]
-\REQUIRE Half-edges $\boldsymbol{h}$ belonging to the junction to delete.
-\STATE ...
+\REQUIRE Half-edge $\boldsymbol{h}$ belonging to the junction to delete, length $\ell$ of the new junction to create.
+\STATE Set $\mu, \nu =$ origin and destination vertices of $\boldsymbol{h}$.
+\LINECOMMENT{Identify half-edge to split to create new junction.}
+\STATE Set $\mathcal{N}_{\mu}, \mathcal{N}_{\nu} =$ neighbours of $\mu$ and $\nu$. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:neighbours}.}
+\STATE Set ensemble of half-edges $\Omega = \emptyset$.
+\FOR{$\xi \in \mathcal{N}_{\mu}$}
+    \IF{$\xi$ is a cell centre and $\xi \notin \mathcal{N}_{\nu}$}
+        \STATE Add half-edge $\mu \to \xi$ to $\Omega$.
+    \ENDIF
+\ENDFOR
+\ASSERT $\Omega \neq \emptyset$
+\STATE Set $\boldsymbol{h}^{\prime} =$ randomly picked element of $\Omega$.
+\STATE Set ensemble of half-edges $\Omega = \emptyset$.
+\FOR{$\xi \in \mathcal{N}_{\nu}$}
+    \IF{$\xi$ is a cell centre and $\xi \notin \mathcal{N}_{\mu}$}
+        \STATE Add half-edge $\nu \to \xi$ to $\Omega$.
+    \ENDIF
+\ENDFOR
+\ASSERT $\Omega \neq \emptyset$
+\STATE Set $\boldsymbol{h}^{\prime\prime} =$ randomly picked element of $\Omega$.
+\LINECOMMENT{Determine angle of new junction.}
+\STATE Set $\alpha = \mathrm{arg}(\boldsymbol{h}) + \pi/2$.
+\LINECOMMENT{Perform T1.}
+\STATE Delete edge to which $\boldsymbol{h}$ belongs. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:delete}. At this point $\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$ go out of the same vertex $\nu$.}
+\STATE Create an edge from $\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$ with additional vertex $\xi$. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:create}. Index of vertex $\xi$ is returned by the algorithm.}
+\STATE Move vertices $\nu$ and $\xi$ a distance $\ell$ apart in the direction given by $\alpha$.
 \end{algorithmic}
 \end{algorithm}
 
-\section{Open boundary}
+\section{Open boundaries}
 
-...
+Open boundaries are treated as special vertices for which the orientation condition (Alg.~\ref{alg:check},~l.~\ref{alg:checkori}) is not checked. It is important that the half-edge construction remains well defined so that it is possible to move along the boundary. Finally, when performing T1s (Alg.~\ref{alg:t1}), half-edges towards an open boundary can be considered as half-edges to be split ($\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$) even though the boundary is a shared neighbour of two vertices, the only important condition is that at least one of these two half-edges has to not go to the boundary.
 
 % \bibliography{ref}
 
@@ -158,7 +182,7 @@ We can now use these algorithms (to merge vertices and create junction) in order
             \ASSERT $o$ knows one half-edge which \textit{does} leave from $o$
             \STATE{Remove $o$ from $\mathcal{V}^{\prime}$.}
         \ENDIF
-        \ASSERT $[\boldsymbol{h}^{\prime} \times (\boldsymbol{h}^{\prime} + 1)] \cdot \hat{\boldsymbol{e}}_z > 0$ \COMMENT{Check orientation, $\boldsymbol{h}^{\prime} + 1$ is meant as next element in order in $\mathcal{T}$.}
+        \ASSERT $[\boldsymbol{h}^{\prime} \times (\boldsymbol{h}^{\prime} + 1)] \cdot \hat{\boldsymbol{e}}_z > 0$ \COMMENT{Check orientation, $\boldsymbol{h}^{\prime} + 1$ is meant as next element in order in $\mathcal{T}$.} \label{alg:checkori}
         \ASSERT pair half-edge of $\boldsymbol{h}^{\prime}$ has opposite origin and destination vertices \COMMENT[0.35\textwidth]{Check half-edge.}
         \ASSERT $\boldsymbol{h}^{\prime}$ is the pair of half-edge of its pair half-edge
         \ASSERT $\boldsymbol{h}^{\prime}$ is previous half-edge of $\boldsymbol{h}^{\prime} + 1$. \COMMENT[0.35\textwidth]{Check next half-edge.}
@@ -210,6 +234,7 @@ We can now use these algorithms (to merge vertices and create junction) in order
 \begin{algorithmic}[1]
 \REQUIRE Half-edges $\boldsymbol{h}$ and $\boldsymbol{h}^{\prime}$ going out of the same vertex. \COMMENT[0.45\textwidth]{Thick {\color{green}green} and {\color{yellow}yellow} half-edges in Fig.~\ref{fig:create}.}
 \REQUIRE Types $t,t^{\dagger}$ for half-edges at which new triangles are adjacent. \COMMENT[0.45\textwidth]{Thick and thin {\color{grey}grey} lines in Fig.~\ref{fig:create}.}
+\ENSURE Created vertex and half-edges.
 \STATE Set $\nu$ = origin vertex of $\boldsymbol{h}$. \COMMENT{$\nu$ should also be the origin vertex of $\boldsymbol{h}^{\prime}$.}
 \LINECOMMENT{Create new vertex.}
 \STATE Create vertex $\xi$ associated to half-edge $\boldsymbol{h}^{\prime}$ going out of it.
@@ -239,6 +264,7 @@ We can now use these algorithms (to merge vertices and create junction) in order
 \STATEx Associate type of $\boldsymbol{h}^{\prime}$ to $\boldsymbol{b}$.
 \STATE Associate $\boldsymbol{n}$ as pair half-edge of $\boldsymbol{h}^{\prime\dagger}$ and vice-versa.
 \STATEx Associate type of $\boldsymbol{h}^{\prime\dagger}$ to $\boldsymbol{n}$.
+\RETURN indices of vertex $\xi$ and of half-edges within the created triangles.
 \end{algorithmic}
 \end{algorithm}
 
