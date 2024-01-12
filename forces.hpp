@@ -170,9 +170,9 @@ Active Brownian self-propulsion force acting on vertices.
                 }
             }
             // integration
+            double const amp = sqrt(2.*dt/parameters.at("taup"));
             for (auto it=theta.begin(); it != theta.end(); ++it) {
-                theta[it->first] +=
-                    sqrt(2.*dt/parameters.at("taup"))*random->gauss();
+                theta[it->first] += amp*random->gauss();
             }
         }
 
@@ -235,14 +235,13 @@ http://arxiv.org/abs/2309.04818
                 }
             }
             // integration
+            double const dt_ = dt/parameters.at("taup");
+            double const amp = parameters.at("st0")*sqrt(2.*dt_);
             for (auto it=tension.begin(); it != tension.end(); ++it) {
                 tension[it->first] =
-                    (1 - dt/parameters.at("taup"))*tension[it->first]
-                        + (dt/parameters.at("st0"))*parameters.at("t0")
-                        + sqrt(
-                            2.*pow(parameters.at("t0"), 2)
-                            *dt/parameters.at("taup"))
-                                *random->gauss();
+                    (1 - dt_)*tension[it->first]
+                        + dt_*parameters.at("t0")
+                        + amp*random.gauss();
             }
         }
 
