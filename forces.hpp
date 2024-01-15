@@ -158,13 +158,19 @@ Active Brownian self-propulsion force acting on vertices.
 
         void integrate(double const& dt) override {
             // index correspondence between vertices and orientations
-            for (auto it=theta.begin(); it != theta.end(); ++it) {
-                if (!inMap(*vertices, it->first)) { // vertex index not present anymore
-                    theta.erase(it->first);
+            for (auto it=theta.begin(); it != theta.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = theta.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = theta.erase(it);
+                }
+                else {
+                    ++it;
                 }
             }
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
-                if (!inMap(theta, it->first)        // new vertex index
+                if (!inMap(theta, it->first)                            // new vertex index
                     && (it->second).getType() == type) {
                     theta[it->first] = 2.*std::numbers::pi*random->random01();
                 }
@@ -172,7 +178,7 @@ Active Brownian self-propulsion force acting on vertices.
             // integration
             double const amp = sqrt(2.*dt/parameters.at("taup"));
             for (auto it=theta.begin(); it != theta.end(); ++it) {
-                theta[it->first] += amp*random->gauss();
+                it->second += amp*random->gauss();
             }
         }
 
@@ -222,13 +228,19 @@ http://arxiv.org/abs/2309.04818
 
         void integrate(double const& dt) override {
             // index correspondence between half-edges and tensions
-            for (auto it=tension.begin(); it != tension.end(); ++it) {
-                if (!inMap(*halfEdges, it->first)) {    // half-edge index not present anymore
-                    tension.erase(it->first);
+            for (auto it=tension.begin(); it != tension.end();) {
+                if (!inMap(*halfEdges, it->first)) {                        // half-edge index not present any more
+                    it = tension.erase(it);
+                }
+                else if ((halfEdges->at(it->first)).getType() != type) {    // half-edge is not a junction any more
+                    it = tension.erase(it);
+                }
+                else {
+                    ++it;
                 }
             }
             for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
-                if (!inMap(tension, it->first)          // new half-edge index
+                if (!inMap(tension, it->first)                              // new half-edge index
                     && (it->second).getType() == type) {
                     tension[it->first] = parameters.at("t0")
                         + parameters.at("st0")*random->gauss();
@@ -238,7 +250,7 @@ http://arxiv.org/abs/2309.04818
             double const dt_ = dt/parameters.at("taup");
             double const amp = parameters.at("st0")*sqrt(2.*dt_);
             for (auto it=tension.begin(); it != tension.end(); ++it) {
-                tension[it->first] =
+                it->second =
                     (1 - dt_)*tension[it->first]
                         + dt_*parameters.at("t0")
                         + amp*random->gauss();
