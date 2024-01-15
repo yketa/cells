@@ -29,7 +29,7 @@ Cell perimeter restoring force.
 
         PerimeterForce(
             double const& kP_, double const& P0_,
-            Mesh* mesh_, ForcesType* forces_, VerticesType* vertices_) :
+            Mesh* const mesh_, ForcesType* forces_, VerticesType* vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"kP", kP_}, {"P0", P0_}},
                 forces_, vertices_),
@@ -74,13 +74,13 @@ Cell area restoring force.
 
     protected:
 
-        Mesh* mesh;
+        Mesh* const mesh;
 
     public:
 
         AreaForce(
             double const& kA_, double const& A0_,
-            Mesh* mesh_, ForcesType* forces_, VerticesType* vertices_) :
+            Mesh* const mesh_, ForcesType* forces_, VerticesType* vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"kA", kA_}, {"A0", A0_}},
                 forces_, vertices_),
@@ -186,15 +186,15 @@ http://arxiv.org/abs/2309.04818
 
     protected:
 
-        Mesh* mesh;                         // mesh object
+        Mesh* const mesh;                   // mesh object
         Random* random;                     // random number generator
-        std::map<long int, double> tension; // orientation of self-propulsion force
+        std::map<long int, double> tension; // tension in each junction
 
     public:
 
         OrnsteinUhlenbeckTension(
             double const& t0_, double const& st0_, double const& taup_,
-            Mesh* mesh_, Random* random_,
+            Mesh* const mesh_, Random* random_,
             ForcesType* forces_, HalfEdgesType* halfEdges_) :
             HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
                 {{"t0", t0_}, {"st0", st0_}, {"taup", taup_}},
@@ -241,7 +241,7 @@ http://arxiv.org/abs/2309.04818
                 tension[it->first] =
                     (1 - dt_)*tension[it->first]
                         + dt_*parameters.at("t0")
-                        + amp*random.gauss();
+                        + amp*random->gauss();
             }
         }
 
