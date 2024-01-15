@@ -139,8 +139,7 @@ PYBIND11_MODULE(bind, m) {
         "Python wrapper around C++ Active Brownian force computation object.")
         .def_property("theta",
             &ActiveBrownianForce::getTheta,
-            [](ActiveBrownianForce& self, std::map<long int, double> theta_)
-                { self.setTheta(theta_); });
+            &ActiveBrownianForce::setTheta);
 
     pybind11::class_<OrnsteinUhlenbeckTension,
         HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
@@ -150,9 +149,7 @@ PYBIND11_MODULE(bind, m) {
         "object.")
         .def_property("tension",
             &OrnsteinUhlenbeckTension::getTension,
-            [](OrnsteinUhlenbeckTension& self,
-                std::map<long int, double> tension_)
-                { self.setTension(tension_); });
+            &OrnsteinUhlenbeckTension::setTension);
 
     /*
      *  [system.hpp]
