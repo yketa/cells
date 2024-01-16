@@ -57,7 +57,7 @@ All forces.
         BaseForce(BaseForce<T> const& bF) : // copy constructor
             BaseForce(bF.getType(), bF.getParameters(), bF.getForces()) {}
 
-        virtual ~BaseForce() = 0;
+        virtual ~BaseForce() {}
 
         // METHODS
 
