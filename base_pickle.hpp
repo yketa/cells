@@ -59,8 +59,10 @@ void pybind11_setstate_vertex_forces(                           // python __sets
     // check
     checkSize(t, 2);
     // get data
-    std::string const name = t[0].cast<std::string>();
-    std::map<std::string, double> const parameters = t[1].cast<std::string>();
+    std::string const name =
+        t[0].cast<std::string>();
+    std::map<std::string, double> const parameters =
+        t[1].cast<std::map<std::string, double>>();
     // add force
     vm.addVertexForce<DerivedType, ParametersType const&>(
         name, parameters);
@@ -81,8 +83,10 @@ void pybind11_setstate_half_edge_forces(                        // python __sets
     // check
     checkSize(t, 2);
     // get data
-    std::string const name = t[0].cast<std::string>();
-    std::map<std::string, double> const parameters = t[1].cast<std::string>();
+    std::string const name =
+        t[0].cast<std::string>();
+    std::map<std::string, double> const parameters =
+        t[1].cast<std::map<std::string, double>>();
     // add force
     vm.addHalfEdgeForce<DerivedType, ParametersType const&>(
         name, parameters);

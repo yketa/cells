@@ -46,7 +46,7 @@ All forces.
         T* getForces()
             { return forces; }
 
-        // CONSTRUCTORS
+        // CONSTRUCTORS AND DESTRUCTORS
 
         BaseForce(
             std::string const& type_,
@@ -56,6 +56,8 @@ All forces.
 
         BaseForce(BaseForce<T> const& bF) : // copy constructor
             BaseForce(bF.getType(), bF.getParameters(), bF.getForces()) {}
+
+        virtual ~BaseForce() = 0;
 
         // METHODS
 

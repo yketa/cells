@@ -49,12 +49,12 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("position",
             [](Vertex const& self) {
                 std::vector<double> const position = self.getPosition();
-                return pybind11::array_t<double>({2}, &(position[0]));
+                return pybind11::array_t<double>(2, &(position[0]));
             })
         .def_property_readonly("uposition",
             [](Vertex const& self) {
                 std::vector<double> const uposition = self.getUPosition();
-                return pybind11::array_t<double>({2}, &(uposition[0]));
+                return pybind11::array_t<double>(2, &(uposition[0]));
             })
         .def_property_readonly("halfEdgeIndex",
             &Vertex::getHalfEdgeIndex)
@@ -186,7 +186,7 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("systemSize",
             [](VertexModel const& self) {
                 std::vector<double> const systemSize = self.getSystemSize();
-                return pybind11::array_t<double>({2}, &(systemSize[0]));
+                return pybind11::array_t<double>(2, &(systemSize[0]));
             })
         // attributes [VertexModel (system.hpp)]
         .def_property_readonly("halfEdgeForces",
@@ -208,7 +208,7 @@ PYBIND11_MODULE(bind, m) {
                     (double const*) pos.request().ptr;
                 std::vector<double> const wpos =
                     self.wrap(std::vector<double>(posPTR, posPTR + 2));
-                return pybind11::array_t<double>({2}, &(wpos[0]));
+                return pybind11::array_t<double>(2, &(wpos[0]));
             },
             "Wrap position to positive values with respect to periodic\n"
             "boundary conditions.\n"
@@ -235,7 +235,7 @@ PYBIND11_MODULE(bind, m) {
                     self.wrapDiff(
                         std::vector<double>(fromPosPTR, fromPosPTR + 2),
                         std::vector<double>(toPosPTR, toPosPTR + 2));
-                return pybind11::array_t<double>({2}, &(disp[0]));
+                return pybind11::array_t<double>(2, &(disp[0]));
             },
             "Wrap difference vector with respect to periodic boundary\n"
             "conditions.\n"
