@@ -8,7 +8,14 @@ from cells.vm import plot
 
 import matplotlib.pyplot as plt
 
+import signal
+import os
+
 if __name__ == "__main__":
+
+    signal.signal(signal.SIGINT, lambda _, __: os._exit(0)) # avoid traceback when interrupting
+
+    # INITIALISATION
 
     args, vm = init_vm()
     fig, ax = plot(vm)

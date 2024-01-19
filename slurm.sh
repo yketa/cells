@@ -157,8 +157,8 @@ sbatch ${WAIT:+-W} ${CHAIN:+-d afterok:$CHAIN} <<EOF
 #! /bin/bash
 #SBATCH --job-name='$JOB_NAME'
 #SBATCH -D '$EXE_DIR'
-#SBATCH --output='${OUT_DIR}/%j.out'
-#SBATCH --error='${ERR_DIR}/%j.err'
+#SBATCH --output='${OUT_DIR}/%j'
+#SBATCH --error='${ERR_DIR}/%j'
 #SBATCH --partition=$PARTITION
 ${GRES:+#SBATCH --gres=$GRES}
 #SBATCH --nodes=$NODES
@@ -190,13 +190,9 @@ export OMP_NUM_THREADS=$NTASKS
 (>&1 printf '%-21s: %s\n' 'SCRIPT' '$SCRIPT')
 (>&1 echo)
 
-trap 'kill -15 "\${PID}"; wait "\${PID}";' SIGINT SIGTERM   # terminate script when cancelled
-
 module load Python/3.10.4-GCCcore-11.3.0                    # load python3.10
 
-$SCRIPT &                                                   # launching script
-PID="\$!"
-wait "\${PID}"
+$SCRIPT                                                     # launching script
 EOF
 
 ${WAIT:+wait}   # wait until completion of the job

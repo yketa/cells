@@ -9,6 +9,7 @@ from cells.exponents import float_to_letters
 from cells.init import init_vm
 
 import sys
+import os
 
 from math import ceil
 
@@ -290,20 +291,25 @@ def plot(vm, fig=None, ax=None):
 
 if __name__ == "__main__":
 
-    args, vm = init_vm()
-
     # COMPUTATION TIME
 
     start_t = datetime.now()
-    print("Started on %s." % start_t)
+    print("Started on %s." % start_t,
+        flush=True)
 
-    def exit_handler():
+    def exit_handler(*_args, **_kwargs):
         end_t = datetime.now()
-        print("Stopped on %s (elapsed: %s)." % (end_t, end_t - start_t))
+        print("Stopped on %s (elapsed: %s)." % (end_t, end_t - start_t),
+            flush=True)
+        os._exit(0)
     # print elapsed time on exit
     signal.signal(signal.SIGINT, exit_handler)
     signal.signal(signal.SIGTERM, exit_handler)
     atexit.register(exit_handler)
+
+    # INITIALISATION
+
+    args, vm = init_vm()
 
     # METADATA
 
