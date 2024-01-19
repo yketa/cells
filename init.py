@@ -53,6 +53,9 @@ def init_vm():
     if args.out:
         vm.addOrnsteinUhlenbeckTension("out",
             args.t0, args.st0, args.taup)
+    if args.model0:
+        vm.addModel0("model0",
+            args.Gamma, args.p0*np.sqrt(A0), args.sigma, args.taup)
 
     return args, vm
 
@@ -106,6 +109,15 @@ def parse_args():
         help="active tension mean")
     parser.add_argument("-st0", type=float, default=5e-1,
         help="active tension standard deviation")
+    # MODELS 0-4
+    parser.add_argument("-Gamma", type=float, default=1,
+        help="perimeter elasticity constant")
+    parser.add_argument("-sigma", type=float, default=1e-1,
+        help="noise amplitude")
+    # model 0
+    parser.add_argument("-model0",
+        action=BooleanOptionalAction,
+        help="add model 0")
 
     # ALGORITHM
     parser.add_argument("-seed", type=int, default=0,

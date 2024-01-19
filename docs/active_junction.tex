@@ -1,0 +1,107 @@
+\documentclass{revtex-custom}
+
+\begin{document}
+
+\title{Variations of active junctions}
+\author{Yann-Edwin Keta}
+\date{\today, \currenttime}                                                     
+\maketitle
+
+\section{General equations}
+
+We consider a junction between two vertices $\mu$ and $\nu$, with a tension $T_{\mu\nu}$ and a length $\ell_{\mu\nu}$, which separates cells $i$ and $j$. This junction contributes the following term to the force applied on $\mu$
+\begin{equation}
+\boldsymbol{F}_{\mu\nu} = T_{\mu\nu} \hat{\boldsymbol{r}}_{\mu\nu}
+\end{equation}
+with $\hat{\boldsymbol{r}}_{\mu\nu} = (\boldsymbol{r}_{\nu} - \boldsymbol{r}_{\mu})/|\boldsymbol{r}_{\nu} - \boldsymbol{r}_{\mu}|$.
+
+We will denote an ``Ornstein-Uhlenbeck process''
+\begin{equation}
+p = \mathrm{OU}(m, \sigma, \tau) \Leftrightarrow \tau \dot{p} = -(p - m) + \sqrt{2 \sigma^2 \tau} \, \eta
+\end{equation}
+where $\eta$ is a zero-mean unit-variance Gaussian white noise. With this notation $m$ may itself be a stochastic process. It is then important to distinguish
+\begin{subequations}
+\begin{align}
+p^{(1)} = m + \Delta p^{(1)},\\
+\Delta p^{(1)} = \mathrm{OU}(0, \ldots) \Leftrightarrow \Delta \dot{p}^{(1)} = - \Delta p^{(1)} + \eta,
+\end{align}
+\end{subequations}
+for which we obtain
+\begin{equation}
+\dot{p}^{(1)} = -(p^{(1)} - m) + \eta + \dot{m},
+\label{eq:1}
+\end{equation}
+from the similarly defined
+\begin{equation}
+p^{(2)} = \mathrm{OU}(m, \ldots) \Leftrightarrow \dot{p}^{(2)} = -(p^{(2)} - m) + \eta,
+\label{eq:2}
+\end{equation}
+such that Eqs.~\ref{eq:1},~\ref{eq:2} differ by a term $\dot{m}$.
+
+\section{Perimeter elasticity}
+
+We define $P_i$ and $P_i^0$ the perimeter and target perimeter of cell $i$, and $\Gamma$ an elastic constant. We denote
+\begin{equation}
+T_{\mu\nu}^{\mathrm{per}} = \Gamma[P_i - P_i^0] + \Gamma[P_j - P_j^0]
+\end{equation}
+the tension deriving from perimeter elasticity. Target perimeters $P_i^0$ are constant.
+
+\subsection{Model 0}
+
+\begin{subequations}
+\begin{align}
+T_{\mu\nu} = T_{\mu\nu}^{\mathrm{per}} + \Delta T_{\mu\nu},\\
+\Delta T_{\mu\nu} = \mathrm{OU}(0, \sigma, \tau_p).
+\end{align}
+\end{subequations}
+This corresponds to the classical vertex model in the limit $\sigma \to 0$.
+
+\subsection{Model 1}
+
+\begin{equation}
+T_{\mu\nu} = \mathrm{OU}(T_{\mu\nu}^{\mathrm{per}}, \sigma, \tau_p).
+\end{equation}
+In the $\sigma \to 0$ limit the tension relaxes to $T_{\mu\nu}^{\mathrm{per}}$ over the timescale $\tau_p$, which amounts to an effective memory kernel.
+
+\section{Junction viscoelasticity}
+
+We define $\ell_{\mu\nu}^0$ the rest length of junction $\mu \leftrightarrow \nu$ and $k$ an elastic constant. We denote
+\begin{equation}
+T_{\mu\nu}^{\mathrm{el}} = k[\ell_{\mu\nu} - \ell_{\mu\nu}^0]
+\end{equation}
+the tension deriving from junction elasticity. Rest lengths $\ell_{\mu\nu}^0$ are stochastic variables which are initialised with the values of the junction lengths $\ell_{\mu\nu}$.
+
+\subsection{Model 2}
+
+\begin{subequations}
+\begin{align}
+T_{\mu\nu} = T_{\mu\nu}^{\mathrm{el}} + \Delta T_{\mu\nu},\\
+\Delta T_{\mu\nu} = \mathrm{OU}(0, \sigma, \tau_p),\\
+\tau_v \dot{\ell}^0_{\mu\nu} = -(\ell^0_{\mu\nu} - \ell_{\mu\nu}) \Leftrightarrow \dot{\ell}^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, 0, \tau_v).
+\end{align}
+\end{subequations}
+
+This corresponds to the Maxwell model in the limit $\sigma \to 0$.
+
+\subsection{Model 3}
+
+\begin{subequations}
+\begin{align}
+T_{\mu\nu} = T_{\mu\nu}^{\mathrm{el}},\\
+\ell^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, \sigma, \tau_p).
+\end{align}
+\end{subequations}
+
+This corresponds to the Maxwell model in the limit $\sigma \to 0$.
+
+\subsection{Model 4}
+
+\begin{subequations}
+\begin{align}
+T_{\mu\nu} = \mathrm{OU}(T_{\mu\nu}^{\mathrm{el}}, \sigma, \tau_p),\\
+\tau_v \dot{\ell}^0_{\mu\nu} = -(\ell^0_{\mu\nu} - \ell_{\mu\nu}) \Leftrightarrow \dot{\ell}^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, 0, \tau_v).
+\end{align}
+\end{subequations}
+
+\end{document}
+

@@ -152,6 +152,24 @@ PYBIND11_MODULE(bind, m) {
             &OrnsteinUhlenbeckTension::setTension);
 
     /*
+     *  MODELS 0-4
+     *
+     */
+
+    pybind11::class_<Model0,
+        HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<Model0>>(
+        m, "Model0",
+        "Python wrapper around C++ model 0 computation object.")
+        .def_property_readonly("perimeter",
+            &Model0::getPerimeter)
+        .def_property("noise",
+            &Model0::getNoise,
+            &Model0::setNoise)
+        .def_property_readonly("tension",
+            &Model0::getTension);
+
+    /*
      *  [system.hpp]
      *
      *  Also defines some wrappers for functions inherited from Mesh in
@@ -427,6 +445,32 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("t0"),
             pybind11::arg("st0"),
+            pybind11::arg("taup"))
+        /*
+         *  MODELS 0-4
+         *
+         */
+        .def("addModel0",
+            &VertexModel::addHalfEdgeForce<Model0,
+                double const&, double const&, double const&, double const&>,
+            "Add model 0 for active junctions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "Gamma : float\n"
+            "    Perimeter elasticity constant.\n"
+            "P0 : float\n"
+            "    Target parameter.\n"
+            "sigma : float\n"
+            "    Tension noise strength.\n"
+            "taup : float\n"
+            "    Noise persistence time.",
+            pybind11::arg("name"),
+            pybind11::arg("Gamma"),
+            pybind11::arg("P0"),
+            pybind11::arg("sigma"),
             pybind11::arg("taup"))
         // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",

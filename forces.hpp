@@ -259,5 +259,115 @@ http://arxiv.org/abs/2309.04818
 
 };
 
+/*
+ *  MODELS 0-4
+ *
+ */
+
+class Model0 : public HalfEdgeForce<ForcesType> {
+
+    protected:
+
+        Mesh* const mesh;                       // mesh object
+        VerticesType* const vertices;           // vertices
+        Random* random;                         // random number generator
+        std::map<long int, double> perimeter;   // cell perimeters
+        std::map<long int, double> noise;       // noise in tension
+        std::map<long int, double> tension;     // junction tension
+
+    public:
+
+        Model0(
+            double const& Gamma_, double const& P0_,
+            double const& sigma_, double const& taup_,
+            Mesh* const mesh_, VerticesType* const vertices_, Random* random_,
+            ForcesType* forces_, HalfEdgesType* halfEdges_) :
+            HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
+                {{"Gamma", Gamma_}, {"P0", P0_},
+                    {"sigma", sigma_}, {"taup", taup_}},
+                forces_, halfEdges_),
+            mesh(mesh_), vertices(vertices_), random(random_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getPerimeter() const
+            { return perimeter; }
+
+        std::map<long int, double> const& getNoise() const
+            { return noise; }
+        void setNoise(std::map<long int, double> const& noise_)
+            { noise = noise_; }
+
+        std::map<long int, double> const& getTension() const
+            { return tension; }
+
+        void addForce(HalfEdge const& halfEdge) override {
+            long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
+            long int const toIndex = halfEdge.getToIndex();         // destination vertex
+            std::vector<double> const fromTo =
+                mesh->getHalfEdgeVector(halfEdge.getIndex(), true); // unit half-edge vector
+            double force;
+            for (int dim=0; dim < 2; dim++) {
+                force = tension[halfEdge.getIndex()]*fromTo[dim];
+                (*forces)[fromIndex][dim] += force;
+                (*forces)[toIndex][dim] -= force;
+            }
+        }
+
+        void integrate(double const& dt) override {
+            // index correspondence between cell centre vertices and perimeters
+            perimeter.clear();
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if ((it->second).getType() == "centre") {                   // compute perimeter around cell centres
+                    perimeter[it->first] =
+                        mesh->getVertexToNeighboursPerimeter(it->first);
+                }
+            }
+            // index correspondence between half-edges and noises
+            for (auto it=noise.begin(); it != noise.end();) {
+                if (!inMap(*halfEdges, it->first)) {                        // half-edge index not present any more
+                    it = noise.erase(it);
+                }
+                else if ((halfEdges->at(it->first)).getType() != type) {    // half-edge is not a junction any more
+                    it = noise.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
+                if (!inMap(noise, it->first)                                // new half-edge index
+                    && (it->second).getType() == type) {
+                    noise[it->first] = parameters.at("sigma")*random->gauss();
+                }
+            }
+            // clear tension
+            tension.clear();
+            // noise integration and tension setting
+            double const dt_ = dt/parameters.at("taup");
+            double const amp = parameters.at("sigma")*sqrt(2.*dt_);
+            for (auto it=noise.begin(); it != noise.end(); ++it) {
+                // noise
+                noise[it->first] =
+                    (1 - dt_)*noise[it->first] + amp*random->gauss();
+                // tension
+                long int const cellIndices[2] =                             // indices of cell of the junction
+                    {halfEdges->at(
+                        halfEdges->at(it->first)
+                            .getNextIndex()).getToIndex(),
+                    halfEdges->at(
+                        halfEdges->at(halfEdges->at(it->first).getPairIndex())
+                            .getNextIndex()).getToIndex()};
+                tension[it->first] = noise[it->first];                      // stochastic part
+                for (long int cellIndex : cellIndices) {
+                    if (inMap(perimeter, cellIndex)) {
+                        tension[it->first] += parameters.at("Gamma")*(      // deterministic part
+                            perimeter[cellIndex] - parameters.at("P0"));
+                    }
+                }
+            }
+        }
+
+};
+
 #endif
 

@@ -211,14 +211,24 @@ def plot(vm, fig=None, ax=None):
 
     if "area" in vm.vertexForces:
         A0 = vm.vertexForces["area"].parameters["A0"]
-    if "area" in vm.vertexForces and "perimeter" in vm.vertexForces:
-        p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
+    if "perimeter" in vm.vertexForces:
+        if "area" in vm.vertexForces:
+            p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
+        else:
+            P0 = vm.vertexForces["perimeter"].parameters["P0"]
     if "abp" in vm.vertexForces:
         v0 = vm.vertexForces["abp"].parameters["v0"]
         taup = vm.vertexForces["abp"].parameters["taup"]
     if "out" in vm.halfEdgeForces:
         t0 = vm.halfEdgeForces["out"].parameters["t0"]
         taup = vm.halfEdgeForces["out"].parameters["taup"]
+    if "model0" in vm.halfEdgeForces:
+        if "area" in vm.vertexForces:
+            p0 = vm.halfEdgeForces["model0"].parameters["P0"]/np.sqrt(A0)
+        else:
+            P0 = vm.halfEdgeForces["model0"].parameters["P0"]
+        sT0 = vm.halfEdgeForces["model0"].parameters["sigma"]
+        taup = vm.halfEdgeForces["model0"].parameters["taup"]
 
     # initialise figure
 
@@ -232,6 +242,10 @@ def plot(vm, fig=None, ax=None):
             cbar_tension = plt.colorbar(
                 mappable=scalarMap_tension, ax=ax, shrink=0.5)
             cbar_tension.set_label(r"$t_i/t_0 - 1$", rotation=270)
+        if "model0" in vm.halfEdgeForces:
+            cbar_tension = plt.colorbar(
+                mappable=scalarMap_tension, ax=ax, shrink=0.5)
+            cbar_tension.set_label(r"$t_i/\sigma$", rotation=270)
 
     # plot
 
@@ -243,15 +257,23 @@ def plot(vm, fig=None, ax=None):
 
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=3)    # all junctions
-    if "t0" in locals():
+    if "t0" in locals() or "sT0" in locals():
         junctions = [i for i in sorted(vm.halfEdges)
             if vm.halfEdges[i].type == "junction"]
-        tensions = np.concatenate(list(map(
-            lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
-            junctions)))
-        lines.set_color(list(map(
-            lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
-            tensions)))
+        if "t0" in locals():
+            tensions = np.concatenate(list(map(
+                lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
+                junctions)))
+            lines.set_color(list(map(
+                lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
+                tensions)))
+        elif "sT0" in locals():
+            tensions = np.concatenate(list(map(
+                lambda i: [vm.halfEdgeForces["model0"].tension[i]]*2,
+                junctions)))
+            lines.set_color(list(map(
+                lambda tension: scalarMap_tension.to_rgba(tension/sT0),
+                tensions)))
     ax.add_collection(lines)
     #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1)                          # all half-edges
 
@@ -276,10 +298,14 @@ def plot(vm, fig=None, ax=None):
         % (vm.time, vm.nT1, len(cells)))
     if "p0" in locals():
         title += r"$, p_0=%.2f$" % p0
+    if "P0" in locals():
+        title += r"$, P_0=%.2f$" % P0
     if "v0" in locals():
         title += r"$, v_0=%.1e, \tau_p=%.1e$" % (v0, taup)
     if "t0" in locals():
         title += r"$, t_0=%1.e, \tau_p=%.1e$" % (t0, taup)
+    if "sT0" in locals():
+        title += r"$, \sigma=%.1e, \tau_p=%.1e$" % (sT0, taup)
     ax.set_title(title)
 
     fig.canvas.draw_idle()
