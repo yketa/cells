@@ -27,6 +27,20 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
 
+# TOOLS
+
+# progress bar (https://stackoverflow.com/a/3160819/7385044)
+_toolbar_width = 40
+def _progressbar(p):
+    out = "[%s] (%2i%%)" % (
+        "="*ceil(p*_toolbar_width)
+            + " "*(_toolbar_width - ceil(p*_toolbar_width)),
+        ceil(100*p))
+    sys.stdout.write(out)
+    sys.stdout.flush()
+    sys.stdout.write("\b"*len(out))
+    if p == 1: sys.stdout.write("\n")   # end the progress bar
+
 # READ SIMULATION
 
 class Read:
@@ -57,34 +71,22 @@ class Read:
             self.frames = self.metadata["frames"]   # array of computed frames
             self.dt = self.metadata["dt"]           # integration time step
 
-            # progress bar (https://stackoverflow.com/a/3160819/7385044)
-            toolbar_width = 40
-            def progressbar(p):
-                out = "[%s] (%2i%%)" % (
-                    "="*ceil(p*toolbar_width)
-                        + " "*(toolbar_width - ceil(p*toolbar_width)),
-                    ceil(100*p))
-                sys.stdout.write(out)
-                sys.stdout.flush()
-                sys.stdout.write("\b"*len(out))
-
             # check file consistency and build skip directory
             if not(check): return
-            self.skip = np.array([], dtype=int) # position of each object in file
-            _max_diff_t = 0                     # check consistency with metadata in computed times
+            self.skip = np.array([], dtype=int)     # position of each object in file
+            _max_diff_t = 0                         # check consistency with metadata in computed times
             for i, time in enumerate(self.frames*self.dt):
-                progressbar(i/self.frames.size) # display progress bar
+                _progressbar(i/self.frames.size)    # display progress bar
                 self.skip = np.append(self.skip, current_pointer)
-                vm = pickle.load(dump)          # load vertex model object
-                assert(type(vm) == VertexModel) # check object has correct type
-                if time == 0:                   # absolute difference in time
+                vm = pickle.load(dump)              # load vertex model object
+                assert(type(vm) == VertexModel)     # check object has correct type
+                if time == 0:                       # absolute difference in time
                     _max_diff_t = max(_max_diff_t, np.abs(time - vm.time))
                     assert(_max_diff_t == 0)
-                else:                           # relative difference in time
+                else:                               # relative difference in time
                     _max_diff_t = max(_max_diff_t, np.abs(time - vm.time)/time)
-                current_pointer = dump.tell()   # current position of the read pointer
-            progressbar(1)
-            sys.stdout.write("\n")              # end the progress bar
+                current_pointer = dump.tell()       # current position of the read pointer
+            _progressbar(1)
             try:
                 pickle.load(dump)   # this should raise an EOFError if the file was read completely
                 raise ValueError("File size is not consistent with metadata.")
@@ -95,7 +97,7 @@ class Read:
 
         self.fig, self.ax = None, None  # used for plotting
 
-    def plot(self, frame):
+    def plot(self, frame, rainbow=None):
         """
         Plot vertex model state corresponding to frame.
 
@@ -103,20 +105,44 @@ class Read:
         ----------
         frame : int
             Index of frame.
+        rainbow : int or None
+            Index of previous frame of the system with respect to which colour
+            cells. (default: None)
+            NOTE: if rainbow != None then this overrides all other cell
+                  colouring.
         """
 
-        self.fig, self.ax = plot(self[frame], fig=self.fig, ax=self.ax)
+        self.fig, self.ax = plot(self[frame], fig=self.fig, ax=self.ax,
+            rainbow=rainbow if rainbow is None else self[rainbow])
 
-    def play(self):
+    def play(self, frames=None, rainbow=None):
         """
-        Plot all frames.
+        Plot frames.
+
+        Parameters
+        ----------
+        frames : int array-like or None
+            Frames to plot.
+            NOTE: if frames == None then all frames in self.frames are plotted.
+        rainbow : int or None
+            Index of previous frame of the system with respect to which colour
+            cells. (default: None)
+            NOTE: if rainbow != None then this overrides all other cell
+                  colouring.
         """
 
-        self.plot(self.frames[0])
+        if frames is None:
+            frames = self.frames
+        frames = list(frames)
+
+        _progressbar(0)
+        self.plot(frames[0])
         plt.ion()
         plt.show()
-        for frame in self.frames[1:]:
-            self.plot(frame)
+        for frame in frames[1:]:
+            _progressbar(frames.index(frame)/len(frames))
+            self.plot(frame, rainbow=rainbow)
+        _progressbar(1)
 
     def __getitem__(self, frame):
         """
@@ -184,7 +210,7 @@ cmap_tension = plt.cm.Spectral                                  # colourmap
 norm_tension = Normalize(-1.5, 1.5)                             # interval of value represented by colourmap
 scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)  # conversion from scalar value to colour
 
-def plot(vm, fig=None, ax=None):
+def plot(vm, fig=None, ax=None, rainbow=None):
     """
     Plot vertex model.
 
@@ -198,6 +224,10 @@ def plot(vm, fig=None, ax=None):
     ax : matplotlib.axes._subplots.AxesSubplot or None
         Axes subplot on which to plot. (default: None)
         NOTE: if ax == None then a new figure and axes subplot is created.
+    rainbow : cells.bind.VertexModel or None
+        Previous state of the system with respect to which colour cells.
+        (default: None)
+        NOTE: if rainbow != None then this overrides all other cell colouring.
 
     Returns
     -------
@@ -232,7 +262,7 @@ def plot(vm, fig=None, ax=None):
 
     # initialise figure
 
-    if type(fig) == type(None) or type(ax) == type(None):
+    if fig is None or ax is None:
         fig, ax = plt.subplots()
         if "area" in vm.vertexForces:
             cbar_area = plt.colorbar(
@@ -285,7 +315,16 @@ def plot(vm, fig=None, ax=None):
         facecolors="none")
     cells = [i for i in sorted(vm.vertices)
         if vm.vertices[i].type == "centre"]
-    if "A0" in locals():
+    if type(rainbow) is VertexModel:
+        scalarMap_rainbow = ScalarMappable(
+            Normalize(0, rainbow.systemSize[0]), plt.cm.hsv)
+        positions0 = np.array(list(map(
+            lambda i: rainbow.vertices[i].position,
+            cells)))
+        polygons.set_color(list(map(        # colour according to previous position
+            lambda position0: scalarMap_rainbow.to_rgba(position0[0]),
+            positions0)))
+    elif "A0" in locals():
         areas = np.array(list(map(
             lambda i: vm.getVertexToNeighboursArea(i),
             cells)))
