@@ -153,6 +153,8 @@ def parse_args():
         parser.add_argument("--linear-frames", "-linear-frames", "-linear",
             action=BooleanOptionalAction,
             help="compute logarithmically spaced frames")
+        parser.add_argument("-filename", "-f", nargs="?", default=None,
+            help="prefix to the simulation file name")
         parser.add_argument("-id", type=int, default=0,
             help="numerical identifier for simulation file")
 
