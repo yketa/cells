@@ -9,6 +9,7 @@ from cells.exponents import float_to_letters
 from cells.init import init_vm
 
 import sys
+
 from math import ceil
 
 from datetime import datetime
@@ -314,7 +315,7 @@ if __name__ == "__main__":
 
     # CHOOSE FRAMES
 
-    if not(args.log_frames):    # LINEARLY SPACED FRAMES
+    if args.linear_frames:  # LINEARLY SPACED FRAMES
         if args.niter%args.dtmin:
             raise ValueError(
                 "No integer multiple of %i frames in a total of %i frames."

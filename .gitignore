@@ -16,3 +16,4 @@ sync.sh
 *.log
 *Notes.bib
 *.out
+*.sif

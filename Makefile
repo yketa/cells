@@ -44,3 +44,8 @@ bind.so: CFLAGS+=-fPIC
 bind.so: bind.o forces.o initialisation.o mesh.o system.o tools.o
 	$(CXX) -o $@ -shared $^ $(LDFLAGS)
 
+# CONTAINER
+
+container.sif: container.def requirements.txt Makefile $(wildcard *.*pp) $(wildcard *.py)
+	sudo singularity build $@ $<
+

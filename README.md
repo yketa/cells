@@ -4,9 +4,11 @@ Python library written in C++ to integrate vertex models.
 
 ![polygonal tiling](docs/cells.svg)
 
-## Requirements and compiling
+## Compiling and running
 
-Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install pybind11`) and a C++20 compiler.
+### Directly on the machine
+
+Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install -r requirements.txt`) and a C++20 compiler.
 
 Python scripts are written for `python3` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`, e.g. by executing
 ```
@@ -14,21 +16,23 @@ echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
 ```
 from this directory.
 
-Python routines `run.py` and `vm.py` require `numpy` and `matplotlib`. These can be installed with `python -m pip install -r requirements.txt`.
+Python routines `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt`).
 
-## Running
+### In a container
+
+It is possible to compile this library in a `singularity` container (with `sudo` privilege) with `make container.sif`. Package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
+
+### Routines
 
 There are two default routines to simulate vertex models (VMs): `run.py` plots in real time a simulation of a vertex model, and `vm.py` saves simulations of vertex models. It is noteworthy that `vm.py` also defines objects and functions to access and plot vertex model data (and on which `run.py` relies).
-
-### Arguments
 
 Both routines rely on `init.py` which parses command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
 
 ### Examples
 
 ```
-python run.py -out -area -perimeter # visualise VM with Ornstein-Uhlenbeck tension, and area and perimeter elastic forces
-python run.py -abp -area -periodic  # visualise VM with active Brownian vertices, area elastic force, and periodic boundary conditions
+python -m cells.run -abp -area -perimeter
+python -m cells.run -out -area -periodic -N 12
 ```
 
 ## C++ scripts
