@@ -179,7 +179,7 @@ class Read:
     def __len__(self):              # number of frames
         return self.frames.__len__()
 
-def filename(N, identifier):
+def filename(N, identifier, prefix=None):
     """
     Standard filename for simulation file.
 
@@ -189,6 +189,8 @@ def filename(N, identifier):
         Number of vertices.
     identifier : int
         Unique integer identifier for file.
+    prefix : str or None
+        Prefix to the simulation file name. (default: None)
 
     Returns
     -------
@@ -196,7 +198,7 @@ def filename(N, identifier):
         File name.
     """
 
-    return ("N%s_%%%s.p"
+    return (("" if prefix is None else "%s_" % prefix) + "N%s_%%%s.p"
         % tuple(map(float_to_letters, (N, identifier))))
 
 # PLOT VERTEX MODEL OBJECT
@@ -353,7 +355,7 @@ if __name__ == "__main__":
     # METADATA
 
     metadata = {        # metadata for simulation file
-        "filename": filename(len(vm.vertices), args.id),
+        "filename": filename(len(vm.vertices), args.id, prefix=args.filename),
         "dt": args.dt,  # used to check computed times
         "args": args,   # save all arguments
     }
