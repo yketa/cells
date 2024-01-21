@@ -62,5 +62,5 @@ Descriptions of some forces can be found in `docs/forces.pdf`.
 ## Authors
 
 - Yann-Edwin Keta, Instituut-Lorentz, Universiteit Leiden (keta@lorentz.leidenuniv.nl)
-- Silke Henkes, Instituut-Lorentz, Universiteit Leiden (henkes@lorentz.leidenuniv.nl)
+- Silke Henkes, Instituut-Lorentz, Universiteit Leiden (shenkes@lorentz.leidenuniv.nl)
 
