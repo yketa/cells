@@ -16,7 +16,7 @@ echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
 ```
 from this directory.
 
-Python routines `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt`).
+Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt`).
 
 ### In a container
 
@@ -24,9 +24,11 @@ It is possible to compile this library in a `singularity` container (with `sudo`
 
 ### Routines
 
-There are two default routines to simulate vertex models (VMs): `run.py` plots in real time a simulation of a vertex model, and `vm.py` saves simulations of vertex models. It is noteworthy that `vm.py` also defines objects and functions to access and plot vertex model data (and on which `run.py` relies).
+There are two default routines to simulate vertex models: `run.py` runs and plots in real time a simulation of a vertex model, and `vm.py` runs and saves a simulation of a vertex model. These routines rely on modules `init.py` and `read.py`.
 
-Both routines rely on `init.py` which parses command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
+Module `init.py` defines functions to parse command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
+
+Module `read.py` defines objects and functions to access and plot vertex model data. Executed as a routine, with a simulation file name as a command line argument, this prints `true` (respectively `false`) if the file is consistent (respectively not consistent).
 
 ### Examples
 
