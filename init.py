@@ -1,5 +1,5 @@
 """
-Initialise vertex model.
+Define functions to initialise a vertex model.
 """
 
 from cells.bind import VertexModel

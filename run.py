@@ -1,10 +1,10 @@
 """
-Run and plot in real time a simulation of the vertex model. This does not save
-data.
+Routine to run and plot in real time a simulation of the vertex model. This
+does not save data.
 """
 
 from cells.init import init_vm
-from cells.vm import plot
+from cells.read import plot
 
 import matplotlib.pyplot as plt
 
