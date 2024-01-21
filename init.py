@@ -56,6 +56,9 @@ def init_vm():
     if args.model0:
         vm.addModel0("model0",
             args.Gamma, args.p0*np.sqrt(A0), args.sigma, args.taup)
+    if args.model1:
+        vm.addModel1("model1",
+            args.Gamma, args.p0*np.sqrt(A0), args.sigma, args.taup)
 
     return args, vm
 
@@ -118,6 +121,10 @@ def parse_args():
     parser.add_argument("-model0",
         action=BooleanOptionalAction,
         help="add model 0")
+    # model 1
+    parser.add_argument("-model1",
+        action=BooleanOptionalAction,
+        help="add model 1")
 
     # ALGORITHM
     parser.add_argument("-seed", type=int, default=0,

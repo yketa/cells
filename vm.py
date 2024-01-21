@@ -254,13 +254,14 @@ def plot(vm, fig=None, ax=None, rainbow=None):
     if "out" in vm.halfEdgeForces:
         t0 = vm.halfEdgeForces["out"].parameters["t0"]
         taup = vm.halfEdgeForces["out"].parameters["taup"]
-    if "model0" in vm.halfEdgeForces:
-        if "area" in vm.vertexForces:
-            p0 = vm.halfEdgeForces["model0"].parameters["P0"]/np.sqrt(A0)
-        else:
-            P0 = vm.halfEdgeForces["model0"].parameters["P0"]
-        sT0 = vm.halfEdgeForces["model0"].parameters["sigma"]
-        taup = vm.halfEdgeForces["model0"].parameters["taup"]
+    for model in ("model0", "model1"):
+        if model in vm.halfEdgeForces:
+            if "area" in vm.vertexForces:
+                p0 = vm.halfEdgeForces[model].parameters["P0"]/np.sqrt(A0)
+            else:
+                P0 = vm.halfEdgeForces[model].parameters["P0"]
+            sT0 = vm.halfEdgeForces[model].parameters["sigma"]
+            taup = vm.halfEdgeForces[model].parameters["taup"]
 
     # initialise figure
 
@@ -274,7 +275,7 @@ def plot(vm, fig=None, ax=None, rainbow=None):
             cbar_tension = plt.colorbar(
                 mappable=scalarMap_tension, ax=ax, shrink=0.5)
             cbar_tension.set_label(r"$t_i/t_0 - 1$", rotation=270)
-        if "model0" in vm.halfEdgeForces:
+        if "model0" in vm.halfEdgeForces or "model1" in vm.halfEdgeForces:
             cbar_tension = plt.colorbar(
                 mappable=scalarMap_tension, ax=ax, shrink=0.5)
             cbar_tension.set_label(r"$t_i/\sigma$", rotation=270)
@@ -300,9 +301,13 @@ def plot(vm, fig=None, ax=None, rainbow=None):
                 lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
                 tensions)))
         elif "sT0" in locals():
-            tensions = np.concatenate(list(map(
-                lambda i: [vm.halfEdgeForces["model0"].tension[i]]*2,
-                junctions)))
+            for model in ("model0", "model1"):
+                try:
+                    tensions = np.concatenate(list(map(
+                        lambda i: [vm.halfEdgeForces[model].tension[i]]*2,
+                        junctions)))
+                except:
+                    continue
             lines.set_color(list(map(
                 lambda tension: scalarMap_tension.to_rgba(tension/sT0),
                 tensions)))

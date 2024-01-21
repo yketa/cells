@@ -169,6 +169,17 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("tension",
             &Model0::getTension);
 
+    pybind11::class_<Model1,
+        HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<Model1>>(
+        m, "Model1",
+        "Python wrapper around C++ model 1 computation object.")
+        .def_property_readonly("perimeter",
+            &Model1::getPerimeter)
+        .def_property("tension",
+            &Model1::getTension,
+            &Model1::setTension);
+
     /*
      *  [system.hpp]
      *
@@ -454,6 +465,28 @@ PYBIND11_MODULE(bind, m) {
             &VertexModel::addHalfEdgeForce<Model0,
                 double const&, double const&, double const&, double const&>,
             "Add model 0 for active junctions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "Gamma : float\n"
+            "    Perimeter elasticity constant.\n"
+            "P0 : float\n"
+            "    Target parameter.\n"
+            "sigma : float\n"
+            "    Tension noise strength.\n"
+            "taup : float\n"
+            "    Noise persistence time.",
+            pybind11::arg("name"),
+            pybind11::arg("Gamma"),
+            pybind11::arg("P0"),
+            pybind11::arg("sigma"),
+            pybind11::arg("taup"))
+        .def("addModel1",
+            &VertexModel::addHalfEdgeForce<Model1,
+                double const&, double const&, double const&, double const&>,
+            "Add model 1 for active junctions.\n"
             "\n"
             "Parameters\n"
             "----------\n"
