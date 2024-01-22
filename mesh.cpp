@@ -154,7 +154,7 @@ double Mesh::getVertexToNeighboursPerimeter(
     return perimeter;
 }
 
-std::tuple<long int, std::vector<long int>> Mesh::deleteEdge(
+TopoChangeEdgeInfoType Mesh::deleteEdge(
     long int const& halfEdgeIndex) {
 
     std::vector<long int> deletedHalfEdgeIndices(0);
@@ -291,7 +291,7 @@ std::tuple<long int, std::vector<long int>> Mesh::deleteEdge(
     return std::make_tuple(fromMergeIndex, deletedHalfEdgeIndices);
 }
 
-std::tuple<long int, std::vector<long int>> Mesh::createEdge(
+TopoChangeEdgeInfoType Mesh::createEdge(
     long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
     double const& angle, double const& length,
     std::string type0, std::string type1) {

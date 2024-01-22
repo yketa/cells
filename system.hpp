@@ -11,8 +11,6 @@ Objects for simulation.
 #include "random.hpp"
 #include "tools.hpp"
 
-typedef std::map<long int, std::vector<double>> ForcesType;
-
 class VertexModel : public Mesh {
 
     private:
@@ -143,7 +141,8 @@ class VertexModel : public Mesh {
 
         void doT1(double const& delta=0.1, double const& epsilon=0.1);
         /*
-        Check all junctions and perform T1s.
+        Check all junctions and perform T1s and update internal degrees of
+        freedom.
 
         Parameters
         ----------

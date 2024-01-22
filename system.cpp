@@ -57,7 +57,7 @@ void VertexModel::integrate(double const& dt,
             wrap(vertices.at(vertexIndex).getUPosition()));
     }
 
-    // perform T1s
+    // perform T1s and update internal degrees of freedom
 
     doT1(delta, epsilon);
 
@@ -233,19 +233,30 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 //             << std::min(cellA1, cellB1) << "|" << std::max(cellA1, cellB1)
 //             << ")" << std::endl;
 
-        // merge vertices
+        // delete edge
 
-        std::tuple<long int, std::vector<long int>> del =
+        TopoChangeEdgeInfoType const del =
             deleteEdge(mergeHalfEdgeIndex);
 
-        // create new vertex
+        for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)
+            { (it->second)->deleteEdge(del); }
+        for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
+            { (it->second)->deleteEdge(del); }
 
-        std::tuple<long int, std::vector<long int>> cre =
+        // create edge
+
+        TopoChangeEdgeInfoType const cre =
             createEdge(
                 halfEdges[createHalfEdgePairIndex0].getPairIndex(),
                 halfEdges[createHalfEdgePairIndex1].getPairIndex(),
                 angle, delta + epsilon,
                 "junction", "");
+
+        for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)
+            { (it->second)->createEdge(cre); }
+        for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
+            { (it->second)->createEdge(cre); }
+
     }
 //     if (halfEdgeIndices.size() > 0) { checkMesh(); }
 }

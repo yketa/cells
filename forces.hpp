@@ -257,6 +257,14 @@ http://arxiv.org/abs/2309.04818
             }
         }
 
+        void deleteEdge(TopoChangeEdgeInfoType const& del) override {
+            for (long int halfEdgeIndex : std::get<1>(del)) {
+                if (inMap(tension, halfEdgeIndex)) {
+                    tension.erase(halfEdgeIndex);
+                }
+            }
+        }
+
 };
 
 /*
@@ -363,6 +371,14 @@ class Model0 : public HalfEdgeForce<ForcesType> {
                         tension[it->first] += parameters.at("Gamma")*(      // deterministic part
                             perimeter[cellIndex] - parameters.at("P0"));
                     }
+                }
+            }
+        }
+
+        void deleteEdge(TopoChangeEdgeInfoType const& del) override {
+            for (long int halfEdgeIndex : std::get<1>(del)) {
+                if (inMap(noise, halfEdgeIndex)) {
+                    noise.erase(halfEdgeIndex);
                 }
             }
         }
@@ -474,6 +490,14 @@ class Model1 : public HalfEdgeForce<ForcesType> {
                         tension[it->first] += dt_*parameters.at("Gamma")*(  // target deterministic part
                             perimeter[cellIndex] - parameters.at("P0"));
                     }
+                }
+            }
+        }
+
+        void deleteEdge(TopoChangeEdgeInfoType const& del) override {
+            for (long int halfEdgeIndex : std::get<1>(del)) {
+                if (inMap(tension, halfEdgeIndex)) {
+                    tension.erase(halfEdgeIndex);
                 }
             }
         }

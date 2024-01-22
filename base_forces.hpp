@@ -66,6 +66,18 @@ All forces.
         Integrate internal degrees of freedom.
         */
 
+        virtual void deleteEdge(TopoChangeEdgeInfoType const& del) {}
+        /*
+        Update internal degrees of freedom from indices of deleted objects
+        following egde deletion (see Mesh::deleteEdge).
+        */
+
+        virtual void createEdge(TopoChangeEdgeInfoType const& cre) {}
+        /*
+        Update internal degrees of freedom from indices of created objects
+        following egde creation (see Mesh::createEdge).
+        */
+
 };
 
 // HALF-EDGE FORCES

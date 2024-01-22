@@ -9,9 +9,7 @@ Objects to define the two-dimensional mesh with half-edge procedure.
 #include <string>
 #include <vector>
 
-class Vertex;
-class HalfEdge;
-class Mesh;
+typedef std::tuple<long int, std::vector<long int>> TopoChangeEdgeInfoType;
 
 class Vertex {
 /*
@@ -364,7 +362,7 @@ Two-dimensional ensembles of vertices and edges.
             Perimeter encapsulated by neighbours.
         */
 
-        std::tuple<long int, std::vector<long int>> deleteEdge(
+        TopoChangeEdgeInfoType deleteEdge(
             long int const& halfEdgeIndex);
         /*
         Delete edge by merging two vertices.
@@ -382,7 +380,7 @@ Two-dimensional ensembles of vertices and edges.
             Indices of half-edges deleted by this operation.
         */
 
-        std::tuple<long int, std::vector<long int>> createEdge(
+        TopoChangeEdgeInfoType createEdge(
             long int const& halfEdgeIndex0, long int const& halfEdgeIndex1,
             double const& angle, double const& length=1,
             std::string type0="", std::string type1="");
