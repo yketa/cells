@@ -1,10 +1,11 @@
 __pycache__
+old
+tools
 .*.swp
 test*
 *.o
 *.so
-old
-sync.sh
+*.sif
 *.p
 *.pickle
 *~
@@ -16,6 +17,3 @@ sync.sh
 *.log
 *Notes.bib
 *.out
-*.sif
-config.sh
-slurm.sh

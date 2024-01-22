@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # Make movie from initial frames of simulation file.
-# Requires ffmpeg.
+# Requires ffmpeg configured with --enable-gpl --enable-libx265.
 
 while getopts "rp:f:y" OPTION; do
     case $OPTION in
