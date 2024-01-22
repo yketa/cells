@@ -18,3 +18,4 @@ sync.sh
 *.out
 *.sif
 config.sh
+slurm.sh
