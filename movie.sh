@@ -27,7 +27,7 @@ cat >> ${tmp_dir}/movie.py <<EOF
 Save frames from simulation file.
 """
 
-from cells.vm import Read, _progressbar
+from cells.read import Read, _progressbar
 
 import os
 
