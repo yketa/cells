@@ -6,7 +6,9 @@ Python library written in C++ to integrate vertex models.
 
 ## Compiling and running
 
-### Directly on the machine
+### Compiling
+
+#### Directly on the machine
 
 Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install -r requirements.txt`) and a C++20 compiler.
 
@@ -18,7 +20,7 @@ from this directory.
 
 Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt`).
 
-### In a container
+#### In a container
 
 It is possible to compile this library in a `singularity` container (with `sudo` privilege) with `make container.sif`. Package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
 
@@ -37,7 +39,11 @@ python -m cells.run -abp -area -perimeter
 python -m cells.run -out -area -periodic -N 12
 ```
 
-## C++ scripts
+### Additional scripts
+
+Script `movie.sh` is a quick tool to make movies and requires `read.py` and [`ffmpeg`](https://ffmpeg.org/download.html).
+
+## C++ source files
 
 ### Vertex model
 
