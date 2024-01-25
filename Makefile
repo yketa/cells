@@ -2,11 +2,18 @@ SHELL:=/bin/bash
 
 # COMPILATION PARAMETERS
 
-PYTHON=python                   # python executable
-#CXX=g++                        # default C++ compiler (g++, clang++, etc.) should already be available in Makefile through variable $(CXX)
-CFLAGS=-std=c++20 -O3 -Wall -g  # -g flag should not affect performance (https://stackoverflow.com/questions/10988318)
+# -- python executable --
+PYTHON=python
+# -- compiler --
+# default C++ compiler (g++, clang++, etc.) should already be available in Makefile through variable $(CXX)
+# CXX=g++
+# -- compiler flags --
+# -g flag should not affect performance (https://stackoverflow.com/questions/10988318)
+CFLAGS=-std=c++20 -O3 -Wall -g
+# -- linker flags --
 LDFLAGS=
-MPIFLAGS=-fopenmp
+# -- openMP flags --
+MPFLAGS=-fopenmp
 
 # find actual python executable by resolving symlinks
 # (https://stackoverflow.com/a/42918/7385044)
@@ -14,10 +21,12 @@ PYTHON:=$(shell perl -MCwd -le 'print Cwd::abs_path(shift)' "`which $(PYTHON)`")
 # python libraries
 PYTHONFLAGS=$(shell $(PYTHON) -m pybind11 --includes) $(shell $(PYTHON)-config --includes)
 
+.PHONY: clean
+
 all: bind.so
 
 clean:
-	rm -f *.o *.so
+	rm -rf *.o *.so *.sif
 
 # OBJECT FILES
 # dependencies to be checked with `$(CXX) -MM $<`
