@@ -59,6 +59,9 @@ def init_vm():
     if args.model1:
         vm.addModel1("model1",
             args.Gamma, args.p0*np.sqrt(A0), args.sigma, args.taup)
+    if args.model2:
+        vm.addModel2("model2",
+            args.Gamma, args.taur, args.sigma, args.taup)
 
     return args, vm
 
@@ -117,6 +120,8 @@ def parse_args():
         help="perimeter elasticity constant")
     parser.add_argument("-sigma", type=float, default=1e-1,
         help="noise amplitude")
+    parser.add_argument("-taur", type=float, default=1e0,
+        help="relaxation time")
     # model 0
     parser.add_argument("-model0",
         action=BooleanOptionalAction,
@@ -125,6 +130,10 @@ def parse_args():
     parser.add_argument("-model1",
         action=BooleanOptionalAction,
         help="add model 1")
+    # model 2
+    parser.add_argument("-model2",
+        action=BooleanOptionalAction,
+        help="add model 2")
 
     # ALGORITHM
     parser.add_argument("-seed", type=int, default=0,

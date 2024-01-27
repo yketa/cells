@@ -180,6 +180,22 @@ PYBIND11_MODULE(bind, m) {
             &Model1::getTension,
             &Model1::setTension);
 
+    pybind11::class_<Model2,
+        HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<Model2>>(
+        m, "Model2",
+        "Python wrapper around C++ model 2 computation object.")
+        .def_property_readonly("length",
+            &Model2::getLength)
+        .def_property("restLength",
+            &Model2::getRestLength,
+            &Model2::setRestLength)
+        .def_property("noise",
+            &Model2::getNoise,
+            &Model2::setNoise)
+        .def_property_readonly("tension",
+            &Model2::getTension);
+
     /*
      *  [system.hpp]
      *
@@ -503,6 +519,28 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("Gamma"),
             pybind11::arg("P0"),
+            pybind11::arg("sigma"),
+            pybind11::arg("taup"))
+        .def("addModel2",
+            &VertexModel::addHalfEdgeForce<Model2,
+                double const&, double const&, double const&, double const&>,
+            "Add model 2 for active junctions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "Gamma : float\n"
+            "    Perimeter elasticity constant.\n"
+            "taur : float\n"
+            "    Rest length relaxation time.\n"
+            "sigma : float\n"
+            "    Tension noise strength.\n"
+            "taup : float\n"
+            "    Noise persistence time.",
+            pybind11::arg("name"),
+            pybind11::arg("Gamma"),
+            pybind11::arg("taur"),
             pybind11::arg("sigma"),
             pybind11::arg("taup"))
         // initialisation methods [VertexModel (initialisation.cpp)]

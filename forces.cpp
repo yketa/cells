@@ -99,3 +99,19 @@ template<> void VertexModel::addHalfEdgeForce<
         this, &vertices, &random, &forces, &halfEdges); // VertexModel attributes
 }
 
+template<> void VertexModel::addHalfEdgeForce<
+    // derived force class
+    Model2,
+    // argument types
+    double const&, double const&, double const&, double const&>(
+    // user-defined arguments
+    std::string const& name,
+    double const& Gamma, double const& taur,
+    double const& sigma, double const& taup) {
+    // set force
+    halfEdgeForces.add<Model2>(
+        name,                                           // (unique) user-defined name for forces
+        Gamma, taur, sigma, taup,                       // user-defined parameters
+        this, &random, &forces, &halfEdges);            // VertexModel attributes
+}
+

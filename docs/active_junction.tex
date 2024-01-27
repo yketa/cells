@@ -67,7 +67,7 @@ In the $\sigma \to 0$ limit the tension relaxes to $T_{\mu\nu}^{\mathrm{per}}$ o
 
 We define $\ell_{\mu\nu}^0$ the rest length of junction $\mu \leftrightarrow \nu$ and $k$ an elastic constant. We denote
 \begin{equation}
-T_{\mu\nu}^{\mathrm{el}} = k[\ell_{\mu\nu} - \ell_{\mu\nu}^0]
+T_{\mu\nu}^{\mathrm{el}} = \Gamma [\ell_{\mu\nu} - \ell_{\mu\nu}^0]
 \end{equation}
 the tension deriving from junction elasticity. Rest lengths $\ell_{\mu\nu}^0$ are stochastic variables which are initialised with the values of the junction lengths $\ell_{\mu\nu}$.
 
@@ -77,7 +77,7 @@ the tension deriving from junction elasticity. Rest lengths $\ell_{\mu\nu}^0$ ar
 \begin{align}
 T_{\mu\nu} = T_{\mu\nu}^{\mathrm{el}} + \Delta T_{\mu\nu},\\
 \Delta T_{\mu\nu} = \mathrm{OU}(0, \sigma, \tau_p),\\
-\tau_v \dot{\ell}^0_{\mu\nu} = -(\ell^0_{\mu\nu} - \ell_{\mu\nu}) \Leftrightarrow \dot{\ell}^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, 0, \tau_v).
+\tau_r \dot{\ell}^0_{\mu\nu} = -(\ell^0_{\mu\nu} - \ell_{\mu\nu}) \Leftrightarrow \dot{\ell}^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, 0, \tau_r).
 \end{align}
 \end{subequations}
 
@@ -99,7 +99,7 @@ This corresponds to the Maxwell model in the limit $\sigma \to 0$.
 \begin{subequations}
 \begin{align}
 T_{\mu\nu} = \mathrm{OU}(T_{\mu\nu}^{\mathrm{el}}, \sigma, \tau_p),\\
-\tau_v \dot{\ell}^0_{\mu\nu} = -(\ell^0_{\mu\nu} - \ell_{\mu\nu}) \Leftrightarrow \dot{\ell}^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, 0, \tau_v).
+\tau_r \dot{\ell}^0_{\mu\nu} = -(\ell^0_{\mu\nu} - \ell_{\mu\nu}) \Leftrightarrow \dot{\ell}^0_{\mu\nu} = \mathrm{OU}(\ell_{\mu\nu}, 0, \tau_r).
 \end{align}
 \end{subequations}
 
