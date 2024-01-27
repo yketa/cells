@@ -8,6 +8,8 @@ test*
 *.sif
 *.p
 *.pickle
+*.mov
+*.mp4
 *~
 *.aux
 *.bbl
