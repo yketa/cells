@@ -225,6 +225,8 @@ def plot(vm, fig=None, ax=None, rainbow=None):
 
     if fig is None or ax is None:
         fig, ax = plt.subplots()
+        fig.set_size_inches(10, 10)                                     # set figure size
+        fig.canvas.window().setFixedSize(fig.canvas.window().size())    # set window size
         if "area" in vm.vertexForces:
             cbar_area = plt.colorbar(
                 mappable=scalarMap_area, ax=ax, shrink=0.5)

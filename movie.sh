@@ -19,12 +19,18 @@ Requires FFmpeg. (see https://ffmpeg.org/download.html)
 SYNOPSIS
 
     [bash] $(basename "${BASH_SOURCE[0]}") [OPTIONS] SIMULATION_FILE_NAME
+    [bash] $(basename "${BASH_SOURCE[0]}") [OPTIONS] -d FRAMES_DIRECTORY_NAME
 
 OPTIONS
 
     -h  Display this help.
 
     -r  Make rainbow plot.
+        NOTE: Does nothing if -d option is used.
+
+    -d  Make movie from frames in directory.
+        DEFAULT: (not specified)
+        NOTE: Frames must be *.png and ordered.
 
     -p  Python executable.
         DEFAULT: $__PYTHON_DEFAULT
@@ -37,21 +43,23 @@ OPTIONS
 
 # OPTIONS
 
-while getopts "hrp:f:y" OPTION; do
+while getopts "hrd:p:f:y" OPTION; do
     case $OPTION in
         r)  # rainbow plot
             __RAINBOW=true;;
+        d)  # frames directory
+            __DIR="$OPTARG";;
         p)  # python executable
-            __PYTHON=$OPTARG;;
+            if [ "$OPTARG" != "" ]; then __PYTHON=$OPTARG; fi;;
         f)  # FFmpeg executable
-            __FFMPEG=$OPTARG;;
+            if [ "$OPTARG" != "" ]; then __FFMPEG=$OPTARG; fi;;
         y)  # yes to FFmpeg
             __YES=true;;
     esac
 done
 shift $(expr $OPTIND - 1)
 
-if [[ -z "$@" ]]; then
+if [[ -z "$1" && -z "$__DIR" ]]; then
     usage;
     exit 1;
 fi
@@ -61,9 +69,12 @@ __FFMPEG=${__FFMPEG-$__FFMPEG_DEFAULT}
 
 # SCRIPT
 
-tmp_dir=$(mktemp -d)
+# make frames
+if [[ -z "$__DIR" ]]; then
 
-cat >> ${tmp_dir}/movie.py <<EOF
+    __DIR=$(mktemp -d);
+
+    cat >> ${__DIR}/movie.py <<EOF
 """
 Save frames from simulation file.
 """
@@ -83,19 +94,24 @@ for frame in frames:
     # plot
     r.plot(frame ${__RAINBOW:+, rainbow=r.t0[0]})
     # save
-    r.fig.savefig(os.path.join("$tmp_dir", "%05d.png" % frames.index(frame)))
+    r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame)))
 
     _progressbar((frames.index(frame) + 1)/len(frames))
 
 EOF
 
-# save frames
-$__PYTHON ${tmp_dir}/movie.py
+    # save frames
+    $__PYTHON ${__DIR}/movie.py;
+
+fi
+
 # make movie
+__MOVIE=${1:-movie}
+__MOVIE=${__MOVIE%.*}.mp4
 $__FFMPEG ${__YES:+-y} -r 5 -f image2 -s 1280x960 \
-    -i ${tmp_dir}/%5d.png -pix_fmt yuv420p ${1%.*}.mp4
+    -pattern_type glob -i "${__DIR}/*.png" -pix_fmt yuv420p $__MOVIE
 # make movie with H.265 compression (not compatible with all players)
 # requires FFmpeg configured with --enable-gpl --enable-libx265
 # $__FFMPEG ${__YES:+-y} -r 5 -f image2 -s 1280x960 -pix_fmt yuv420p \
-#     -i ${tmp_dir}/%5d.png -vcodec libx265 -crf 28 ${1%.*}.mp4
+#     -pattern_type glob -i "${__DIR}/*.png" -vcodec libx265 -crf 28 $__MOVIE
 

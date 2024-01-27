@@ -45,11 +45,12 @@ if __name__ == "__main__":
         flush=True)
 
     def exit_handler(*_args, **_kwargs):
+        # print elapsed time on exit
         end_t = datetime.now()
         print("Stopped on %s (elapsed: %s)." % (end_t, end_t - start_t),
             flush=True)
+        # exit
         os._exit(0)
-    # print elapsed time on exit
     signal.signal(signal.SIGINT, exit_handler)
     signal.signal(signal.SIGTERM, exit_handler)
     atexit.register(exit_handler)

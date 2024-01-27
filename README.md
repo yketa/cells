@@ -32,16 +32,17 @@ Module `init.py` defines functions to parse command line arguments and initialis
 
 Module `read.py` defines objects and functions to access and plot vertex model data. Executed as a routine, with a simulation file name as a command line argument, this prints `true` (respectively `false`) if the file is consistent (respectively not consistent).
 
+### Additional scripts
+
+Script `movie.sh` is a quick tool to make movies and requires `read.py` and [`ffmpeg`](https://ffmpeg.org/download.html). Calling module `run.py` with command line argument `-m` will save displayed frames and make a movie from these frames when exited.
+
 ### Examples
 
 ```
 python -m cells.run -abp -area -perimeter
+python -m cells.run -abp -area -perimeter -m
 python -m cells.run -out -area -periodic -N 12
 ```
-
-### Additional scripts
-
-Script `movie.sh` is a quick tool to make movies and requires `read.py` and [`ffmpeg`](https://ffmpeg.org/download.html).
 
 ## C++ source files
 

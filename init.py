@@ -3,6 +3,7 @@ Define functions to initialise a vertex model.
 """
 
 from cells.bind import VertexModel
+from cells import __path__
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter,\
     BooleanOptionalAction
@@ -123,6 +124,13 @@ def parse_args():
             help="number of iterations between plots")
 
     # SAVING
+    if script == "run.py":
+        parser.add_argument("-movie", "-m",
+            action=BooleanOptionalAction,
+            help="make movie from displayed frames (see %s)"
+                % os.path.join(__path__[0], "movie.sh"))
+#         parser.add_argument("-ffmpeg", type=str, default="",
+#             help="FFmpeg executable")
     if script == "vm.py":
         parser.add_argument("-init", type=int, default=0,
             help="number of initial iterations")
@@ -140,8 +148,8 @@ def parse_args():
             help="[--no-linear-frames (default)] max. number of initial times")
         parser.add_argument("--linear-frames", "-linear-frames", "-linear",
             action=BooleanOptionalAction,
-            help="compute logarithmically spaced frames")
-        parser.add_argument("-filename", "-f", nargs="?", default=None,
+            help="compute linearly spaced frames")
+        parser.add_argument("-filename", "-f", type=str, default=None,
             help="prefix to the simulation file name")
         parser.add_argument("-id", type=int, default=0,
             help="numerical identifier for simulation file")
