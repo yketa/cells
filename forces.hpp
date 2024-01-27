@@ -29,7 +29,8 @@ Cell perimeter restoring force.
 
         PerimeterForce(
             double const& kP_, double const& P0_,
-            Mesh* const mesh_, ForcesType* forces_, VerticesType* vertices_) :
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"kP", kP_}, {"P0", P0_}},
                 forces_, vertices_),
@@ -80,7 +81,8 @@ Cell area restoring force.
 
         AreaForce(
             double const& kA_, double const& A0_,
-            Mesh* const mesh_, ForcesType* forces_, VerticesType* vertices_) :
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"kA", kA_}, {"A0", A0_}},
                 forces_, vertices_),
@@ -133,7 +135,8 @@ Active Brownian self-propulsion force acting on vertices.
 
         ActiveBrownianForce(
             double const& v0_, double const& taup_,
-            Random* random_, ForcesType* forces_, VerticesType* vertices_) :
+            Random* random_,
+            ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("vertex",
                 {{"v0", v0_}, {"taup", taup_}},
                 forces_, vertices_),
@@ -201,7 +204,7 @@ http://arxiv.org/abs/2309.04818
         OrnsteinUhlenbeckTension(
             double const& t0_, double const& st0_, double const& taup_,
             Mesh* const mesh_, Random* random_,
-            ForcesType* forces_, HalfEdgesType* halfEdges_) :
+            ForcesType* forces_, HalfEdgesType* const halfEdges_) :
             HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
                 {{"t0", t0_}, {"st0", st0_}, {"taup", taup_}},
                 forces_, halfEdges_),
