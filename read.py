@@ -243,7 +243,7 @@ def plot(vm, fig=None, ax=None, rainbow=None):
     ax.set_aspect("equal")
 
     # junctions and half-edges
-    lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=3)    # all junctions
+    lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=1.5)  # all junctions
     if "t0" in locals():
         junctions = [i for i in sorted(vm.halfEdges)
             if vm.halfEdges[i].type == "junction"]
