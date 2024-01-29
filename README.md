@@ -60,9 +60,9 @@ This vertex model implementation is separated in two parts. First `mesh.*pp` con
 
 Forces are defined separately and are attached to the `VertexModel` class following a class factory method (see `class_factory.hpp`) which enables to add and remove different forces. There are two general classes of forces enabled (see `base_forces.hpp`): forces which are computed for all vertices of a given type (`VertexForce` class), and forces which are computed for all half-edges of a given type (`HalfEdgeForce` class).
 
-Proper definitions of forces belong in `forces.hpp`, with `forces.cpp` providing definitions of `VertexModel` methods to add them. Finally, these are exposed to Python in `bind.cpp`.
+Proper definitions of forces belong in `forces.hpp`, with `forces.cpp` providing definitions of `VertexModel` methods to add them. Finally, these are exposed to Python in `bind.cpp`. On the Python side, forces are initialised in `init.py` and forces-dependent plotting are defined in `read.py`.
 
-Descriptions of some forces can be found in `docs/forces.pdf`.
+Descriptions of some forces can be found in `docs/forces.pdf` and `docs/active_junction.pdf`.
 
 ### Pickling
 

@@ -325,6 +325,14 @@ class Model0 : public HalfEdgeForce<ForcesType> {
         }
 
         void integrate(double const& dt) override {
+            // noise integration
+            double const dt_ = dt/parameters.at("taup");
+            double const amp = parameters.at("sigma")*sqrt(2.*dt_);
+            for (auto it=noise.begin(); it != noise.end(); ++it) {
+                // noise
+                noise[it->first] =
+                    (1 - dt_)*noise[it->first] + amp*random->gauss();
+            }
             // index correspondence between cell centre vertices and perimeters
             perimeter.clear();
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
@@ -353,14 +361,8 @@ class Model0 : public HalfEdgeForce<ForcesType> {
             }
             // clear tension
             tension.clear();
-            // noise integration and tension setting
-            double const dt_ = dt/parameters.at("taup");
-            double const amp = parameters.at("sigma")*sqrt(2.*dt_);
+            // tension setting
             for (auto it=noise.begin(); it != noise.end(); ++it) {
-                // noise
-                noise[it->first] =
-                    (1 - dt_)*noise[it->first] + amp*random->gauss();
-                // tension
                 long int const cellIndices[2] =                             // indices of cell of the junction
                     {halfEdges->at(
                         halfEdges->at(it->first)
@@ -434,6 +436,34 @@ class Model1 : public HalfEdgeForce<ForcesType> {
         }
 
         void integrate(double const& dt) override {
+            // tension integration
+            double const dt_ = dt/parameters.at("taup");
+            double const amp = parameters.at("sigma")*sqrt(2.*dt_);
+            for (auto it=tension.begin(); it != tension.end();) {
+                // tension
+                long int const cellIndices[2] =                                 // indices of cell of the junction
+                    {halfEdges->at(
+                        halfEdges->at(it->first)
+                            .getNextIndex()).getToIndex(),
+                    halfEdges->at(
+                        halfEdges->at(halfEdges->at(it->first).getPairIndex())
+                            .getNextIndex()).getToIndex()};
+                if (!inMap(perimeter, cellIndices[0])
+                    && !inMap(perimeter, cellIndices[1])) {                     // this junction does not belong to any cell
+                    it = tension.erase(it);
+                }
+                else {
+                    tension[it->first] = (1 - dt_)*tension[it->first]           // zero-mean deterministic part
+                        + amp*random->gauss();                                  // stochastic part
+                    for (long int cellIndex : cellIndices) {
+                        if (inMap(perimeter, cellIndex)) {
+                            tension[it->first] += dt_*parameters.at("Gamma")*(  // target deterministic part
+                                perimeter[cellIndex] - parameters.at("P0"));
+                        }
+                    }
+                    ++it;
+                }
+            }
             // index correspondence between cell centre vertices and perimeters
             perimeter.clear();
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
@@ -474,27 +504,6 @@ class Model1 : public HalfEdgeForce<ForcesType> {
                     }
                 }
             }
-            // tension integration
-            double const dt_ = dt/parameters.at("taup");
-            double const amp = parameters.at("sigma")*sqrt(2.*dt_);
-            for (auto it=tension.begin(); it != tension.end(); ++it) {
-                // tension
-                long int const cellIndices[2] =                             // indices of cell of the junction
-                    {halfEdges->at(
-                        halfEdges->at(it->first)
-                            .getNextIndex()).getToIndex(),
-                    halfEdges->at(
-                        halfEdges->at(halfEdges->at(it->first).getPairIndex())
-                            .getNextIndex()).getToIndex()};
-                tension[it->first] = (1 - dt_)*tension[it->first]           // zero-mean deterministic part
-                    + amp*random->gauss();                                  // stochastic part
-                for (long int cellIndex : cellIndices) {
-                    if (inMap(perimeter, cellIndex)) {
-                        tension[it->first] += dt_*parameters.at("Gamma")*(  // target deterministic part
-                            perimeter[cellIndex] - parameters.at("P0"));
-                    }
-                }
-            }
         }
 
         void deleteEdge(TopoChangeEdgeInfoType const& del) override {
@@ -513,7 +522,7 @@ class Model2 : public HalfEdgeForce<ForcesType> {
 
         Mesh* const mesh;                       // mesh object
         Random* random;                         // random number generator
-        std::map<long int, double> length;      // junction lenghts
+        std::map<long int, double> length;      // junction lengths
         std::map<long int, double> restLength;  // junction rest lengths
         std::map<long int, double> noise;       // noise in tension
         std::map<long int, double> tension;     // junction tension
@@ -562,6 +571,18 @@ class Model2 : public HalfEdgeForce<ForcesType> {
         }
 
         void integrate(double const& dt) override {
+            // rest length and noise integration
+            double const dtr_ = dt/parameters.at("taur");
+            double const dtp_ = dt/parameters.at("taup");
+            double const amp = parameters.at("sigma")*sqrt(2.*dtp_);
+            for (auto it=length.begin(); it != length.end(); ++it) {
+                // rest length
+                restLength[it->first] =
+                    (1 - dtr_)*restLength[it->first] + dtr_*length[it->first];
+                // noise
+                noise[it->first] =
+                    (1 - dtp_)*noise[it->first] + amp*random->gauss();
+            }
             // index correspondence between half-edges and junction lengths
             length.clear();
             for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
@@ -596,18 +617,8 @@ class Model2 : public HalfEdgeForce<ForcesType> {
             }
             // clear tension
             tension.clear();
-            // rest length and noise integration and tension setting
-            double const dtr_ = dt/parameters.at("taur");
-            double const dtp_ = dt/parameters.at("taup");
-            double const amp = parameters.at("sigma")*sqrt(2.*dtp_);
+            // tension setting
             for (auto it=length.begin(); it != length.end(); ++it) {
-                // rest length
-                restLength[it->first] =
-                    (1 - dtr_)*restLength[it->first] + dtr_*length[it->first];
-                // noise
-                noise[it->first] =
-                    (1 - dtp_)*noise[it->first] + amp*random->gauss();
-                // tension
                 tension[it->first] =
                     parameters.at("Gamma")*(                                // deterministic part
                         length[it->first] - restLength[it->first])
@@ -622,6 +633,213 @@ class Model2 : public HalfEdgeForce<ForcesType> {
                 }
                 if (inMap(noise, halfEdgeIndex)) {
                     noise.erase(halfEdgeIndex);
+                }
+            }
+        }
+
+};
+
+class Model3 : public HalfEdgeForce<ForcesType> {
+
+    protected:
+
+        Mesh* const mesh;                       // mesh object
+        Random* random;                         // random number generator
+        std::map<long int, double> length;      // junction lengths
+        std::map<long int, double> restLength;  // junction rest lengths
+        std::map<long int, double> tension;     // junction tension
+
+    public:
+
+        Model3(
+            double const& Gamma_,
+            double const& sigma_, double const& taup_,
+            Mesh* const mesh_, Random* random_,
+            ForcesType* forces_, HalfEdgesType* const halfEdges_) :
+            HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
+                {{"Gamma", Gamma_},
+                    {"sigma", sigma_}, {"taup", taup_}},
+                forces_, halfEdges_),
+            mesh(mesh_), random(random_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getLength() const
+            { return length; }
+
+        std::map<long int, double> const& getRestLength() const
+            { return restLength; }
+        void setRestLength(std::map<long int, double> const& restLength_)
+            { restLength = restLength_; }
+
+        std::map<long int, double> const& getTension() const
+            { return tension; }
+
+        void addForce(HalfEdge const& halfEdge) override {
+            long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
+            long int const toIndex = halfEdge.getToIndex();         // destination vertex
+            std::vector<double> const fromTo =
+                mesh->getHalfEdgeVector(halfEdge.getIndex(), true); // unit half-edge vector
+            double force;
+            for (int dim=0; dim < 2; dim++) {
+                force = tension[halfEdge.getIndex()]*fromTo[dim];
+                (*forces)[fromIndex][dim] += force;
+                (*forces)[toIndex][dim] -= force;
+            }
+        }
+
+        void integrate(double const& dt) override {
+            // rest length integration
+            double const dtp_ = dt/parameters.at("taup");
+            double const amp = parameters.at("sigma")*sqrt(2.*dtp_);
+            for (auto it=restLength.begin(); it != restLength.end(); ++it) {
+                restLength[it->first] =
+                    (1 - dtp_)*restLength[it->first] + dtp_*length[it->first]   // deterministic part
+                    + amp*parameters.at("sigma")*random->gauss();               // noise part
+            }
+            // index correspondence between half-edges and junction lengths
+            length.clear();
+            for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
+                if ((it->second).getType() == type) {                           // compute junction length
+                    length[it->first] = mesh->getEdgeLength(it->first);
+                }
+            }
+            // index correspondence between half-edges and rest lengths
+            for (auto it=restLength.begin(); it != restLength.end();) {
+                if (!inMap(length, it->first)) {                                // half-edge index not present any more or is not a junction
+                    it = restLength.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=length.begin(); it != length.end(); ++it) {            // new half-edge index
+                if (!inMap(restLength, it->first)) {
+                    restLength[it->first] = length[it->first]
+                        + parameters.at("sigma")*random->gauss();
+                }
+            }
+            // clear tension
+            tension.clear();
+            // tension setting
+            for (auto it=length.begin(); it != length.end(); ++it) {
+                tension[it->first] =
+                    parameters.at("Gamma")*(
+                        length[it->first] - restLength[it->first]);
+            }
+        }
+
+        void deleteEdge(TopoChangeEdgeInfoType const& del) override {
+            for (long int halfEdgeIndex : std::get<1>(del)) {
+                if (inMap(restLength, halfEdgeIndex)) {
+                    restLength.erase(halfEdgeIndex);
+                }
+            }
+        }
+
+};
+
+class Model4 : public HalfEdgeForce<ForcesType> {
+
+    protected:
+
+        Mesh* const mesh;                       // mesh object
+        Random* random;                         // random number generator
+        std::map<long int, double> length;      // junction lengths
+        std::map<long int, double> restLength;  // junction rest lengths
+        std::map<long int, double> tension;     // junction tension
+
+    public:
+
+        Model4(
+            double const& Gamma_, double const& taur_,
+            double const& sigma_, double const& taup_,
+            Mesh* const mesh_, Random* random_,
+            ForcesType* forces_, HalfEdgesType* const halfEdges_) :
+            HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
+                {{"Gamma", Gamma_}, {"taur", taur_},
+                    {"sigma", sigma_}, {"taup", taup_}},
+                forces_, halfEdges_),
+            mesh(mesh_), random(random_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getLength() const
+            { return length; }
+
+        std::map<long int, double> const& getRestLength() const
+            { return restLength; }
+        void setRestLength(std::map<long int, double> const& restLength_)
+            { restLength = restLength_; }
+
+        std::map<long int, double> const& getTension() const
+            { return tension; }
+        void setTension(std::map<long int, double> const& tension_)
+            { tension = tension_; }
+
+        void addForce(HalfEdge const& halfEdge) override {
+            long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
+            long int const toIndex = halfEdge.getToIndex();         // destination vertex
+            std::vector<double> const fromTo =
+                mesh->getHalfEdgeVector(halfEdge.getIndex(), true); // unit half-edge vector
+            double force;
+            for (int dim=0; dim < 2; dim++) {
+                force = tension[halfEdge.getIndex()]*fromTo[dim];
+                (*forces)[fromIndex][dim] += force;
+                (*forces)[toIndex][dim] -= force;
+            }
+        }
+
+        void integrate(double const& dt) override {
+            // tension and rest length integration
+            double const dtp_ = dt/parameters.at("taup");
+            double const amp = parameters.at("sigma")*sqrt(2.*dtp_);
+            double const dtr_ = dt/parameters.at("taur");
+            for (auto it=tension.begin(); it != tension.end(); ++it) {
+                // tension
+                tension[it->first] =
+                    (1 - dtp_)*tension[it->first]                               // zero-mean deterministic part
+                    + dtp_*parameters.at("Gamma")*(                             // target deterministic part
+                        length[it->first] - restLength[it->first])
+                    + amp*parameters.at("sigma")*random->gauss();               // noise part
+                // rest length
+                restLength[it->first] =
+                    (1 - dtr_)*restLength[it->first] + dtr_*length[it->first];
+            }
+            // index correspondence between half-edges and junction lengths
+            length.clear();
+            for (auto it=halfEdges->begin(); it != halfEdges->end(); ++it) {
+                if ((it->second).getType() == type) {                           // compute junction length
+                    length[it->first] = mesh->getEdgeLength(it->first);
+                }
+            }
+            // index correspondence between half-edges and rest lengths
+            for (auto it=restLength.begin(); it != restLength.end();) {
+                if (!inMap(length, it->first)) {                                // half-edge index not present any more or is not a junction
+                    it = restLength.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=length.begin(); it != length.end(); ++it) {            // new half-edge index
+                if (!inMap(restLength, it->first)) {
+                    restLength[it->first] = length[it->first]
+                        + parameters.at("sigma")*random->gauss();
+                }
+            }
+            // clear tension
+            tension.clear();
+            // tension setting
+            for (auto it=length.begin(); it != length.end(); ++it) {
+                tension[it->first] =
+                    parameters.at("Gamma")*(
+                        length[it->first] - restLength[it->first]);
+            }
+        }
+
+        void deleteEdge(TopoChangeEdgeInfoType const& del) override {
+            for (long int halfEdgeIndex : std::get<1>(del)) {
+                if (inMap(restLength, halfEdgeIndex)) {
+                    restLength.erase(halfEdgeIndex);
                 }
             }
         }

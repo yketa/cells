@@ -229,11 +229,11 @@ def plot(vm, fig=None, ax=None, rainbow=None):
                 p0 = vm.halfEdgeForces[model].parameters["P0"]/np.sqrt(A0)
             else:
                 P0 = vm.halfEdgeForces[model].parameters["P0"]
-    for model in ("model0", "model1", "model2"):
+    for model in ("model0", "model1", "model2", "model3", "model4"):
         if model in vm.halfEdgeForces:
             sT0 = vm.halfEdgeForces[model].parameters["sigma"]
             taup = vm.halfEdgeForces[model].parameters["taup"]
-    for model in ("model2",):
+    for model in ("model2", "model4"):
         if model in vm.halfEdgeForces:
             taur = vm.halfEdgeForces[model].parameters["taur"]
 
@@ -252,7 +252,7 @@ def plot(vm, fig=None, ax=None, rainbow=None):
             cbar_tension = plt.colorbar(
                 mappable=scalarMap_tension, ax=ax, shrink=0.5)
             cbar_tension.set_label(r"$t_i/t_0 - 1$", rotation=270)
-        for model in ("model0", "model1", "model2"):
+        for model in ("model0", "model1", "model2", "model3", "model4"):
             if model in vm.halfEdgeForces:
                 cbar_tension = plt.colorbar(
                     mappable=scalarMap_tension, ax=ax, shrink=0.5)
@@ -279,7 +279,7 @@ def plot(vm, fig=None, ax=None, rainbow=None):
                 lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
                 tensions)))
         elif "sT0" in locals():
-            for model in ("model0", "model1", "model2"):
+            for model in ("model0", "model1", "model2", "model3", "model4"):
                 try:
                     tensions = np.concatenate(list(map(
                         lambda i: [vm.halfEdgeForces[model].tension[i]]*2,
