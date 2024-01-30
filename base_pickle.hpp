@@ -5,6 +5,7 @@ Provide templates for pickling operations on C++ objects via pybind11.
 #ifndef PICKLE_HPP
 #define PICKLE_HPP
 
+#include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -30,67 +31,46 @@ Check that pybind11::tuple has correct size to generate data.
 
 template<class T> pybind11::tuple pybind11_getstate(T const& obj)
 /*
-python __getstate__ (converts data from object to pickleable tuple)
+Python __getstate__ (converts data from object to pickleable tuple).
 */
     { return pybind11::make_tuple(obj); }
 
 template<class T> T pybind11_setstate(pybind11::tuple const& t)
 /*
-python __setstate__ (converts tuple back to object)
+Python __setstate__ (converts tuple back to object).
 */
     { checkSize(t, 1); return t[0].cast<T>(); }
 
 /*
-Specific functions to save to and load force computation objects from pickle.
+Specific functions to save and loaf force computation object from pickle.
 */
 
-// VertexForce<ForcesType>
-
-template<class DerivedType>
-pybind11::tuple pybind11_getstate_vertex_forces(                // python __getstate__
-    std::string const& name,
-    std::shared_ptr<VertexForce<ForcesType>> const& obj) {      // default behaviour
-    return pybind11::make_tuple(name, obj->getParameters());
+template<class Force>
+std::map<std::string, pybind11::tuple> pybind11_getstate_force_class_factory(
+    ClassFactory<Force> const& classFactory) {
+/*
+Save data from forces.
+*/
+    std::map<std::string, pybind11::tuple> stateMap;
+    for (auto it=classFactory.cbegin(); it != classFactory.cend(); ++it)
+        { stateMap.emplace(it->first, (it->second)->pybind11_getstate()); }
+    return stateMap;
 }
 
-template<class DerivedType>                                        
-void pybind11_setstate_vertex_forces(                           // python __setstate__
-    pybind11::tuple const& t, VertexModel& vm) {                // default behaviour
-    // check
-    checkSize(t, 2);
-    // get data
-    std::string const name =
-        t[0].cast<std::string>();
-    std::map<std::string, double> const parameters =
-        t[1].cast<std::map<std::string, double>>();
-    // add force
-    vm.addVertexForce<DerivedType, ParametersType const&>(
-        name, parameters);
-}
+// template specialisation
+template std::map<std::string, pybind11::tuple>
+pybind11_getstate_force_class_factory<HalfEdgeForce<ForcesType>>
+    (ClassFactory<HalfEdgeForce<ForcesType>> const&);
+template std::map<std::string, pybind11::tuple>
+pybind11_getstate_force_class_factory<VertexForce<ForcesType>>
+    (ClassFactory<VertexForce<ForcesType>> const&);
 
-// HalfEdgeForce<ForcesType>
-
-template<class DerivedType>
-pybind11::tuple pybind11_getstate_half_edge_forces(             // python __getstate__
-    std::string const& name,
-    std::shared_ptr<HalfEdgeForce<ForcesType>> const& obj) {    // default behaviour
-    return pybind11::make_tuple(name, obj->getParameters());
-}
-
-template<class DerivedType>                                        
-void pybind11_setstate_half_edge_forces(                        // python __setstate__
-    pybind11::tuple const& t, VertexModel& vm) {                // default behaviour
-    // check
-    checkSize(t, 2);
-    // get data
-    std::string const name =
-        t[0].cast<std::string>();
-    std::map<std::string, double> const parameters =
-        t[1].cast<std::map<std::string, double>>();
-    // add force
-    vm.addHalfEdgeForce<DerivedType, ParametersType const&>(
-        name, parameters);
-}
+template<class Force>
+void pybind11_setstate_force_class_factory(
+    VertexModel& vm, std::map<std::string, pybind11::tuple> const& stateMap);
+/*
+Load data from forces.
+*/
 
 #endif
 

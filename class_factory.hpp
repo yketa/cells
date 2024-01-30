@@ -45,7 +45,7 @@ Adapted from code initially written by Rastko Sknepnek.
         */
             { return (factory_map.find(key) != factory_map.end()); }
 
-        std::shared_ptr<BaseType>& get(std::string const& key)
+        std::shared_ptr<BaseType>& operator[](std::string const& key)
         /*
         Return pointer to the object associated with the key.
         */
@@ -62,9 +62,9 @@ Adapted from code initially written by Rastko Sknepnek.
         std::map<std::string, std::shared_ptr<BaseType>>::iterator
             end() { return factory_map.end(); }
         std::map<std::string, std::shared_ptr<BaseType>>::const_iterator
-            const_begin() const { return factory_map.begin(); }
+            cbegin() const { return factory_map.begin(); }
         std::map<std::string, std::shared_ptr<BaseType>>::const_iterator
-            const_end() const { return factory_map.end(); }
+            cend() const { return factory_map.end(); }
 
         // SET
 

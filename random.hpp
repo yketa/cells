@@ -72,6 +72,8 @@ Adapted from code initially written by Robert L. Jack.
         friend std::istream& operator>>(std::istream& is, Random& rnd)          // overload >> operator
             { is >> rnd.generator; return is; }
 
+        void operator=(Random const& rnd) { setGenerator(rnd.getGenerator()); } // copy operator
+
 };
 
 #endif

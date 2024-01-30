@@ -6,6 +6,7 @@ pybind11.
 #ifndef SYSTEM_PICKLE_HPP
 #define SYSTEM_PICKLE_HPP
 
+#include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -171,67 +172,6 @@ Mesh pybind11_setstate<Mesh>(pybind11::tuple const& t) {
 }
 
 /*
- *  [class_factory.hpp, base_forces.hpp]
- *  Specific functions to save to and load class factories of force computation
- *  objects from pickle.
- *  ATTENTION: The setters only work if the class factory elements have all the
- *             same derived type.
- *
- */
-
-// ClassFactory<VertexForce<ForcesType>>
-
-template<class DerivedType>
-pybind11::tuple pybind11_getstate_class_factory_vertex_forces(      // python __getstate__
-    ClassFactory<VertexForce<ForcesType>> const& obj) {
-    std::map<std::string, pybind11::tuple> data;
-    for (auto it=obj.const_begin(); it != obj.const_end(); ++it) {
-        data.emplace(
-            it->first,
-            pybind11_getstate_vertex_forces<DerivedType>(it->second));
-    }
-    return pybind11::make_tuple(data);
-}
-
-template<class DerivedType>
-void pybind11_setstate_class_factory_vertex_forces(                 // python __setstate__
-    pybind11::tuple const& t, VertexModel& vm) {
-    // get data
-    std::map<std::string, pybind11::tuple> const data =
-        t[0].cast<std::map<std::string, pybind11::tuple>>();
-    // add force
-    for (auto it=data.begin(); it != data.end(); ++it) {
-        pybind11_setstate_vertex_forces<DerivedType>(it->second, vm);
-    }
-}
-
-// ClassFactory<HalfEdgeForce<ForcesType>>
-
-template<class DerivedType>
-pybind11::tuple pybind11_getstate_class_factory_half_edge_forces(   // python __getstate__
-    ClassFactory<HalfEdgeForce<ForcesType>> const& obj) {
-    std::map<std::string, pybind11::tuple> data;
-    for (auto it=obj.const_begin(); it != obj.const_end(); ++it) {
-        data.emplace(
-            it->first,
-            pybind11_getstate_half_edge_forces<DerivedType>(it->second));
-    }
-    return pybind11::make_tuple(data);
-}
-
-template<class DerivedType>
-void pybind11_setstate_class_factory_half_edge_forces(              // python __setstate__
-    pybind11::tuple const& t, VertexModel& vm) {
-    // get data
-    std::map<std::string, pybind11::tuple> const data =
-        t[0].cast<std::map<std::string, pybind11::tuple>>();
-    // add force
-    for (auto it=data.begin(); it != data.end(); ++it) {
-        pybind11_setstate_half_edge_forces<DerivedType>(it->second, vm);
-    }
-}
-
-/*
  *  [system.hpp]
  *
  */
@@ -242,16 +182,22 @@ template<>
 pybind11::tuple pybind11_getstate<VertexModel>(VertexModel const& vm) {
     return pybind11::make_tuple(
         pybind11_getstate<Mesh>(vm),
-        // ATTENTION: this does not save forces objects
         vm.getSeed(),
         pybind11_getstate<Random>(vm.getRandom()),
         vm.getTime(),
-        vm.getnT1());
+        vm.getnT1(),
+        pybind11_getstate_force_class_factory<VertexForce<ForcesType>>(
+            vm.getVertexForces()),
+        pybind11_getstate_force_class_factory<HalfEdgeForce<ForcesType>>(
+            vm.getHalfEdgeForces()));
 }
 
 template<>
-VertexModel pybind11_setstate<VertexModel>(pybind11::tuple const& t) {
-    checkSize(t, 5);
+std::unique_ptr<VertexModel> pybind11_setstate<std::unique_ptr<VertexModel>>(   // using unique_ptr to conserve pointers in force computation objects
+    pybind11::tuple const& t) {
+    // check
+    checkSize(t, 7);
+    // extract data
     Mesh const mesh =
         pybind11_setstate<Mesh>(t[0].cast<pybind11::tuple>());
     long int const seed =
@@ -262,7 +208,18 @@ VertexModel pybind11_setstate<VertexModel>(pybind11::tuple const& t) {
         t[3].cast<double>();
     long int const nT1 =
         t[4].cast<long int>();
-    return VertexModel(mesh, seed, random, time, nT1);
+    // initialise simulation object
+    std::unique_ptr<VertexModel> vm =
+        std::make_unique<VertexModel>(mesh, seed, time, nT1);
+    // set forces
+    pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
+        *vm, t[5].cast<std::map<std::string, pybind11::tuple>>());
+    pybind11_setstate_force_class_factory<HalfEdgeForce<ForcesType>>(
+        *vm, t[6].cast<std::map<std::string, pybind11::tuple>>());
+    // copy random generator
+    // (to be done after forces initialisation which may call the generator)
+    vm->setRandom(random);
+    return vm;
 }
 
 #endif

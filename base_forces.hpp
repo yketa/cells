@@ -8,6 +8,10 @@ Base types for forces.
 #include <map>
 #include <string>
 
+#include <Python.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include "mesh.hpp"
 
 typedef std::map<long int, HalfEdge> HalfEdgesType;
@@ -54,7 +58,7 @@ All forces.
             T* forces_) :
             type(type_), parameters(parameters_), forces(forces_) {}
 
-        BaseForce(BaseForce<T> const& bF) : // copy constructor
+        BaseForce(BaseForce<T>& bF) :   // copy constructor
             BaseForce(bF.getType(), bF.getParameters(), bF.getForces()) {}
 
         virtual ~BaseForce() {}
@@ -78,6 +82,14 @@ All forces.
         following egde creation (see Mesh::createEdge).
         */
 
+        virtual pybind11::tuple pybind11_getstate() const
+            { return pybind11::make_tuple(); }
+        /*
+        Tuple with data to regenerate force computation object.
+        First element MUST be an unique identifying string for the force object
+        type.
+        */
+
 };
 
 // HALF-EDGE FORCES
@@ -90,7 +102,7 @@ Force which derives from the property of a half-edge.
 
     protected:
 
-        HalfEdgesType* const halfEdges;  // reference to half-edge container
+        HalfEdgesType* const halfEdges; // reference to half-edge container
 
     public:
 
@@ -101,7 +113,7 @@ Force which derives from the property of a half-edge.
             HalfEdgesType* halfEdges_) :
             BaseForce<T>(type_, parameters_, forces_), halfEdges(halfEdges_) {}
 
-        HalfEdgeForce(HalfEdgeForce<T> const& hEF) :    // copy constructor
+        HalfEdgeForce(HalfEdgeForce<T>& hEF) :  // copy constructor
             BaseForce<T>(hEF), halfEdges(hEF.getHalfEdges()) {}
 
         HalfEdgesType const getHalfEdges() const
@@ -138,7 +150,7 @@ Force which derives from the property of a vertex.
 
     protected:
 
-        VerticesType* const vertices; // reference to vertex container
+        VerticesType* const vertices;   // reference to vertex container
 
     public:
 
@@ -149,11 +161,11 @@ Force which derives from the property of a vertex.
             VerticesType* vertices_) :
             BaseForce<T>(type_, parameters_, forces_), vertices(vertices_) {}
 
-        VertexForce(VertexForce<T> const& vF) : // copy constructor
+        VertexForce(VertexForce<T>& vF) :   // copy constructor
             BaseForce<T>(vF), vertices(vF.getVertices()) {}
 
-        VerticesType const getVertices() const
-            { return *vertices; }
+        VerticesType* const getVertices() const
+            { return vertices; }
 
         virtual void addForce(Vertex const& vertex) {}
         /*

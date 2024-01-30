@@ -66,6 +66,8 @@ Cell perimeter restoring force.
             }
         }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class AreaForce : public VertexForce<ForcesType> {
@@ -118,6 +120,8 @@ Cell area restoring force.
                 }
             }
         }
+
+        pybind11::tuple pybind11_getstate() const override;
 
 };
 
@@ -184,6 +188,8 @@ Active Brownian self-propulsion force acting on vertices.
                 it->second += amp*random->gauss();
             }
         }
+
+        pybind11::tuple pybind11_getstate() const override;
 
 };
 
@@ -268,6 +274,8 @@ http://arxiv.org/abs/2309.04818
             }
         }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 /*
@@ -302,6 +310,8 @@ class Model0 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getPerimeter() const
             { return perimeter; }
+        void setPerimeter(std::map<long int, double> const& perimeter_)
+            { perimeter = perimeter_; }
 
         std::map<long int, double> const& getNoise() const
             { return noise; }
@@ -310,6 +320,8 @@ class Model0 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getTension() const
             { return tension; }
+        void setTension(std::map<long int, double> const& tension_)
+            { tension = tension_; }
 
         void addForce(HalfEdge const& halfEdge) override {
             long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
@@ -388,6 +400,8 @@ class Model0 : public HalfEdgeForce<ForcesType> {
             }
         }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class Model1 : public HalfEdgeForce<ForcesType> {
@@ -416,6 +430,8 @@ class Model1 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getPerimeter() const
             { return perimeter; }
+        void setPerimeter(std::map<long int, double> const& perimeter_)
+            { perimeter = perimeter_; }
 
         std::map<long int, double> const& getTension() const
             { return tension; }
@@ -514,6 +530,8 @@ class Model1 : public HalfEdgeForce<ForcesType> {
             }
         }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class Model2 : public HalfEdgeForce<ForcesType> {
@@ -543,6 +561,8 @@ class Model2 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getLength() const
             { return length; }
+        void setLength(std::map<long int, double> const& length_)
+            { length = length_; }
 
         std::map<long int, double> const& getRestLength() const
             { return restLength; }
@@ -556,6 +576,8 @@ class Model2 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getTension() const
             { return tension; }
+        void setTension(std::map<long int, double> const& tension_)
+            { tension = tension_; }
 
         void addForce(HalfEdge const& halfEdge) override {
             long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
@@ -637,6 +659,8 @@ class Model2 : public HalfEdgeForce<ForcesType> {
             }
         }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class Model3 : public HalfEdgeForce<ForcesType> {
@@ -665,6 +689,8 @@ class Model3 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getLength() const
             { return length; }
+        void setLength(std::map<long int, double> const& length_)
+            { length = length_; }
 
         std::map<long int, double> const& getRestLength() const
             { return restLength; }
@@ -673,6 +699,8 @@ class Model3 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getTension() const
             { return tension; }
+        void setTension(std::map<long int, double> const& tension_)
+            { tension = tension_; }
 
         void addForce(HalfEdge const& halfEdge) override {
             long int const fromIndex = halfEdge.getFromIndex();     // origin vertex
@@ -736,6 +764,8 @@ class Model3 : public HalfEdgeForce<ForcesType> {
             }
         }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class Model4 : public HalfEdgeForce<ForcesType> {
@@ -764,6 +794,8 @@ class Model4 : public HalfEdgeForce<ForcesType> {
 
         std::map<long int, double> const& getLength() const
             { return length; }
+        void setLength(std::map<long int, double> const& length_)
+            { length = length_; }
 
         std::map<long int, double> const& getRestLength() const
             { return restLength; }
@@ -843,6 +875,8 @@ class Model4 : public HalfEdgeForce<ForcesType> {
                 }
             }
         }
+
+        pybind11::tuple pybind11_getstate() const override;
 
 };
 

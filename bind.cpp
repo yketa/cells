@@ -13,11 +13,12 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include <map>
 
 #include "forces.hpp"
+#include "forces_pickle.hpp"
 #include "mesh.hpp"
+#include "plot.hpp"
 #include "system_pickle.hpp"
 #include "system.hpp"
 #include "tools.hpp"
-#include "plot.hpp"
 
 PYBIND11_MODULE(bind, m) {
     m.doc() =
@@ -136,7 +137,7 @@ PYBIND11_MODULE(bind, m) {
         VertexForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<ActiveBrownianForce>>(
         m, "ActiveBrownianForce",
-        "Python wrapper around C++ Active Brownian force computation object.")
+        "Python wrapper around C++ active Brownian force computation object.")
         .def_property("theta",
             &ActiveBrownianForce::getTheta,
             &ActiveBrownianForce::setTheta);
@@ -161,21 +162,24 @@ PYBIND11_MODULE(bind, m) {
         std::shared_ptr<Model0>>(
         m, "Model0",
         "Python wrapper around C++ model 0 computation object.")
-        .def_property_readonly("perimeter",
-            &Model0::getPerimeter)
+        .def_property("perimeter",
+            &Model0::getPerimeter,
+            &Model0::setPerimeter)
         .def_property("noise",
             &Model0::getNoise,
             &Model0::setNoise)
-        .def_property_readonly("tension",
-            &Model0::getTension);
+        .def_property("tension",
+            &Model0::getTension,
+            &Model0::setTension);
 
     pybind11::class_<Model1,
         HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<Model1>>(
         m, "Model1",
         "Python wrapper around C++ model 1 computation object.")
-        .def_property_readonly("perimeter",
-            &Model1::getPerimeter)
+        .def_property("perimeter",
+            &Model1::getPerimeter,
+            &Model1::setPerimeter)
         .def_property("tension",
             &Model1::getTension,
             &Model1::setTension);
@@ -185,37 +189,42 @@ PYBIND11_MODULE(bind, m) {
         std::shared_ptr<Model2>>(
         m, "Model2",
         "Python wrapper around C++ model 2 computation object.")
-        .def_property_readonly("length",
-            &Model2::getLength)
+        .def_property("length",
+            &Model2::getLength,
+            &Model2::setLength)
         .def_property("restLength",
             &Model2::getRestLength,
             &Model2::setRestLength)
         .def_property("noise",
             &Model2::getNoise,
             &Model2::setNoise)
-        .def_property_readonly("tension",
-            &Model2::getTension);
+        .def_property("tension",
+            &Model2::getTension,
+            &Model2::setTension);
 
     pybind11::class_<Model3,
         HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<Model3>>(
         m, "Model3",
         "Python wrapper around C++ model 3 computation object.")
-        .def_property_readonly("length",
-            &Model3::getLength)
+        .def_property("length",
+            &Model3::getLength,
+            &Model3::setLength)
         .def_property("restLength",
             &Model3::getRestLength,
             &Model3::setRestLength)
-        .def_property_readonly("tension",
-            &Model3::getTension);
+        .def_property("tension",
+            &Model3::getTension,
+            &Model3::setTension);
 
     pybind11::class_<Model4,
         HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<Model4>>(
         m, "Model4",
         "Python wrapper around C++ model 4 computation object.")
-        .def_property_readonly("length",
-            &Model4::getLength)
+        .def_property("length",
+            &Model4::getLength,
+            &Model4::setLength)
         .def_property("restLength",
             &Model4::getRestLength,
             &Model4::setRestLength)
@@ -424,16 +433,6 @@ PYBIND11_MODULE(bind, m) {
             "name : str\n"
             "    Name of the force to remove.",
             pybind11::arg("name"))
-        .def("copyRandom",
-            &VertexModel::copyRandom,
-            "Copy random number generator from different instance of\n"
-            "VertexModel.\n"
-            "\n"
-            "Parameters\n"
-            "----------\n"
-            "vm : VertexModel\n"
-            "    Instance to copy the random number generator from.",
-            pybind11::arg("vm"))
         // add forces methods [HalfEdgeForce, VertexForce (base_forces.hpp, forces.hpp, forces.cpp)]
         .def("addPerimeterForce",
             &VertexModel::addVertexForce<PerimeterForce,
@@ -656,6 +655,6 @@ PYBIND11_MODULE(bind, m) {
         // pickle
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,
-            &pybind11_setstate<VertexModel>));
+            &pybind11_setstate<std::unique_ptr<VertexModel>>));
 }
 

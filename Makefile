@@ -34,7 +34,7 @@ clean:
 %.o: %.cpp
 	$(CXX) -o $@ -c $< $(CFLAGS)
 
-bind.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp system_pickle.hpp base_pickle.hpp class_factory.hpp system.hpp plot.hpp
+bind.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp forces_pickle.hpp base_pickle.hpp class_factory.hpp system.hpp plot.hpp system_pickle.hpp
 
 forces.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp system.hpp class_factory.hpp
 
@@ -46,9 +46,10 @@ system.o: system.hpp class_factory.hpp forces.hpp base_forces.hpp mesh.hpp rando
 
 tools.o: tools.hpp
 
+bind.o forces.o initialisation.o system.o: CFLAGS+=$(PYTHONFLAGS)
+
 # LIBRARIES
 
-bind.o: CFLAGS+=$(PYTHONFLAGS)
 bind.so: CFLAGS+=-fPIC
 bind.so: bind.o forces.o initialisation.o mesh.o system.o tools.o
 	$(CXX) -o $@ -shared $^ $(LDFLAGS)
