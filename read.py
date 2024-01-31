@@ -208,6 +208,8 @@ def plot(vm, fig=None, ax=None, rainbow=None):
         Axes subplot.
     """
 
+    rainbow_plot = (type(rainbow) == VertexModel)   # is it a rainbow plot?
+
     # forces parameters
 
     if "area" in vm.vertexForces:
@@ -244,19 +246,20 @@ def plot(vm, fig=None, ax=None, rainbow=None):
         fig.set_size_inches(10, 10)                                         # set figure size
         try: fig.canvas.window().setFixedSize(fig.canvas.window().size())   # set window size
         except AttributeError: pass
-        if "area" in vm.vertexForces:
-            cbar_area = plt.colorbar(
-                mappable=scalarMap_area, ax=ax, shrink=0.5)
-            cbar_area.set_label(r"$A_i/A_0 - 1$", rotation=270)
-        if "out" in vm.halfEdgeForces:
-            cbar_tension = plt.colorbar(
-                mappable=scalarMap_tension, ax=ax, shrink=0.5)
-            cbar_tension.set_label(r"$t_i/t_0 - 1$", rotation=270)
-        for model in ("model0", "model1", "model2", "model3", "model4"):
-            if model in vm.halfEdgeForces:
+        if not(rainbow_plot):
+            if "area" in vm.vertexForces:
+                cbar_area = plt.colorbar(
+                    mappable=scalarMap_area, ax=ax, shrink=0.5)
+                cbar_area.set_label(r"$A_i/A_0 - 1$", rotation=270)
+            if "out" in vm.halfEdgeForces:
                 cbar_tension = plt.colorbar(
                     mappable=scalarMap_tension, ax=ax, shrink=0.5)
-                cbar_tension.set_label(r"$t_i/\sigma$", rotation=270)
+                cbar_tension.set_label(r"$t_i/t_0 - 1$", rotation=270)
+            for model in ["model%i" % i for i in range(5)]:
+                if model in vm.halfEdgeForces:
+                    cbar_tension = plt.colorbar(
+                        mappable=scalarMap_tension, ax=ax, shrink=0.5)
+                    cbar_tension.set_label(r"$t_i/\sigma$", rotation=270)
 
     # plot
 
@@ -268,27 +271,28 @@ def plot(vm, fig=None, ax=None, rainbow=None):
 
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=1.5)  # all junctions
-    if "t0" in locals() or "sT0" in locals():
-        junctions = [i for i in sorted(vm.halfEdges)
-            if vm.halfEdges[i].type == "junction"]
-        if "t0" in locals():
-            tensions = np.concatenate(list(map(
-                lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
-                junctions)))
-            lines.set_color(list(map(
-                lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
-                tensions)))
-        elif "sT0" in locals():
-            for model in ("model0", "model1", "model2", "model3", "model4"):
-                try:
-                    tensions = np.concatenate(list(map(
-                        lambda i: [vm.halfEdgeForces[model].tension[i]]*2,
-                        junctions)))
-                except:
-                    continue
-            lines.set_color(list(map(
-                lambda tension: scalarMap_tension.to_rgba(tension/sT0),
-                tensions)))
+    if not(rainbow_plot):
+        if ("t0" in locals() or "sT0" in locals()):
+            junctions = [i for i in sorted(vm.halfEdges)
+                if vm.halfEdges[i].type == "junction"]
+            if "t0" in locals():
+                tensions = np.concatenate(list(map(
+                    lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
+                    junctions)))
+                lines.set_color(list(map(
+                    lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
+                    tensions)))
+            elif "sT0" in locals():
+                for model in ["model%i" % i for i in range(5)]:
+                    try:
+                        tensions = np.concatenate(list(map(
+                            lambda i: [vm.halfEdgeForces[model].tension[i]]*2,
+                            junctions)))
+                    except:
+                        continue
+                lines.set_color(list(map(
+                    lambda tension: scalarMap_tension.to_rgba(tension/sT0),
+                    tensions)))
     ax.add_collection(lines)
     #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1)                          # all half-edges
 
@@ -300,7 +304,7 @@ def plot(vm, fig=None, ax=None, rainbow=None):
         facecolors="none")
     cells = [i for i in sorted(vm.vertices)
         if vm.vertices[i].type == "centre"]
-    if type(rainbow) is VertexModel:
+    if rainbow_plot:
         scalarMap_rainbow = ScalarMappable(
             Normalize(0, rainbow.systemSize[0]), plt.cm.hsv)
         positions0 = np.array(list(map(
