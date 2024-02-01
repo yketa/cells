@@ -334,6 +334,34 @@ PYBIND11_MODULE(bind, m) {
             "    Difference vector.",
             pybind11::arg("fromPos"),
             pybind11::arg("toPos"))
+        .def("getNeighbourVertices",
+            [](VertexModel const& self, long int const& vertexIndex) {
+                std::vector<std::vector<long int>> neighbours =
+                    self.getNeighbourVertices(vertexIndex);
+                long int const nNeigh = neighbours[0].size();
+                return pybind11::make_tuple(
+                    pybind11::array_t<long int>(nNeigh, &(neighbours[0][0])),
+                    pybind11::array_t<long int>(nNeigh, &(neighbours[1][0])));
+            },
+            "Indices of neighbouring vertices and indices of half-edges\n"
+            "towards them.\n"
+            "\n"
+            "NOTE: If the half-edge construction is correct, these should be\n"
+            "      in anti-clockwise order.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of the vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "neighbourVerticesIndices : (*,) int numpy array\n"
+            "    Indices of vertices neighbouring this vertex.\n"
+            "halfEdgesToNeighboursIndices : (*,) int numpy array\n"
+            "    Indices of half-edges from this vertex towards neighbour\n"
+            "    vertices.",
+            pybind11::arg("vertexIndex"))
         .def("getVertexToNeighboursArea",
             &VertexModel::getVertexToNeighboursArea,
             "Area encapsulated by the neighbours of a vertex (shoelace\n"
