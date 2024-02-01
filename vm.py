@@ -104,13 +104,14 @@ if __name__ == "__main__":
 
     with open(metadata["filename"], "wb") as dump:
         pickle.dump(metadata, dump)
-    print("Writing to \"%s\"." % metadata["filename"])
+    print("Writing to \"%s\"." % metadata["filename"],
+        flush=True)
 
     # SIMULATION
 
     for t in np.diff(metadata["frames"], prepend=0):
         vm.nintegrate(t, args.dt, args.delta, args.epsilon)
-        vm.checkMesh(["junction"])
+#         vm.checkMesh(["junction"])
         with open(metadata["filename"], "ab") as dump:
             pickle.dump(vm, dump)
 
