@@ -7,6 +7,7 @@ from cells.bind import VertexModel
 from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
 
 import sys
+import traceback
 
 from math import ceil
 import numpy as np
@@ -35,6 +36,9 @@ def _progressbar(p):
 # READ SIMULATION
 
 class Read:
+    """
+    Simulation file reading object.
+    """
 
     def __init__(self, fname, check=True):
         """
@@ -47,9 +51,12 @@ class Read:
         check : bool
             Check file consistency. This is mandatory in order to access data,
             otherwise only metadata is read and accessible. (default: True)
+            NOTE: Use cells.read.ReadWYC to access as much data as possible in
+                  the case of corrupted files.
         """
 
         self.filename = fname
+        self.fig, self.ax = None, None  # used for plotting
 
         with open(self.filename, "rb") as dump:
             self.metadata = pickle.load(dump)
@@ -85,8 +92,6 @@ class Read:
                 pass
 
         assert _max_diff_t < 1e-8   # relative difference between python and C++ times
-
-        self.fig, self.ax = None, None  # used for plotting
 
     def plot(self, frame, rainbow=None):
         """
@@ -169,6 +174,36 @@ class Read:
 
     def __len__(self):              # number of frames
         return self.frames.__len__()
+
+# READ CORRUPTED SIMULATION (experimental)
+
+class ReadWYC(Read):
+    """
+    CAUTION: This object is expected to be prone to errors.
+
+    Derived class of simulation file reading object cells.read.Read which
+    bypasses exceptions due to file corruptions in object initialiser.
+    https://stackoverflow.com/questions/51254859/
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        CAUTION: This object is expected to be prone to errors.
+
+        All arguments are passed to cells.read.Read.__init__ except keyword
+        argument `check' which is always set to True.
+
+        ==== [cells.read.Read.__init__.__doc__] ====
+
+        {0}
+        """
+
+        kwargs["check"] = True
+        try: super().__init__(*args, **kwargs)
+        except: print(traceback.format_exc(), file=sys.stderr)  # print traceback
+
+ReadWYC.__init__.__doc__ = (    # append docstring https://stackoverflow.com/questions/58256881/
+    ReadWYC.__init__.__doc__.format(Read.__init__.__doc__))
 
 # PLOT VERTEX MODEL OBJECT
 
@@ -280,8 +315,8 @@ def plot(vm, fig=None, ax=None, rainbow=None):
                     lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
                     junctions)))
                 lines.set_color(list(map(
-                    lambda tension: scalarMap_tension.to_rgba(tension/t0 - 1),
-                    tensions)))
+                    lambda s_tension: scalarMap_tension.to_rgba(s_tension),
+                    tensions if t0 == 0 else tensions/t0 - 1)))
             elif "sT0" in locals():
                 for model in ["model%i" % i for i in range(5)]:
                     try:
@@ -291,8 +326,8 @@ def plot(vm, fig=None, ax=None, rainbow=None):
                     except:
                         continue
                 lines.set_color(list(map(
-                    lambda tension: scalarMap_tension.to_rgba(tension/sT0),
-                    tensions)))
+                    lambda s_tension: scalarMap_tension.to_rgba(s_tension),
+                    tensions if sT0 == 0 else tensions/sT0)))
     ax.add_collection(lines)
     #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1)                          # all half-edges
 
