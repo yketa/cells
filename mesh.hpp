@@ -9,6 +9,12 @@ Objects to define the two-dimensional mesh with half-edge procedure.
 #include <string>
 #include <vector>
 
+class Vertex;
+class HalfEdge;
+class Mesh;
+
+typedef std::map<long int, Vertex> VerticesType;
+typedef std::map<long int, HalfEdge> HalfEdgesType;
 typedef std::tuple<long int, std::vector<long int>> TopoChangeEdgeInfoType;
 
 class Vertex {
@@ -159,8 +165,8 @@ Two-dimensional ensembles of vertices and edges.
 
     protected:
 
-        std::map<long int, Vertex> vertices;
-        std::map<long int, HalfEdge> halfEdges;
+        VerticesType vertices;
+        HalfEdgesType halfEdges;
         std::vector<double> systemSize{0, 0};
 
     public:
@@ -179,9 +185,9 @@ Two-dimensional ensembles of vertices and edges.
 
         // GETTERS
 
-        std::map<long int, Vertex> const& getVertices() const
+        VerticesType const& getVertices() const
             { return vertices; }
-        std::map<long int, HalfEdge> const& getHalfEdges() const
+        HalfEdgesType const& getHalfEdges() const
             { return halfEdges; }
         std::vector<double> const& getSystemSize() const
             { return systemSize; }
@@ -191,8 +197,8 @@ Two-dimensional ensembles of vertices and edges.
         Mesh() {}
 
         Mesh(                   // used to load state
-            std::map<long int, Vertex> const& vertices_,
-            std::map<long int, HalfEdge> const& halfEdges_,
+            VerticesType const& vertices_,
+            HalfEdgesType const& halfEdges_,
             std::vector<double> const& systemSize_) {
             // clear
             clear();

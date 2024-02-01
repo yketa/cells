@@ -22,8 +22,8 @@ the line (xi, yi) -- (xi', yi') corresponds to the i-th half-edge in `vm'.
 
     std::vector<std::vector<double>> lines(0);
 
-    std::map<long int, Vertex> const vertices = vm.getVertices();
-    std::map<long int, HalfEdge> const halfEdges = vm.getHalfEdges();
+    VerticesType const vertices = vm.getVertices();
+    HalfEdgesType const halfEdges = vm.getHalfEdges();
 
     std::vector<double> fromPos, disp;
     for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {          // loop over all half-edges
@@ -45,8 +45,8 @@ where the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
 
     std::vector<std::vector<std::vector<double>>> lines(0);
 
-    std::map<long int, Vertex> const vertices = vm.getVertices();
-    std::map<long int, HalfEdge> const halfEdges = vm.getHalfEdges();
+    VerticesType const vertices = vm.getVertices();
+    HalfEdgesType const halfEdges = vm.getHalfEdges();
 
     std::vector<double> fromPos, disp;
     std::vector<long int> halfEdgeIndices;
@@ -77,7 +77,7 @@ point (xi^j, yi^j) is the j-th corner of the i-th cell.
 
     std::vector<std::vector<std::vector<double>>> polygons(0);
 
-    std::map<long int, Vertex> const vertices = vm.getVertices();
+    VerticesType const vertices = vm.getVertices();
 
     long int n;
     long int vertexIndex;

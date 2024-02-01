@@ -14,8 +14,6 @@ Base types for forces.
 
 #include "mesh.hpp"
 
-typedef std::map<long int, HalfEdge> HalfEdgesType;
-typedef std::map<long int, Vertex> VerticesType;
 typedef std::map<std::string, double> ParametersType;
 
 // GENERAL BASE
@@ -28,9 +26,9 @@ All forces.
 
     protected:
 
-        std::string const type;                         // type on which the force applies (if it is "" then it applies to all types)
-        std::map<std::string, double> const parameters; // force parameters
-        T* forces;                                      // reference to forces container
+        std::string const type;             // type on which the force applies (if it is "" then it applies to all types)
+        ParametersType const parameters;    // force parameters
+        T* forces;                          // reference to forces container
 
     public:
 

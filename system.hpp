@@ -19,9 +19,9 @@ class VertexModel : public Mesh {
         [mesh.hpp]
         inherited from Mesh
         -------------------
-        std::map<long int, Vertex> vertices;    // std::map<long int, Vertex> Mesh::getVertices
-        std::map<long int, HalfEdge> halfEdges; // std::map<long int, HalfEdge> Mesh::getHalfEdges
-        std::vector<double> systemSize;         // std::vector<double> Mesh::getSystemSize
+        VerticesType vertices;          // VerticesType Mesh::getVertices
+        HalfEdgesType halfEdges;        // HalfEdgesType Mesh::getHalfEdges
+        std::vector<double> systemSize; // std::vector<double> Mesh::getSystemSize
         */
 
         ClassFactory<HalfEdgeForce<ForcesType>> halfEdgeForces; // forces deriving from half-edge properties
