@@ -3,6 +3,7 @@ Define functions to initialise a vertex model.
 """
 
 from cells.bind import VertexModel
+from cells.read import Read
 from cells import __path__
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter,\
@@ -32,13 +33,23 @@ def init_vm():
 
     # INITIALISATION
 
-    vm = VertexModel(args.seed)
+    if args.input is None:
 
-    if args.periodic:
-        vm.initRegularTriangularLattice(size=args.N)
+        # regular grid
+
+        vm = VertexModel(args.seed)
+
+        if args.periodic:
+            vm.initRegularTriangularLattice(size=args.N)
+        else:
+            vm.initOpenRegularHexagonalLattice(nCells=args.N)
+#             vm.initOpenRegularTriangularLattice(size=args.N)
+
     else:
-        vm.initOpenRegularHexagonalLattice(nCells=args.N)
-#         vm.initOpenRegularTriangularLattice(size=args.N)
+
+        # input file
+
+        vm = Read(args.input)[args.frame]
 
     # FORCES
 
@@ -84,7 +95,8 @@ def parse_args():
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
-    # BOX
+    # INITIALISATION
+    # regular grid
     parser.add_argument("-N", type=int, default=36,
         help=
             "[--no-periodic (default)] number of cells (! square number) "
@@ -93,6 +105,11 @@ def parse_args():
     parser.add_argument("--periodic", "-periodic", "-p",
         action=BooleanOptionalAction,
         help="periodic boundary conditions")
+    # input file
+    parser.add_argument("-input", "-input-name", "-i", type=str, default=None,
+        help="input file name (! discards grid args and seed if != None)")
+    parser.add_argument("-frame", "-input-frame", "-f", type=int, default=0,
+        help="input frame (! used when -input != None)")
 
     # FORCES
     # area force
