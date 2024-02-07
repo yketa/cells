@@ -26,6 +26,17 @@ PYBIND11_MODULE(bind, m) {
         "vertex model.\n";
 
     /*
+     *  [tools.hpp]
+     *
+     */
+
+    m.def("angle2",
+        [](double const& x, double const& y) { return angle2(x, y); },
+        "Angle of 2D vector (x, y) with respect to horizontax axis.",
+        pybind11::arg("x"),
+        pybind11::arg("y"));
+
+    /*
      *  [plot.hpp]
      *
      */
@@ -405,6 +416,58 @@ PYBIND11_MODULE(bind, m) {
             "    These types should not be defined identically for both\n"
             "    half-edges of a single pair.",
             pybind11::arg("helfEdgeTypes")=std::vector<std::string>())
+        .def("getVertexIndicesByType",
+            [](VertexModel& self, std::string const type) {
+                if (type == "") { throw std::runtime_error("No type."); }
+                std::map<long int, Vertex> const vertices =
+                    self.getVertices();
+                std::vector<long int> vertexIndices;
+                for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+                    if ((it->second).getType() == type) {
+                        vertexIndices.push_back(it->first);
+                    }
+                }
+                return vertexIndices;
+            },
+            "Return vertex indices corresponding to type.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "type : str\n"
+            "    Type of vertices.\n"
+            "    NOTE: This cannot be empty.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "vertexIndices : list of int\n"
+            "    Vertex indices corresponding to type.",
+            pybind11::arg("type"))
+        .def("getHalfEdgeIndicesByType",
+            [](VertexModel& self, std::string const type) {
+                if (type == "") { throw std::runtime_error("No type."); }
+                std::map<long int, HalfEdge> const halfEdges =
+                    self.getHalfEdges();
+                std::vector<long int> halfEdgeIndices;
+                for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
+                    if ((it->second).getType() == type) {
+                        halfEdgeIndices.push_back(it->first);
+                    }
+                }
+                return halfEdgeIndices;
+            },
+            "Return half-edge indices corresponding to type.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "type : str\n"
+            "    Type of half-edges.\n"
+            "    NOTE: This cannot be empty.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "halfEdgeIndices : list of int\n"
+            "    Half-edge indices corresponding to type.",
+            pybind11::arg("type"))
         // methods [VertexModel (system.hpp)]
         .def("nintegrate",
             [](VertexModel& self,
@@ -433,16 +496,79 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("dt")=0,
             pybind11::arg("delta")=0.1,
             pybind11::arg("epsilon")=0.1)
+        .def("getPositions",
+            [](VertexModel& self, bool const wrapped=true) {
+                std::map<long int, std::vector<double>> positions;
+                std::map<long int, Vertex> const vertices = self.getVertices();
+                for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+                    if (!(it->second).getBoundary()) {
+                        if (wrapped) {
+                            positions.emplace(
+                                it->first, (it->second).getPosition());
+                        }
+                        else {
+                            positions.emplace(
+                                it->first, (it->second).getUPosition());
+                        }
+                    }
+                }
+                return positions;
+            },
+            "Return positions of all vertices excluding boundary vertices.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "wrapped : bool\n"
+            "    Wrap the position around periodic boundary conditions.\n"
+            "    (default: True)\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "positions : {int: list} dict\n"
+            "    Dictionary which associates vertex indices to position of\n"
+            "    vertex.",
+            pybind11::arg("wrapped")=true)
         .def("getForces",
             [](VertexModel& self)
                 { self.computeForces(); return self.getForces(); },
-            "Compute forces on vertices."
+            "Compute forces on vertices.\n"
             "\n"
             "Returns\n"
             "-------\n"
             "forces : {int: list} dict\n"
             "    Dictionary which associates vertex indices to force applied\n"
             "    on the vertex.")
+        .def("getForcesCentre",
+            [](VertexModel& self) {
+                std::map<long int, std::vector<double>> const forces =
+                    self.getForces();
+                std::map<long int, std::vector<double>> forcesCentre;
+                std::map<long int, Vertex> const vertices = self.getVertices();
+                for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+                    if ((it->second).getType() == "centre") {       // loop over cell centre
+                        forcesCentre[it->first] = {0, 0};
+                        std::vector<long int> const neighbours =
+                            self.getNeighbourVertices(it->first)[0];
+                        long int const nNeighbours = neighbours.size();
+                        for (long int i : neighbours) {             // loop over neighbours
+                            for (int dim=0; dim < 2; dim++) {
+                                if (inMap(forces, i)) {
+                                    forcesCentre[it->first][dim] += // average force on neighbours
+                                        (forces.at(i)).at(dim)/nNeighbours;
+                                }
+                            }
+                        }
+                    }
+                }
+                return forcesCentre;
+            },
+            "Compute forces on cell centres.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "forces : {int: list} dict\n"
+            "    Dictionary which associates cell centre vertex indices to\n"
+            "    force applied on the vertex.")
         .def("removeHalfEdgeForce",
             &VertexModel::removeHalfEdgeForce,
             "Remove half-edge force.\n"
@@ -684,5 +810,6 @@ PYBIND11_MODULE(bind, m) {
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,
             &pybind11_setstate<std::unique_ptr<VertexModel>>));
+
 }
 

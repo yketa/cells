@@ -12,7 +12,8 @@ __FFMPEG_DEFAULT=$(which ffmpeg)    # default FFmpeg executable
 
 usage() {
 cat <<< "
-Make movie from initial frames of simulation file using module \`cells.read\`.
+Make movie from initial frames of simulation file using modules \`cells.read\`
+and \`cells.plot\`.
 
 Requires FFmpeg. (see https://ffmpeg.org/download.html)
 
@@ -27,6 +28,10 @@ OPTIONS
 
     -r  Make rainbow plot.
         NOTE: Does nothing if -d option is used.
+    -c  Clear the plot of all cell colouring.
+        NOTE: Does nothing if -d option is used.
+              Options -r and -c are exclusionary.
+    -f  Display forces on vertices.
 
     -d  Make movie from frames in directory.
         DEFAULT: (not specified)
@@ -34,7 +39,7 @@ OPTIONS
 
     -p  Python executable.
         DEFAULT: $__PYTHON_DEFAULT
-    -f  FFmpeg executable.
+    -F  FFmpeg executable.
         DEFAULT: $__FFMPEG_DEFAULT
 
     -y  \"Yes\" to all FFmpeg prompts.
@@ -43,15 +48,21 @@ OPTIONS
 
 # OPTIONS
 
-while getopts "hrd:p:f:y" OPTION; do
+while getopts "hrcfd:p:F:y" OPTION; do
     case $OPTION in
+        h)  # help
+            usage; exit 1;;
         r)  # rainbow plot
             __RAINBOW=true;;
+        c)  # clear plot
+            __CLEAR=true;;
+        f)  # force plot
+            __FORCES=true;;
         d)  # frames directory
             __DIR="$OPTARG";;
         p)  # python executable
             if [ "$OPTARG" != "" ]; then __PYTHON=$OPTARG; fi;;
-        f)  # FFmpeg executable
+        F)  # FFmpeg executable
             if [ "$OPTARG" != "" ]; then __FFMPEG=$OPTARG; fi;;
         y)  # yes to FFmpeg
             __YES=true;;
@@ -80,6 +91,7 @@ Save frames from simulation file.
 """
 
 from cells.read import Read, _progressbar
+${__FORCES:+from cells.plot import plot_forces}
 
 import os
 
@@ -92,7 +104,8 @@ _progressbar(0)
 for frame in frames:
 
     # plot
-    r.plot(frame ${__RAINBOW:+, rainbow=r.t0[0]})
+    r.plot(frame
+        ${__RAINBOW:+, rainbow=r.t0[0]} ${__FORCES:+, override=plot_forces})
     # save
     r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame)))
 

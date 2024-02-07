@@ -44,11 +44,11 @@ template<class T, class TT> void printMap(std::map<T, TT> const& map) {         
     }
 }
 
-template<class T> double const angle2(T x, T y)                                 // angle of 2D vector (x, y) with respect to horizontal axis
+template<class T> double const angle2(T const& x, T const& y)                   // angle of 2D vector (x, y) with respect to horizontal axis
     { double angle = acos(x/sqrt(x*x + y*y)); return (y > 0 ? 1 : - 1)*angle; }
-template<class T> double const angle2(std::vector<T> vec)
+template<class T> double const angle2(std::vector<T> const& vec)
     { return angle2(vec[0], vec[1]); }
-template<class T> double const angle2(T* array)
+template<class T> double const angle2(T* const& array)
     { return angle2(array[0], array[1]); }
 
 /*

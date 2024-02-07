@@ -24,23 +24,26 @@ Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib`
 
 It is possible to compile this library in a `singularity` container (with `sudo` privilege) with `make container.sif`. Package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
 
-### Routines
+### Routines and modules
 
-There are two default routines to simulate vertex models: `run.py` runs and plots in real time a simulation of a vertex model, and `vm.py` runs and saves a simulation of a vertex model. These routines rely on modules `init.py` and `read.py`.
+There are two default routines to simulate vertex models: `run.py` runs and plots in real time a simulation of a vertex model, and `vm.py` runs and saves a simulation of a vertex model. These routines rely on modules `init.py`, `plot.py` and `read.py`.
 
 Module `init.py` defines functions to parse command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
+
+Module `plot.py` defines functions to plot vertex models.
 
 Module `read.py` defines objects and functions to access and plot vertex model data. Executed as a routine, with a simulation file name as a command line argument, this prints `true` (respectively `false`) if the file is consistent (respectively not consistent).
 
 ### Additional scripts
 
-Script `movie.sh` is a quick tool to make movies and requires `read.py` and [`ffmpeg`](https://ffmpeg.org/download.html). Calling module `run.py` with command line argument `-m` will save displayed frames and make a movie from these frames when exited.
+Script `movie.sh` is a quick tool to make movies and requires `plot.py`, `read.py`, and [`ffmpeg`](https://ffmpeg.org/download.html). Calling module `run.py` with command line argument `-m` (or `-movie`) will save displayed frames and make a movie from these frames when exited.
 
 ### Examples
 
 ```
 python -m cells.run -abp -area -perimeter
-python -m cells.run -abp -area -perimeter -m
+python -m cells.run -abp -area -perimeter -forces
+python -m cells.run -abp -area -perimeter -forces -m
 python -m cells.run -out -area -periodic -N 12
 ```
 
@@ -54,13 +57,13 @@ This vertex model implementation is separated in two parts. First `mesh.*pp` con
 
 ### Python binding
 
-`VertexModel` is exposed to Python through `pybind11` in `bind.cpp`. Importantly, this file also contains additional methods to provide control of the forces in Python.
+`VertexModel` is exposed to Python through `pybind11` in `bind.cpp`. Importantly, this file also contains additional methods to provide control of the forces and faster access to information within `VertexModel` in Python.
 
 ### Forces
 
 Forces are defined separately and are attached to the `VertexModel` class following a class factory method (see `class_factory.hpp`) which enables to add and remove different forces. There are two general classes of forces enabled (see `base_forces.hpp`): forces which are computed for all vertices of a given type (`VertexForce` class), and forces which are computed for all half-edges of a given type (`HalfEdgeForce` class).
 
-Definitions of forces belong in `forces.hpp`. Script `forces.cpp` provides definitions of `VertexModel` methods to add them to the simulation object. Header `forces_pickle.hpp` provides definitions of own and `VertexModel` methods to pickle and unpickle these forces and their state. Finally, forces are exposed to Python in `bind.cpp`. On the Python side, forces are initialised in `init.py` and forces-dependent plotting are defined in `read.py`.
+Definitions of forces belong in `forces.hpp`. Script `forces.cpp` provides definitions of `VertexModel` methods to add them to the simulation object. Header `forces_pickle.hpp` provides definitions of own and `VertexModel` methods to pickle and unpickle these forces and their state. Finally, forces are exposed to Python in `bind.cpp`. On the Python side, forces are initialised in `init.py` and forces-dependent plotting are defined in `plot.py`.
 
 Descriptions of some forces can be found in `docs/forces.pdf` and `docs/active_junction.pdf`.
 

@@ -6,6 +6,8 @@ from cells.bind import VertexModel
 from cells.read import Read
 from cells import __path__
 
+import pickle
+
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter,\
     BooleanOptionalAction
 
@@ -49,7 +51,17 @@ def init_vm():
 
         # input file
 
-        vm = Read(args.input)[args.frame]
+        try:                    # simulation file
+
+            r = Read(args.input)
+            vm = r[r.frames[-1] if args.frame < 0 else args.frame]
+            del r
+
+        except AssertionError:  # pickle of VertexModel
+
+            with open(args.input, "rb") as dump:
+                vm = pickle.load(dump)
+            assert(type(vm) == VertexModel)
 
     # FORCES
 
@@ -108,8 +120,8 @@ def parse_args():
     # input file
     parser.add_argument("-input", "-input-name", "-i", type=str, default=None,
         help="input file name (! discards grid args and seed if != None)")
-    parser.add_argument("-frame", "-input-frame", "-f", type=int, default=0,
-        help="input frame (! used when -input != None)")
+    parser.add_argument("-frame", "-input-frame", "-if", type=int, default=0,
+        help="input frame (< 0 gets last frame) (! used when -input != None)")
 
     # FORCES
     # area force
@@ -181,6 +193,11 @@ def parse_args():
     if script == "run.py":
         parser.add_argument("-iterations", type=int, default=100,
             help="number of iterations between plots")
+
+    # DISPLAY
+    if script == "run.py":
+        parser.add_argument("-forces", action=BooleanOptionalAction,
+            help="display forces on vertices")
 
     # SAVING
     if script == "run.py":

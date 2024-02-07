@@ -4,7 +4,7 @@ does not save data.
 """
 
 from cells.init import init_vm
-from cells.read import plot
+from cells.plot import plot, plot_forces
 from cells import __path__
 
 import matplotlib.pyplot as plt
@@ -35,6 +35,7 @@ if __name__ == "__main__":
     # INITIALISATION
 
     args, vm = init_vm()
+    if args.forces: plot = plot_forces
     fig, ax = plot(vm)
 
     if args.movie: tmpdir = TemporaryDirectory()
