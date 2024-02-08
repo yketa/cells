@@ -31,7 +31,7 @@ OPTIONS
     -c  Clear the plot of all cell colouring.
         NOTE: Does nothing if -d option is used.
               Options -r and -c are exclusionary.
-    -f  Display forces on vertices.
+    -f  Display average forces on cell centres.
 
     -d  Make movie from frames in directory.
         DEFAULT: (not specified)

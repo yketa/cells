@@ -212,7 +212,7 @@ def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
 
 def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, **kwargs):
     """
-    Plot vertex model with forces.
+    Plot vertex model with average forces on cell centres.
 
     Parameters
     ----------
@@ -242,10 +242,8 @@ def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, **kwargs):
     fig, ax = plot(vm, fig=fig, ax=ax, update=False, **kwargs)
 
     positions = vm.getPositions(wrapped=True)
-    forces = (
-        lambda f: {i: f[i]
-            for i in f if np.abs(f[i]).max() > zero and i in positions})(
-        vm.getForces())
+    forces = (lambda f: {i: f[i] for i in f if np.abs(f[i]).max() > zero})(
+        vm.getCentreForces())
     av_norm = (1./av_norm)*np.sqrt(
         (np.array(list(forces.values()), dtype=float)**2).sum(axis=-1).mean())
 

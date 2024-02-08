@@ -414,16 +414,18 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "halfEdgeTypes : list of str\n"
             "    These types should not be defined identically for both\n"
-            "    half-edges of a single pair.",
+            "    half-edges of a single pair (default: []).",
             pybind11::arg("helfEdgeTypes")=std::vector<std::string>())
         .def("getVertexIndicesByType",
-            [](VertexModel& self, std::string const type) {
-                if (type == "") { throw std::runtime_error("No type."); }
+            [](VertexModel& self, std::string const type,
+                bool const exclude_boundary=true) {
                 std::map<long int, Vertex> const vertices =
                     self.getVertices();
                 std::vector<long int> vertexIndices;
                 for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-                    if ((it->second).getType() == type) {
+                    if ((it->second).getType() == type || type == "") {
+                        if (exclude_boundary && (it->second).getBoundary())
+                            { continue; }
                         vertexIndices.push_back(it->first);
                     }
                 }
@@ -435,21 +437,23 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "type : str\n"
             "    Type of vertices.\n"
-            "    NOTE: This cannot be empty.\n"
+            "    NOTE: if type == \"\" then return all vertices.\n"
+            "exclude_boundary : bool\n"
+            "    Exclude boundary vertices. (default: True)\n"
             "\n"
             "Returns\n"
             "-------\n"
             "vertexIndices : list of int\n"
             "    Vertex indices corresponding to type.",
-            pybind11::arg("type"))
+            pybind11::arg("type"),
+            pybind11::arg("exclude_boundary")=true)
         .def("getHalfEdgeIndicesByType",
             [](VertexModel& self, std::string const type) {
-                if (type == "") { throw std::runtime_error("No type."); }
                 std::map<long int, HalfEdge> const halfEdges =
                     self.getHalfEdges();
                 std::vector<long int> halfEdgeIndices;
                 for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
-                    if ((it->second).getType() == type) {
+                    if ((it->second).getType() == type || type == "") {
                         halfEdgeIndices.push_back(it->first);
                     }
                 }
@@ -461,7 +465,7 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "type : str\n"
             "    Type of half-edges.\n"
-            "    NOTE: This cannot be empty.\n"
+            "    NOTE: if type == \"\" then return all half-edges.\n"
             "\n"
             "Returns\n"
             "-------\n"
@@ -538,37 +542,39 @@ PYBIND11_MODULE(bind, m) {
             "forces : {int: list} dict\n"
             "    Dictionary which associates vertex indices to force applied\n"
             "    on the vertex.")
-        .def("getForcesCentre",
+        .def ("getCentreForces",
             [](VertexModel& self) {
+                self.computeForces();
                 std::map<long int, std::vector<double>> const forces =
                     self.getForces();
-                std::map<long int, std::vector<double>> forcesCentre;
-                std::map<long int, Vertex> const vertices = self.getVertices();
+                std::map<long int, Vertex> const vertices =
+                    self.getVertices();
+                std::map<long int, std::vector<double>> centreForces;
                 for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-                    if ((it->second).getType() == "centre") {       // loop over cell centre
-                        forcesCentre[it->first] = {0, 0};
+                    if ((it->second).getType() == "centre") {
                         std::vector<long int> const neighbours =
                             self.getNeighbourVertices(it->first)[0];
                         long int const nNeighbours = neighbours.size();
-                        for (long int i : neighbours) {             // loop over neighbours
-                            for (int dim=0; dim < 2; dim++) {
-                                if (inMap(forces, i)) {
-                                    forcesCentre[it->first][dim] += // average force on neighbours
+                        centreForces[it->first] = {0, 0};
+                        for (long int i : neighbours) {
+                            if (inMap(forces, i)) {
+                                for (int dim=0; dim < 2; dim++) {
+                                    centreForces[it->first][dim] +=
                                         (forces.at(i)).at(dim)/nNeighbours;
                                 }
                             }
                         }
                     }
                 }
-                return forcesCentre;
+                return centreForces;
             },
-            "Compute forces on cell centres.\n"
+            "Compute average force around corners of each cell centre.\n"
             "\n"
             "Returns\n"
             "-------\n"
-            "forces : {int: list} dict\n"
-            "    Dictionary which associates cell centre vertex indices to\n"
-            "    force applied on the vertex.")
+            "centreForces : {int: list} dict\n"
+            "    Dictionary which associates cell centre vertex indices to \n"
+            "    average force applied on its cell corner vertices.")
         .def("removeHalfEdgeForce",
             &VertexModel::removeHalfEdgeForce,
             "Remove half-edge force.\n"
