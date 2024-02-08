@@ -12,6 +12,8 @@ import traceback
 from math import ceil
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 import pickle
 
 # TOOLS
