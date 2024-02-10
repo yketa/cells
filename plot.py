@@ -12,23 +12,6 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
 
-# COLOURBARS
-
-# area colourbar
-cmap_area = plt.cm.bwr                                                      # colourmap
-norm_area = Normalize(-2, 2)                                                # interval of value represented by colourmap
-scalarMap_area = ScalarMappable(norm_area, cmap_area)                       # conversion from scalar value to colour
-
-# tension colourbar
-cmap_tension = plt.cm.PRGn                                                  # colourmap
-norm_tension = Normalize(-2, 2)                                             # interval of value represented by colourmap
-scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)              # conversion from scalar value to colour
-
-# orientation colourbar
-cmap_orientation = plt.cm.hsv                                               # colourmap
-norm_orientation = Normalize(0, 2*np.pi)                                    # interval of value represented by colourmap
-scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
-
 # PLOT VERTEX MODEL OBJECT
 
 def _update_canvas(fig):
@@ -104,30 +87,50 @@ def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
     # initialise figure
 
     if fig is None or ax is None:
+
         fig, ax = plt.subplots()
         fig.set_size_inches(10, 10)                                         # set figure size
         try: fig.canvas.window().setFixedSize(fig.canvas.window().size())   # set window size
         except AttributeError: pass
-#         if not(rainbow_plot):
-#             if "area" in vm.vertexForces:
-#                 cbar_area = plt.colorbar(
-#                     mappable=scalarMap_area, ax=ax, shrink=0.5)
-#                 cbar_area.set_label(
-#                     r"$(A_i - \left<A_i\right>)/\mathrm{std}(A_i)$",
-#                     rotation=270)
-#             if "out" in vm.halfEdgeForces:
-#                 cbar_tension = plt.colorbar(
-#                     mappable=scalarMap_tension, ax=ax, shrink=0.5)
-#                 cbar_tension.set_label(
-#                     r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
-#                     rotation=270)
-#             for model in ["model%i" % i for i in range(5)]:
-#                 if model in vm.halfEdgeForces:
-#                     cbar_tension = plt.colorbar(
-#                         mappable=scalarMap_tension, ax=ax, shrink=0.5)
-#                     cbar_tension.set_label(
-#                         r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
-#                         rotation=270)
+
+        # all force-related colorbars
+        if not(rainbow_plot):
+
+            ax_size, fig_width, fig_height = _measure_fig(ax)
+
+            if "area" in vm.vertexForces:
+                cbar_area = fig.colorbar(
+                    mappable=scalarMap_area, ax=ax,
+                    shrink=0.75, pad=0.01)
+                cbar_area.set_label(
+                    r"$(A_i - \left<A_i\right>)/\mathrm{std}(A_i)$",
+                    rotation=270, labelpad=20)
+                # resize
+                ax_size, fig_width, fig_height = (
+                    _resize_fig(ax, ax_size, fig_width, fig_height))
+
+            if "out" in vm.halfEdgeForces:
+                cbar_tension = fig.colorbar(
+                    mappable=scalarMap_tension, ax=ax,
+                    shrink=0.75, pad=0.01)
+                cbar_tension.set_label(
+                    r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
+                    rotation=270, labelpad=20)
+                # resize
+                ax_size, fig_width, fig_height = (
+                    _resize_fig(ax, ax_size, fig_width, fig_height))
+
+            for model in ["model%i" % i for i in range(5)]:
+                if model in vm.halfEdgeForces:
+                    cbar_tension = fig.colorbar(
+                        mappable=scalarMap_tension, ax=ax,
+                        shrink=0.75, pad=0.01)
+                    cbar_tension.set_label(
+                        r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
+                        rotation=270, labelpad=20)
+                    # resize
+                    ax_size, fig_width, fig_height = (
+                        _resize_fig(ax, ax_size, fig_width, fig_height))
 
     # plot
 
@@ -210,9 +213,10 @@ def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
 
     return fig, ax
 
-def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, **kwargs):
+def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, centres=False,
+    **kwargs):
     """
-    Plot vertex model with average forces on cell centres.
+    Plot vertex model with forces on vertices.
 
     Parameters
     ----------
@@ -228,6 +232,9 @@ def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, **kwargs):
         Discard arrows with infinite norm below threshold. (default: 1e-10)
     av_norm : float
         Average norm of arrows. (default: 0.2)
+    centres : bool
+        Only display average forces of cell cornes on centre vertices.
+        (default: False)
 
     Additional keywords arguments are passed to cells.plot.plot.
 
@@ -242,8 +249,13 @@ def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, **kwargs):
     fig, ax = plot(vm, fig=fig, ax=ax, update=False, **kwargs)
 
     positions = vm.getPositions(wrapped=True)
-    forces = (lambda f: {i: f[i] for i in f if np.abs(f[i]).max() > zero})(
-        vm.getCentreForces())
+
+    if centres: forces = vm.getCentreForces()
+    else: forces = vm.getForces()
+    forces = (
+        lambda f: {i: f[i]
+            for i in f if np.abs(f[i]).max() > zero and i in positions})(
+        forces)
     av_norm = (1./av_norm)*np.sqrt(
         (np.array(list(forces.values()), dtype=float)**2).sum(axis=-1).mean())
 
@@ -264,4 +276,43 @@ def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, **kwargs):
     _update_canvas(fig)
 
     return fig, ax
+
+# COLOURBARS
+
+# area colourbar
+cmap_area = plt.cm.bwr                                                      # colourmap
+norm_area = Normalize(-2, 2)                                                # interval of value represented by colourmap
+scalarMap_area = ScalarMappable(norm_area, cmap_area)                       # conversion from scalar value to colour
+
+# tension colourbar
+cmap_tension = plt.cm.PRGn                                                  # colourmap
+norm_tension = Normalize(-2, 2)                                             # interval of value represented by colourmap
+scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)              # conversion from scalar value to colour
+
+# orientation colourbar
+cmap_orientation = plt.cm.hsv                                               # colourmap
+norm_orientation = Normalize(0, 2*np.pi)                                    # interval of value represented by colourmap
+scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
+
+# resize figure with colorbars
+# (https://github.com/matplotlib/matplotlib/issues/15010#issuecomment-524438047)
+def _measure_fig(ax):
+    ax_size = ax.get_position().size.copy()
+    try:
+        fig_width, fig_height = (
+            lambda s: (s.width(), s.height()))(
+            ax.figure.canvas.window().size())
+    except AttributeError:
+        fig_width, fig_height = None, None
+    return ax_size, fig_width, fig_height
+def _resize_fig(ax, ax_size, fig_width, fig_height):
+    r = ax_size/ax.get_position().size  # rescaling factors
+    # rescale
+    ax.figure.set_size_inches(ax.figure.get_size_inches()*r)
+    try:
+        ax.figure.canvas.window().setFixedSize(
+            int(fig_width*r.max()), fig_height)
+    except AttributeError: pass
+    # measure again
+    return _measure_fig(ax)
 

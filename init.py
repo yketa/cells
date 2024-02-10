@@ -197,7 +197,7 @@ def parse_args():
     # DISPLAY
     if script == "run.py":
         parser.add_argument("-forces", action=BooleanOptionalAction,
-            help="display average forces on cell centres")
+            help="display forces on vertices")
 
     # SAVING
     if script == "run.py":

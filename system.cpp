@@ -12,6 +12,21 @@ void VertexModel::integrate(double const& dt,
 
     computeForces();
 
+    // remove centre of mass force
+
+    if (true) {
+        long int const numberVertices = forces.size();
+        double avForce[2] = {0, 0};
+        for (int dim=0; dim < 2; dim++) {
+            for (auto it=forces.begin(); it != forces.end(); ++it) {
+                avForce[dim] += forces[it->first][dim]/numberVertices;
+            }
+            for (auto it=forces.begin(); it != forces.end(); ++it) {
+                forces[it->first][dim] -= avForce[dim];
+            }
+        }
+    }
+
     // integrate positions
 
     long int vertexIndex;
@@ -30,31 +45,33 @@ void VertexModel::integrate(double const& dt,
 
     // move cell centres
 
-    std::vector<double> cellUPosition(0), initialCellPosition(0);
-    std::vector<long int> neighbourVerticesIndices(0); int numberNeighbours;
-    std::vector<double> disp(0);
-    for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-        if ((it->second).getType() != "centre") { continue; }   // only consider cell centres
-        vertexIndex = (it->second).getIndex();
+    if (true) {
+        std::vector<double> cellUPosition(0), initialCellPosition(0);
+        std::vector<long int> neighbourVerticesIndices(0); int numberNeighbours;
+        std::vector<double> disp(0);
+        for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+            if ((it->second).getType() != "centre") { continue; }   // only consider cell centres
+            vertexIndex = (it->second).getIndex();
 
-        cellUPosition = vertices.at(vertexIndex).getUPosition();
-        initialCellPosition = vertices.at(vertexIndex).getPosition();
+            cellUPosition = vertices.at(vertexIndex).getUPosition();
+            initialCellPosition = vertices.at(vertexIndex).getPosition();
 
-        neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
-        numberNeighbours = neighbourVerticesIndices.size();
-        for (long int neighbourVertexIndex : neighbourVerticesIndices) {
-            disp = wrapDiff(
-                initialCellPosition,
-                vertices.at(neighbourVertexIndex).getPosition());
+            neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
+            numberNeighbours = neighbourVerticesIndices.size();
+            for (long int neighbourVertexIndex : neighbourVerticesIndices) {
+                disp = wrapDiff(
+                    initialCellPosition,
+                    vertices.at(neighbourVertexIndex).getPosition());
 
-            for (int dim=0; dim < 2; dim++) {
-                cellUPosition[dim] += disp[dim]/numberNeighbours;
+                for (int dim=0; dim < 2; dim++) {
+                    cellUPosition[dim] += disp[dim]/numberNeighbours;
+                }
             }
+            vertices[vertexIndex].setUPosition( // unwrapped position
+                cellUPosition);
+            vertices[vertexIndex].setPosition(  // (wrapped) position
+                wrap(vertices.at(vertexIndex).getUPosition()));
         }
-        vertices[vertexIndex].setUPosition( // unwrapped position
-            cellUPosition);
-        vertices[vertexIndex].setPosition(  // (wrapped) position
-            wrap(vertices.at(vertexIndex).getUPosition()));
     }
 
     // perform T1s and update internal degrees of freedom
@@ -85,20 +102,6 @@ void VertexModel::computeForces() {
         { (it->second)->addAllForces(); }
     for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
         { (it->second)->addAllForces(); }
-
-    // remove centre of mass force
-    if (true) {
-        long int const numberVertices = forces.size();
-        double avForce[2] = {0, 0};
-        for (int dim=0; dim < 2; dim++) {
-            for (auto it=forces.begin(); it != forces.end(); ++it) {
-                avForce[dim] += forces[it->first][dim]/numberVertices;
-            }
-            for (auto it=forces.begin(); it != forces.end(); ++it) {
-                forces[it->first][dim] -= avForce[dim];
-            }
-        }
-    }
 }
 
 void VertexModel::doT1(double const& delta, double const& epsilon) {
