@@ -6,7 +6,9 @@ When executed this checks the consistency of a simulation file.
 from cells.bind import VertexModel
 from cells.plot import plot
 
+import os
 import sys
+from tempfile import gettempdir
 import traceback
 
 from math import ceil
@@ -21,7 +23,7 @@ import pickle
 # progress bar (https://stackoverflow.com/a/3160819/7385044)
 _toolbar_width = 40
 def _progressbar(p):
-    out = "[%s] (%2i%%)" % (
+    out = "[%s] (%2i%%) " % (
         "="*ceil(p*_toolbar_width)
             + " "*(_toolbar_width - ceil(p*_toolbar_width)),
         ceil(100*p))
@@ -48,6 +50,8 @@ class Read:
         check : bool
             Check file consistency. This is mandatory in order to access data,
             otherwise only metadata is read and accessible. (default: True)
+            NOTE: After a succesful check, a corresponding data file is saved
+                  in a temporary directory for later faster loads.
             NOTE: Use cells.read.ReadWYC to access as much data as possible in
                   the case of corrupted files.
         """
@@ -65,9 +69,18 @@ class Read:
             self.t = self.metadata["t"]             # lag times
             self.frames = self.metadata["frames"]   # array of computed frames
             self.dt = self.metadata["dt"]           # integration time step
+            if not(check): return
+
+            # saved skipped directory
+            data_fname = os.path.join(gettempdir(), "%s.data" % self.filename)
+            try:
+                with open(data_fname, "rb") as dump:
+                    self.skip = pickle.load(dump)
+                print("Data loaded from %s." % data_fname, file=sys.stderr)
+                return
+            except: pass
 
             # check file consistency and build skip directory
-            if not(check): return
             self.skip = np.array([], dtype=int)     # position of each object in file
             _max_diff_t = 0                         # check consistency with metadata in computed times
             for i, time in enumerate(self.frames*self.dt):
@@ -89,6 +102,11 @@ class Read:
                 pass
 
         assert _max_diff_t < 1e-8   # relative difference between python and C++ times
+
+        # save skipped directory
+        with open(data_fname, "wb") as dump:
+            pickle.dump(self.skip, dump)
+        print("Data saved to %s." % data_fname, file=sys.stderr)
 
     def plot(self, frame, rainbow=None, override=None, **kwargs):
         """
@@ -119,7 +137,7 @@ class Read:
             rainbow=rainbow if rainbow is None else self[rainbow],
             **kwargs)
 
-    def play(self, frames=None, **kwargs):
+    def play(self, frames=None, loop=True, **kwargs):
         """
         Plot frames.
 
@@ -128,6 +146,8 @@ class Read:
         frames : int array-like or None
             Frames to plot.
             NOTE: if frames == None then all frames in self.frames are plotted.
+        loop : bool
+            Loop frames. (default: True)
 
         Additional keywords arguments are passed to self.plot.
         """
@@ -143,6 +163,7 @@ class Read:
         for frame in frames[1:]:
             _progressbar(frames.index(frame)/len(frames))
             self.plot(frame, **kwargs)
+        if loop: self.play(frames=frames, loop=loop, **kwargs)
         _progressbar(1)
 
     def __getitem__(self, frame):
