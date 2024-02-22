@@ -19,3 +19,4 @@ test*
 *.log
 *Notes.bib
 *.out
+*.synctex.gz

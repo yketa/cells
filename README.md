@@ -13,7 +13,7 @@ Python library written in C++ to integrate vertex models.
 Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install -r requirements.txt`) and a C++20 compiler.
 
 Python scripts are written for `python3` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`, e.g. by executing
-```
+```bash
 echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
 ```
 from this directory.
@@ -40,7 +40,7 @@ Script `movie.sh` is a quick tool to make movies and requires `plot.py`, `read.p
 
 ### Examples
 
-```
+```bash
 python -m cells.run -abp -area -perimeter
 python -m cells.run -abp -area -perimeter -forces
 python -m cells.run -abp -area -perimeter -forces -m
@@ -73,6 +73,6 @@ Descriptions of some forces can be found in `docs/forces.pdf` and `docs/active_j
 
 ## Authors
 
-- Yann-Edwin Keta, Instituut-Lorentz, Universiteit Leiden (keta@lorentz.leidenuniv.nl)
-- Silke Henkes, Instituut-Lorentz, Universiteit Leiden (shenkes@lorentz.leidenuniv.nl)
+- [Yann-Edwin Keta](keta@lorentz.leidenuniv.nl), Instituut-Lorentz, Universiteit Leiden
+- [Silke Henkes](shenkes@lorentz.leidenuniv.nl), Instituut-Lorentz, Universiteit Leiden
 
