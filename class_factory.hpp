@@ -39,17 +39,17 @@ Adapted from code initially written by Rastko Sknepnek.
 
         // CONSULT
 
-        bool in(std::string const& key) const
+        bool in(std::string const& k) const
         /*
         Indicate if key is in the factory.
         */
-            { return (factory_map.find(key) != factory_map.end()); }
+            { return (factory_map.find(k) != factory_map.end()); }
 
-        std::shared_ptr<BaseType>& operator[](std::string const& key)
+        std::shared_ptr<BaseType> const& operator[](std::string const& k) const
         /*
         Return pointer to the object associated with the key.
         */
-            { return factory_map[key]; }
+            { return factory_map.at(k); }
 
         std::map<std::string, std::shared_ptr<BaseType>> const& map() const
         /*
