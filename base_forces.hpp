@@ -28,16 +28,9 @@ All forces.
 
         std::string const type;             // type on which the force applies (if it is "" then it applies to all types)
         ParametersType const parameters;    // force parameters
-        T* forces;                          // reference to forces container
+        T* forces;                          // pointer to forces container
 
     public:
-
-        // CLEAR
-
-        void clear();
-        /*
-        Clear force values.
-        */
 
         // GETTERS
 
@@ -100,7 +93,7 @@ Force which derives from the property of a half-edge.
 
     protected:
 
-        HalfEdgesType* const halfEdges; // reference to half-edge container
+        HalfEdgesType* const halfEdges; // pointer to half-edge container
 
     public:
 
@@ -123,7 +116,7 @@ Force which derives from the property of a half-edge.
         This is the customly defined force.
         */
 
-        void addAllForces() {
+        virtual void addAllForces() {
         /*
         Add to the force container the forces associated to all half-edges.
         */
@@ -148,7 +141,7 @@ Force which derives from the property of a vertex.
 
     protected:
 
-        VerticesType* const vertices;   // reference to vertex container
+        VerticesType* const vertices;   // pointer to vertex container
 
     public:
 
@@ -171,7 +164,7 @@ Force which derives from the property of a vertex.
         This is the customly defined force.
         */
 
-        void addAllForces() {
+        virtual void addAllForces() {
         /*
         Add to the force container the forces associated to all vertices.
         */
