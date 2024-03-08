@@ -10,13 +10,15 @@ Python library written in C++ to integrate vertex models.
 
 #### Directly on the machine
 
+**PLEASE READ THIS PART ENTIRELY BEFORE EXECUTING ANY COMMAND.**
+
 Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install -r requirements.txt`) and a C++20 compiler.
 
-Python scripts are written for `python3` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`, e.g. by executing
-```bash
-echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.bashrc
+Python scripts are written for `python3` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`. This can be achieved e.g. by executing *from the directory containing this README file* the following commands
+```sh
+( [[ "${PWD##*/}" == "cells" ]] && echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.${0}rc && source ~/.${0}rc && echo "Success." ) || echo "Error: this directory is not 'cells'."
 ```
-from this directory.
+which output `Success.` if succesful.
 
 Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt`).
 
