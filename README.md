@@ -1,40 +1,80 @@
 # Cells
 
-Python library written in C++ to integrate vertex models.
+Python3 library written in C++ to integrate vertex models.
 
 ![polygonal tiling](docs/cells.svg)
 
-## Compiling and running
+This readme assumes that `python` is the Python3 command.
 
-### Compiling
+## Installing
 
-#### Directly on the machine
+**PLEASE READ THIS SECTION ENTIRELY BEFORE EXECUTING ANY COMMAND.**
 
-**PLEASE READ THIS PART ENTIRELY BEFORE EXECUTING ANY COMMAND.**
+### Using `pip`
 
-Compilation of the shared library with `make bind.so` requires `pybind11` (`python -m pip install -r requirements.txt`) and a C++20 compiler.
+This requires C++20 compiler.
 
-Python scripts are written for `python3` and import the `cells` package which necessitates the directory containing this repository to be added to the `$PYTHONPATH`. This can be achieved e.g. by executing *from the directory containing this README file* the following commands
+Configuration file `pyproject.toml` defines instructions to install the `cells` package using `pip`. This is achieved by executing *from the directory containing this readme file* the following commands
 ```sh
-( [[ "${PWD##*/}" == "cells" ]] && echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/.." >> ~/.${0}rc && source ~/.${0}rc && echo "Success." ) || echo "Error: this directory is not 'cells'."
+[ -f pyproject.toml ] && python -m pip install . --verbose --break-system-packages
 ```
-which output `Success.` if succesful.
+then -- after successful completion -- package information should be given by `python -m pip show cells`.
 
-Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt`).
+Package `cells` can be uninstalled by running `python -m pip uninstall cells --break-system-packages`.
 
-#### In a container
+Replacing `install` with `install --editable` will enable [editable mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html), in this case the libraries must be manually compiled (see section below).
 
-It is possible to compile this library in a `singularity` container (with `sudo` privilege) with `make container.sif`. Package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
+### Compiling manually and adding to `$PYTHONPATH`
+
+This requires a C++20 compiler, as well as `pybind11` (`python -m pip install -r requirements.txt --break-system-packages`).
+
+Makefile `src/cells/Makefile` defines instructions to build the libraries. Compilation is achieved by executing *from the directory containing this readme file* the following commands
+```sh
+[ -f pyproject.toml ] && (cd src/cells && make)
+```
+then -- after successful completion -- the shared library path should be given by `[ -f pyproject.toml ] && python -c "from src.cells import bind; print(bind.__file__)"`.
+
+Addition of the `cells` package to the `$PYTHONPATH` is achieved by executing *from the directory containing this readme file* the following commands
+```sh
+[ -f pyproject.toml ] && echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/src" >> ~/.${0}rc && source ~/.${0}rc
+```
+then -- after successful completion -- the module path should be given by `python -c "import cells; print(cells.__path__)"`.
+
+Addition to the `$PYTHONPATH` in the shell configuration file can be reverted by executing
+```sh
+[ -f pyproject.toml ] && sed -i '/'"export PYTHONPATH=\$PYTHONPATH:${PWD//'/'/'\/'}"'\/src/d' ~/.${0}rc
+```
+even though it is preferable to perform this operation manually (e.g. `vim + ~/.${0}rc`).
+
+### Building a `singularity` container
+
+This requires [`singularity`](https://docs.sylabs.io/guides/latest/user-guide/) and admin (`sudo`) privilege.
+
+Configuration file `container.def` and makefile `container.makefile` define instructions to build the container. This is achieved by executing *from the directory containing this readme file* the following command
+```sh
+[ -f pyproject.toml ] && make -f container.makefile
+```
+then -- after successful completion -- package information should be given by `./container.sif python -m pip show cells`.
+
+This operation is reverted by `[ -f pyproject.toml ] && rm -iv container.sif`
+
+Note that package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
+
+## Running
+
+After installation, use `python -c "import cells; print(cells.__path__)"` to find the location of the package files.
+
+Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt --break-system-packages`).
 
 ### Routines and modules
 
 There are two default routines to simulate vertex models: `run.py` runs and plots in real time a simulation of a vertex model, and `vm.py` runs and saves a simulation of a vertex model. These routines rely on modules `init.py`, `plot.py` and `read.py`.
 
-Module `init.py` defines functions to parse command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python run.py -h` (respectively `python vm.py -h`) or `python -m cells.run -h` (respectively `python -m cells.vm -h`).
+Module `init.py` defines functions to parse command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python -m cells.run -h` and `python -m cells.vm -h`.
 
 Module `plot.py` defines functions to plot vertex models.
 
-Module `read.py` defines objects and functions to access and plot vertex model data. Executed as a routine, with a simulation file name as a command line argument, this prints `true` (respectively `false`) if the file is consistent (respectively not consistent).
+Module `read.py` defines objects and functions to access and plot vertex model data. Executed as a routine (`python -m cells.read`) , with a simulation file name as a command line argument, this prints `true` (respectively `false`) if the file is consistent (respectively not consistent).
 
 ### Additional scripts
 
@@ -42,7 +82,7 @@ Script `movie.sh` is a quick tool to make movies and requires `plot.py`, `read.p
 
 ### Examples
 
-```bash
+```sh
 python -m cells.run -abp -area -perimeter
 python -m cells.run -abp -area -perimeter -forces
 python -m cells.run -abp -area -perimeter -forces -m
@@ -51,9 +91,11 @@ python -m cells.run -out -area -periodic -N 12
 
 ## C++ source files
 
+These are located in `src/cells`.
+
 ### Vertex model
 
-This vertex model implementation is separated in two parts. First `mesh.*pp` contains the implementation of the geometrical features of the model, which relies on vertices which are linked together by directed half-edges enabling to move accross the mesh (see `docs/mesh.pdf`). Second `system.*pp` provides a general `VertexModel` class to integrate the dynamics.
+This vertex model implementation is separated in two parts. First `mesh.*pp` contains the implementation of the geometrical features of the model, which relies on vertices which are linked together by directed half-edges enabling to move across the mesh (see `docs/mesh.pdf`). Second `system.*pp` provides a general `VertexModel` class to integrate the dynamics.
 
 `VertexModel` methods to initialise configurations are defined in `initialisation.cpp`.
 

@@ -31,7 +31,7 @@ PYTHONFLAGS+=$(shell $(PYTHON) -m pybind11 --includes)
 all: bind.so
 
 clean:
-	rm -rf *.o *.so *.sif
+	rm -rf *.o *.so
 
 # OBJECT FILES
 # dependencies to be checked with `$(CXX) -MM $<`
@@ -58,9 +58,4 @@ bind.o forces.o initialisation.o system.o: CFLAGS+=$(PYTHONFLAGS)
 bind.so: CFLAGS+=-fPIC
 bind.so: bind.o forces.o initialisation.o mesh.o system.o tools.o
 	$(CXX) -o $@ -shared $^ $(LDFLAGS)
-
-# CONTAINER
-
-container.sif: container.def requirements.txt Makefile $(wildcard *.*pp) $(wildcard *.py)
-	sudo singularity build $@ $<
 

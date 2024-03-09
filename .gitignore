@@ -1,4 +1,7 @@
+build
+MANIFEST.in
 __pycache__
+*.egg-info
 old
 tools
 .*.swp

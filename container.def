@@ -4,32 +4,27 @@ OSVersion: stable
 
 %files
 
-    # libraries source
-    requirements.txt /opt/cells/
-    Makefile /opt/cells/
-    *.*pp /opt/cells/
+    # SOURCE
+    requirements.txt /opt/cells/                # python requirements
+    pyproject.toml /opt/cells/                  # python package configuration file
+    *.md /opt/cells/                            # readme, licence, etc.
+    _custom_build.py /opt/cells/src/            # setuptools build override
+    src/cells/Makefile /opt/cells/src/cells/    # library makefile
+    src/cells/*.*pp /opt/cells/src/cells/       # C++ source files
+    src/cells/*.py /opt/cells/src/cells/        # python modules
+    src/cells/*.sh /opt/cells/src/cells/        # shell scripts
+    docs/*.pdf /opt/cells/src/cells/docs/       # documentation
 
-    # python scripts
-    *.py /opt/cells/
+%post -c /bin/bash -e
 
-%post -c /bin/bash
+    # INSTALL PYTHON
+    apt install -y g++ python3 python3-pip ffmpeg   # install g++ (C++ compiler), python3, pip, ffmpeg
+    ln -sf "$(which python3)" ${PATH%%:*}/python    # `python` command is python3
 
-    cd /opt/cells/
+    # BUILD AND INSTALL PACKAGE
+    python -m pip install /opt/cells --verbose --break-system-packages
 
-    # install python
-    apt install -y python3 python3-pip
-    ln -sf $(which python3) ${PATH%%:*}/python
-
-    # install python requirements
-    python -m pip install -r requirements.txt --break-system-packages
-
-    # compile
-    make bind.so
-
-    # python path
-    echo "export PYTHONPATH=\${PYTHONPATH}:$(realpath $(pwd)/..)" >> $SINGULARITY_ENVIRONMENT
-
-    # matplotlib display support
+    # MATPLOTLIB DISPLAY SUPPORT
     # https://pawseysc.github.io/singularity-containers/42-x11-gnuplot/index.html
     apt install -y xauth python3-pyqt5
     echo "export MPLBACKEND=Qt5Agg" >> $SINGULARITY_ENVIRONMENT
