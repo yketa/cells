@@ -147,3 +147,31 @@ template<> void VertexModel::addHalfEdgeForce<
         this, &random, &forces, &halfEdges);            // VertexModel attributes
 }
 
+/*
+ *  KERATIN
+ *
+ */
+
+template<> void VertexModel::addVertexForce<
+    // derived force class
+    KeratinModel,
+    // argument types
+    double const&, double const&,
+    double const&, double const&,
+    double const&, double const&, double const&,
+    double const&, double const&,
+    double const&, double const&, double const&>(
+    // user-defined arguments
+    std::string const& name,
+    double const& K, double const& A0,
+    double const& Gamma, double const& P0,
+    double const& l0, double const& alpha, double const& kth,
+    double const& tau, double const& sigma,
+    double const& tauon, double const& k0, double const& p0) {
+    // set force
+    vertexForces.add<KeratinModel>(
+        name,                                                           // (unique) user-defined name for forces
+        K, A0, Gamma, P0, l0, alpha, kth, tau, sigma, tauon, k0, p0,    // user-defined parameters
+        this, &time, &random, &forces, &vertices);                      // VertexModel attributes
+}
+

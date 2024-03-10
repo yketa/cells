@@ -366,6 +366,52 @@ VertexModel::addHalfEdgeForce<Model4,
 }
 
 /*
+ *  KeratinModel
+ *
+ */
+
+// save state
+pybind11::tuple KeratinModel::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "KeratinModel",
+        // state
+        parameters, keratin);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<KeratinModel,
+    pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 3);
+    assert(t[0].cast<std::string>() == "KeratinModel");
+    // initialise force
+    ParametersType const parameters =
+        t[1].cast<ParametersType>();
+    addVertexForce<KeratinModel,
+        double const&, double const&,
+        double const&, double const&,
+        double const&, double const&, double const&,
+        double const&, double const&,
+        double const&, double const&, double const&>(
+        name,
+        parameters.at("K"), parameters.at("A0"),
+        parameters.at("Gamma"), parameters.at("P0"),
+        parameters.at("l0"), parameters.at("alpha"), parameters.at("kth"),
+        parameters.at("tau"), parameters.at("sigma"),
+        parameters.at("tauon"), parameters.at("k0"), parameters.at("p0"));
+    // set internal degrees of freedom state
+    std::map<long int, double> const keratin =
+        t[2].cast<std::map<long int, double>>();
+    std::shared_ptr<KeratinModel> k =
+        std::static_pointer_cast<KeratinModel>(
+            vertexForces[name]);
+    k->setKeratin(keratin);
+}
+
+/*
  *  ClassFactory<VertexForce<ForcesType>>
  *
  */

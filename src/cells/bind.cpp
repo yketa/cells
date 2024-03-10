@@ -164,6 +164,7 @@ PYBIND11_MODULE(bind, m) {
             &OrnsteinUhlenbeckTension::setTension);
 
     /*
+     *  [forces.hpp]
      *  MODELS 0-4
      *
      */
@@ -242,6 +243,21 @@ PYBIND11_MODULE(bind, m) {
         .def_property("tension",
             &Model4::getTension,
             &Model4::setTension);
+
+    /*
+     *  [forces.hpp]
+     *  KERATIN
+     *
+     */
+
+    pybind11::class_<KeratinModel,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<KeratinModel>>(
+        m, "KeratinModel",
+        "Python wrapper around C++ keratin model computation object.")
+        .def_property("keratin",
+            &KeratinModel::getKeratin,
+            &KeratinModel::setKeratin);
 
     /*
      *  [system.hpp]
@@ -659,10 +675,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("t0"),
             pybind11::arg("st0"),
             pybind11::arg("taup"))
-        /*
-         *  MODELS 0-4
-         *
-         */
+        // Model0-4
         .def("addModel0",
             &VertexModel::addHalfEdgeForce<Model0,
                 double const&, double const&, double const&, double const&>,
@@ -770,6 +783,57 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("taur"),
             pybind11::arg("sigma"),
             pybind11::arg("taup"))
+        // KeratinModel
+        .def("addKeratinModel",
+            &VertexModel::addVertexForce<KeratinModel,
+                double const&, double const&,
+                double const&, double const&,
+                double const&, double const&, double const&,
+                double const&, double const&,
+                double const&, double const&, double const&>,
+            "Add keratin model.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "K : float\n"
+            "    Area elasticity.\n"
+            "A0 : float\n"
+            "    Target area.\n"
+            "Gamma : float\n"
+            "    Perimeter elasticity.\n"
+            "P0 : float\n"
+            "    Target perimeter.\n"
+            "l0 : float\n"
+            "    Bond rest length.\n"
+            "alpha : float\n"
+            "    Bond elasticity per keratin concentration above threshold.\n"
+            "kth : float\n"
+            "    Bond keratin concentration threshold.\n"
+            "tau : float\n"
+            "    Keratin concentration evolution time scale.\n"
+            "sigma : float\n"
+            "    Keratin concentration noise standard deviation.\n"
+            "tauon : float\n"
+            "    Keratin concentration on-rate evolution time scale.\n"
+            "k0 : float\n"
+            "    Keratin concentration off-rate inverse pressure constant.\n"
+            "p0 : float\n"
+            "    Keratin concentration off-rate inflection pressure.\n",
+            pybind11::arg("name"),
+            pybind11::arg("K"),
+            pybind11::arg("A0"),
+            pybind11::arg("Gamma"),
+            pybind11::arg("P0"),
+            pybind11::arg("l0"),
+            pybind11::arg("alpha"),
+            pybind11::arg("kth"),
+            pybind11::arg("tau"),
+            pybind11::arg("sigma"),
+            pybind11::arg("tauon"),
+            pybind11::arg("k0"),
+            pybind11::arg("p0"))
         // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",
             &VertexModel::initRegularTriangularLattice,

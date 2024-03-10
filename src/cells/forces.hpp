@@ -929,6 +929,20 @@ Keratin model.
             }
         }
 
+        std::map<long int, double> const& getKeratin() const
+            { return keratin; }
+        void setKeratin(std::map<long int, double> const& keratin_)
+            { keratin = keratin_; }
+
+        std::map<long int, double> const& getPressure() const
+            { return pressure; }
+
+        std::map<long int, double> const& getArea() const
+            { return area; }
+
+        std::map<long int, double> const& getTension() const
+            { return tension; }
+
         void addForce(Vertex const& vertex) override {
 
             // reset cell pressure

@@ -19,9 +19,14 @@ import sys
 A0 = (3./2.)/np.tan(np.pi/6.)           # area of a regular hexagon with edge length 1
 script = os.path.basename(sys.argv[0])  # name of invoking script
 
-def init_vm():
+def init_vm(parser=None):
     """
     Initilise VertexModel object with command line arguments.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser or None
+        Argument parser. (default: None)
 
     Returns
     -------
@@ -31,7 +36,7 @@ def init_vm():
         New instance from command line arguments.
     """
 
-    args = parse_args() # command line arguments
+    args = parse_args(parser=parser)    # command line arguments
 
     # INITIALISATION
 
@@ -95,9 +100,14 @@ def init_vm():
 
     return args, vm
 
-def parse_args():
+def parse_args(parser=None):
     """
     Parse command line arguments for vertex model.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser or None
+        Argument parser. (default: None)
 
     Returns
     -------
@@ -105,7 +115,8 @@ def parse_args():
         Arguments.
     """
 
-    parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
+    if parser is None:
+        parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
     # INITIALISATION
     # regular grid
