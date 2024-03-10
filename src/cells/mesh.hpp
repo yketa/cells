@@ -275,6 +275,26 @@ Two-dimensional ensembles of vertices and edges.
             (2,) vector between vertices.
         */
 
+        long int getHalfEdgeIndex(
+            long int const& fromVertexIndex, long int const& toVertexIndex)
+            const;
+        /*
+        Index of the half-edge between two vertices.
+        Throws error if this half-edge does not exist.
+
+        Parameters
+        ----------
+        fromVertexIndex :
+            Index of origin vertex.
+        toVertexIndex :
+            Index of destination vertex.
+
+        Returns
+        -------
+        halfEdgeIndex :
+            Index of half-edge.
+        */
+
         std::vector<double> getHalfEdgeVector(
             long int const& halfEdgeIndex, bool const& unit=false)
             const;

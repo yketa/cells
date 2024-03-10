@@ -880,5 +880,199 @@ class Model4 : public HalfEdgeForce<ForcesType> {
 
 };
 
+/*
+ *  KERATIN
+ *
+ */
+
+class KeratinModel : public VertexForce<ForcesType> {
+/*
+Keratin model.
+*/
+
+    protected:
+
+        Mesh* const mesh;                       // mesh object
+        double* const time;                     // integrated time
+        Random* random;                         // random number generator
+
+        std::map<long int, double> keratin;     // cell keratin concentration
+
+        // degrees of freedom computed in KeratinModel::addAllForces
+        std::map<long int, double> pressure;    // cell pressure
+        std::map<long int, double> area;        // cell area
+        std::map<long int, double> tension;     // bonds keratin tension
+
+    public:
+
+        KeratinModel(
+            double const& K_, double const& A0_,
+            double const& Gamma_, double const& P0_,
+            double const& l0_, double const& alpha_, double const& kth_,
+            double const& tau_, double const& sigma_,
+            double const& tauon_, double const& k0_, double const& p0_,
+            Mesh* const mesh_, double* const time_, Random* random_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("centre",
+                {{"K", K_}, {"A0", A0_},
+                {"Gamma", Gamma_}, {"P0", P0_},
+                {"l0", l0_}, {"alpha", alpha_}, {"kth", kth_},
+                {"tau", tau_}, {"sigma", sigma_},
+                {"tauon", tauon_}, {"k0", k0_}, {"p0", p0_}},
+                forces_, vertices_),
+            mesh(mesh_), time(time_), random(random_) {
+
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if ((it->second).getType() == "centre") {   // loop over all cell centres
+                    keratin.emplace(it->first, 0);          // zero initial value
+                }
+            }
+        }
+
+        void addForce(Vertex const& vertex) override {
+
+            // reset cell pressure
+            pressure.emplace(vertex.getIndex(), 0);
+
+            // cell area and perimeter
+            area.emplace(vertex.getIndex(),
+                mesh->getVertexToNeighboursArea(vertex.getIndex()));
+            double const perimeter =
+                mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
+
+            std::vector<long int> neighbourVerticesIndices =
+                mesh->getNeighbourVertices(vertex.getIndex())[0];
+            int numberNeighbours = neighbourVerticesIndices.size();
+            std::vector<double> radiusToCorner;
+            double distRadiusToCorner;
+            std::vector<double> toPreviousNeighbour, toNextNeighbour;
+            std::vector<double> crossToPreviousNeighbour, crossToNextNeighbour;
+            double distToPreviousNeighbour, distToNextNeighbour;
+            long int halfEdgeIndex;
+            double force;
+            for (int i=0; i < numberNeighbours; i++) {  // loop over neighbours
+                assert(vertices->at(neighbourVerticesIndices[i]).getType()
+                    != "centre");
+                // from cell centre to cell corner
+                radiusToCorner = mesh->wrapTo(
+                    vertex.getIndex(),
+                    neighbourVerticesIndices[i]);
+                distRadiusToCorner = sqrt(
+                    radiusToCorner[0]*radiusToCorner[0]
+                    + radiusToCorner[1]*radiusToCorner[1]);
+                // towards previous neighbour
+                toPreviousNeighbour = mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i - 1, numberNeighbours)],
+                    false);
+                crossToPreviousNeighbour = cross2z(toPreviousNeighbour);
+                distToPreviousNeighbour = sqrt(
+                    toPreviousNeighbour[0]*toPreviousNeighbour[0]
+                    + toPreviousNeighbour[1]*toPreviousNeighbour[1]);
+                // towards next neighbour
+                toNextNeighbour = mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i + 1, numberNeighbours)],
+                    false);
+                crossToNextNeighbour = cross2z(toNextNeighbour);
+                distToNextNeighbour = sqrt(
+                    toNextNeighbour[0]*toNextNeighbour[0]
+                    + toNextNeighbour[1]*toNextNeighbour[1]);
+                for (int dim=0; dim < 2; dim++) {
+                    // area force
+                    force = (parameters.at("K")/2.)*(
+                        area[vertex.getIndex()]             // cell area
+                            - parameters.at("A0"))*(
+                                crossToPreviousNeighbour[dim]
+                                - crossToNextNeighbour[dim]);
+                    (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
+                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
+                        radiusToCorner[dim]             // radius towards vertex
+                            *(-force);                  // force applied on cell centre
+                    // perimeter force
+                    force = parameters.at("Gamma")*(
+                        perimeter - parameters.at("P0"))*(  // cell perimeter
+                            toPreviousNeighbour[dim]        // force from previous neighbour
+                                /distToPreviousNeighbour);
+                    (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
+                    force = parameters.at("Gamma")*(
+                        perimeter - parameters.at("P0"))*(  // cell perimeter
+                            toNextNeighbour[dim]            // force from next neighbour
+                                /distToNextNeighbour);
+                    (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
+                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
+                        toNextNeighbour[dim]            // radius from cell corner to next neighbour
+                            *(force);                   // force applied on cell corner
+                    // keratin force between cell centre and cell corner
+                    halfEdgeIndex = mesh->getHalfEdgeIndex(
+                        vertex.getIndex(),
+                        neighbourVerticesIndices[i]);
+                    if (dim == 0) { // tension is defined once per half-edge
+                        tension.emplace(halfEdgeIndex,
+                            2*parameters.at("alpha")*std::max(0.,
+                                keratin[vertex.getIndex()]  // cell keratin concentration
+                                    - parameters.at("kth"))*(
+                                        distRadiusToCorner  // length between vertices
+                                            - parameters.at("l0")));
+                    }
+                    force = -tension[halfEdgeIndex]                 // tension
+                        *radiusToCorner[dim]/distRadiusToCorner;    // normalised vector;
+                    (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
+                    (*forces)[vertex.getIndex()][dim] -= force;             // force on cell centre
+                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
+                        radiusToCorner[dim]             // radius from cell centre to cell corner
+                            *(-force);                  // force applied on cell centre
+                    // keratin force between cell corner and next neighbour
+                    halfEdgeIndex = mesh->getHalfEdgeIndex(
+                        neighbourVerticesIndices[i],
+                        neighbourVerticesIndices[
+                            pmod(i + 1, numberNeighbours)]);
+                    if (dim == 0) { // tension is defined once per half-edge
+                        tension.emplace(halfEdgeIndex,
+                            parameters.at("alpha")*std::max(0.,
+                                keratin[vertex.getIndex()]  // cell keratin concentration
+                                    - parameters.at("kth"))*(
+                                        distToNextNeighbour // length between vertices
+                                            - parameters.at("l0")));
+                    }
+                    force = tension[halfEdgeIndex]                  // tension
+                        *toNextNeighbour[dim]/distToNextNeighbour;  // normalised vector
+                    (*forces)[neighbourVerticesIndices[                     // force on vertex i
+                        i]][dim] += force;
+                    (*forces)[neighbourVerticesIndices[                     // force on next neighbour
+                        pmod(i + 1, numberNeighbours)]][dim] -= force;
+                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
+                        toNextNeighbour[dim]            // radius from cell corner to next neighbour
+                            *(force);                   // force applied on cell centre
+                }
+            }
+
+            pressure[vertex.getIndex()] /= area[vertex.getIndex()];
+        }
+
+        void addAllForces() override {
+            pressure.clear(); area.clear(); tension.clear();
+            VertexForce<ForcesType>::addAllForces();
+        }
+
+        void integrate(double const& dt) override {
+
+            // integrate keratin concentration
+            double const dt_ = dt/parameters.at("tau");
+            double const amp = parameters.at("sigma")*sqrt(2.*dt_);
+            for (auto it=keratin.begin(); it != keratin.end(); ++it) {
+                double const kon = 1 + (*time/parameters.at("tauon"));  // time-dependent on rate
+                double const koff = 1 + exp(-parameters.at("k0")*(      // keratin-dependent off rate
+                    pressure[it->first] - parameters.at("p0")));        // addAllForces sets pressure
+                keratin[it->first] +=
+                    dt_*(kon - koff*keratin[it->first]) // deterministic part
+                    + amp*random->gauss();              // stochastic part
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
 #endif
 

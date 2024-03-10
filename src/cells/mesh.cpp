@@ -47,6 +47,24 @@ std::vector<double> Mesh::wrapTo(
     return fromTo;
 }
 
+long int Mesh::getHalfEdgeIndex(
+    long int const& fromVertexIndex, long int const& toVertexIndex)
+    const {
+
+    std::vector<std::vector<long int>> neighbours =     // neighbours and half-edge to neighbours
+        getNeighbourVertices(fromVertexIndex);
+    long int const nNeighbours = neighbours[0].size();  // number of neighbours
+
+    for (long int i=0; i < nNeighbours; i++) {  // loop over neighbours
+        if (neighbours[0][i] == toVertexIndex) {
+            return neighbours[1][i];
+        }
+    }
+    throw std::runtime_error("There is not half-edge from vertex index "
+        + std::to_string(fromVertexIndex) + " to vertex index "
+        + std::to_string(toVertexIndex) + ".");
+}
+
 std::vector<double> Mesh::getHalfEdgeVector(
     long int const& halfEdgeIndex, bool const& unit)
     const {

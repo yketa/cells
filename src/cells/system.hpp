@@ -59,12 +59,12 @@ class VertexModel : public Mesh {
             const
             { return forces; }
 
-        long int getSeed() const { return seed; }
+        long int const& getSeed() const { return seed; }
         Random const& getRandom() const { return random; }
         void setRandom(Random const& random_) { random = random_; }
 
-        double getTime() const { return time; }
-        long int getnT1() const { return nT1; }
+        double const& getTime() const { return time; }
+        long int const& getnT1() const { return nT1; }
 
         // CONSTRUCTORS
 
