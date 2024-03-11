@@ -257,7 +257,13 @@ PYBIND11_MODULE(bind, m) {
         "Python wrapper around C++ keratin model computation object.")
         .def_property("keratin",
             &KeratinModel::getKeratin,
-            &KeratinModel::setKeratin);
+            &KeratinModel::setKeratin)
+        .def_property_readonly("pressure",
+            &KeratinModel::getPressure)
+        .def_property_readonly("area",
+            &KeratinModel::getArea)
+        .def_property_readonly("tension",
+            &KeratinModel::getTension);
 
     /*
      *  [system.hpp]
@@ -433,20 +439,7 @@ PYBIND11_MODULE(bind, m) {
             "    half-edges of a single pair (default: []).",
             pybind11::arg("helfEdgeTypes")=std::vector<std::string>())
         .def("getVertexIndicesByType",
-            [](VertexModel& self, std::string const type,
-                bool const exclude_boundary=true) {
-                std::map<long int, Vertex> const vertices =
-                    self.getVertices();
-                std::vector<long int> vertexIndices;
-                for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-                    if ((it->second).getType() == type || type == "") {
-                        if (exclude_boundary && (it->second).getBoundary())
-                            { continue; }
-                        vertexIndices.push_back(it->first);
-                    }
-                }
-                return vertexIndices;
-            },
+            &VertexModel::getVertexIndicesByType,
             "Return vertex indices corresponding to type.\n"
             "\n"
             "Parameters\n"
@@ -464,17 +457,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("type"),
             pybind11::arg("exclude_boundary")=true)
         .def("getHalfEdgeIndicesByType",
-            [](VertexModel& self, std::string const type) {
-                std::map<long int, HalfEdge> const halfEdges =
-                    self.getHalfEdges();
-                std::vector<long int> halfEdgeIndices;
-                for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
-                    if ((it->second).getType() == type || type == "") {
-                        halfEdgeIndices.push_back(it->first);
-                    }
-                }
-                return halfEdgeIndices;
-            },
+            &VertexModel::getHalfEdgeIndicesByType,
             "Return half-edge indices corresponding to type.\n"
             "\n"
             "Parameters\n"

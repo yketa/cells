@@ -192,6 +192,30 @@ Two-dimensional ensembles of vertices and edges.
         std::vector<double> const& getSystemSize() const
             { return systemSize; }
 
+        std::vector<long int> getVertexIndicesByType(
+            std::string const& type, bool const& exclude_boundary=true) const {
+            std::vector<long int> vertexIndices;
+            for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+                if ((it->second).getType() == type || type == "") {
+                    if (exclude_boundary && (it->second).getBoundary())
+                        { continue; }
+                    vertexIndices.push_back(it->first);
+                }
+            }
+            return vertexIndices;
+        }
+
+        std::vector<long int> getHalfEdgeIndicesByType(
+            std::string const& type) const {
+            std::vector<long int> halfEdgeIndices;
+            for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
+                if ((it->second).getType() == type || type == "") {
+                    halfEdgeIndices.push_back(it->first);
+                }
+            }
+            return halfEdgeIndices;
+        }
+
         // CONSTRUCTORS
 
         Mesh() {}
