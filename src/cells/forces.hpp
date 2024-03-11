@@ -125,6 +125,58 @@ Cell area restoring force.
 
 };
 
+class EdgePullForce : public VertexForce<ForcesType> {
+/* 
+Pulling on Vertices at the ounter border with a constant radial tension
+*/
+    protected:
+
+        Mesh* const mesh;
+
+    public:
+        EdgePullForce(double const& Fpull_,  Mesh* const mesh_, ForcesType* forces_, VerticesType* const vertices_) :
+            // Do not filter types here, i.e. try for every vertex. Choose our lone boundary closing vertex below
+            VertexForce<ForcesType>("",
+                {{"Fpull", Fpull_}},
+                forces_, vertices_),
+            mesh(mesh_) {std::cout << "Made force" << std::endl;}
+
+        void addForce(Vertex const& vertex) override {
+//             std::cerr <<
+//                 "Outer pulling force on vertices " << vertex.getIndex() << "."
+//                 << std::endl;
+            //std::cout << "Trying vertex" << std::endl;
+            std::cout << vertex.getBoundary() << std::endl;
+            if (vertex.getBoundary()) {
+                std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
+                std::vector <long int> bindices = mesh->getNeighbourVertices(vertex.getIndex())[0];
+                for (long int idx: bindices) {
+                    std::cout << "Adding boundary force to " << idx << std::endl; 
+                    for (int dim=0; dim < 2; dim++) {
+                        // if it's the lone boundary vertex that closes the hole
+                
+                        std::vector<double> pos;
+                        std::vector<double> const centre_of_mass = {0.5*mesh->getSystemSize()[0], 0.5*mesh->getSystemSize()[1]};
+                        pos = mesh->wrapDiff(centre_of_mass, (vertices->at(idx)).getPosition());
+                        std::cout << pos[0] << " " << pos[1] << std::endl;
+                        //std::vector<double> const lxy = mesh->getSystemSize();
+                        //std::vector<double> const pos = vertex.getPosition()-lxy;
+                        double len = std::sqrt(pos[0]*pos[0]+pos[1]*pos[1]);
+                        if (len<1e-10) {
+                            len=1e-10;
+                        }
+                        (*forces)[idx][dim] +=
+                        parameters.at("Fpull")*pos[dim]/len;
+                    }  
+                }
+                
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+};
+
+
 class ActiveBrownianForce : public VertexForce<ForcesType> {
 /*
 Active Brownian self-propulsion force acting on vertices.

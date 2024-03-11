@@ -642,6 +642,19 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("kA"),
             pybind11::arg("A0"))
+        .def("addEdgePullForce",
+            &VertexModel::addVertexForce<EdgePullForce,
+                double const&>,
+            "Add outer pulling force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "Fpull : float\n"
+            "    pulling forces.",
+            pybind11::arg("name"),
+            pybind11::arg("Fpull"))
         .def("addActiveBrownianForce",
             &VertexModel::addVertexForce<ActiveBrownianForce,
                 double const&, double const&>,

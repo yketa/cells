@@ -68,6 +68,33 @@ VertexModel::addVertexForce<AreaForce, pybind11::tuple const&>(
 }
 
 /*
+ *  EdgePullForce
+ *
+ */
+
+// save state
+pybind11::tuple EdgePullForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "EdgePullForce",
+        // state
+        parameters);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<EdgePullForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 2);
+    assert(t[0].cast<std::string>() == "EdgePullForce");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addVertexForce<EdgePullForce, double const&>(
+        name, parameters.at("Fpull"));
+}
+
+/*
  *  ActiveBrownianForce
  *
  */

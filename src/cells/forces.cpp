@@ -21,6 +21,20 @@ template<> void VertexModel::addVertexForce<
 
 template<> void VertexModel::addVertexForce<
     // derived force class
+    EdgePullForce,
+    // argument types
+    double const&>(
+    // user-defined arguments
+    std::string const& name, double const& Fpull) {
+    // set force
+    vertexForces.add<EdgePullForce>(
+        name,                       // (unique) user-defined name for forcess
+        Fpull,                     // user-defined parameters
+        this, &forces, &vertices);  // VertexModel attributes
+}
+
+template<> void VertexModel::addVertexForce<
+    // derived force class
     AreaForce,
     // argument types
     double const&, double const&>(
