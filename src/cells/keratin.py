@@ -27,14 +27,14 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 
 # keratin colourbar
-cmap_keratin = plt.cm.bwr                                       # colourmap
-norm_keratin = (lambda x: Normalize(-x, x))(0.2)                                 # interval of value represented by colourmap
+cmap_keratin = plt.cm.PRGn                                        # colourmap
+norm_keratin = (lambda x: Normalize(-x, x))(1.5)                                 # interval of value represented by colourmap
 # norm_keratin = Normalize(-2, 2)                                 # interval of value represented by colourmap
 scalarMap_keratin = ScalarMappable(norm_keratin, cmap_keratin)  # conversion from scalar value to colour
 
 # tension colourbar
-cmap_tension = plt.cm.PRGn                                      # colourmap
-norm_tension = (lambda x: Normalize(-x, x))(0.2)                                 # interval of value represented by colourmap
+cmap_tension = plt.cm.bwr                                     # colourmap
+norm_tension = (lambda x: Normalize(-x, x))(0.3)                                 # interval of value represented by colourmap
 # norm_tension = Normalize(-2, 2)                                 # interval of value represented by colourmap
 scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)  # conversion from scalar value to colour
 
@@ -93,7 +93,7 @@ def plot_keratin(vm, fig=None, ax=None):
     if len(halfEdges) > 0:
         lines = LineCollection(
             getLinesHalfEdge(vm, halfEdges),    # all half-edges with tension
-            linewidth=2.5)
+            linewidth=0.5)
         ten_mean, ten_std = 0, 1
 #         ten_mean = np.mean(list(vm.vertexForces["keratin"].tension.values()))
 #         ten_std = np.std(list(vm.vertexForces["keratin"].tension.values()))

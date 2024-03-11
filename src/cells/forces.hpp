@@ -139,28 +139,24 @@ Pulling on Vertices at the ounter border with a constant radial tension
             VertexForce<ForcesType>("",
                 {{"Fpull", Fpull_}},
                 forces_, vertices_),
-            mesh(mesh_) {std::cout << "Made force" << std::endl;}
+            mesh(mesh_) {}
 
         void addForce(Vertex const& vertex) override {
 //             std::cerr <<
 //                 "Outer pulling force on vertices " << vertex.getIndex() << "."
 //                 << std::endl;
-            //std::cout << "Trying vertex" << std::endl;
-            std::cout << vertex.getBoundary() << std::endl;
             if (vertex.getBoundary()) {
-                std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
+                //std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
                 std::vector <long int> bindices = mesh->getNeighbourVertices(vertex.getIndex())[0];
                 for (long int idx: bindices) {
-                    std::cout << "Adding boundary force to " << idx << std::endl; 
+                    //std::cout << "Adding boundary force to " << idx << std::endl; 
                     for (int dim=0; dim < 2; dim++) {
                         // if it's the lone boundary vertex that closes the hole
                 
                         std::vector<double> pos;
                         std::vector<double> const centre_of_mass = {0.5*mesh->getSystemSize()[0], 0.5*mesh->getSystemSize()[1]};
                         pos = mesh->wrapDiff(centre_of_mass, (vertices->at(idx)).getPosition());
-                        std::cout << pos[0] << " " << pos[1] << std::endl;
-                        //std::vector<double> const lxy = mesh->getSystemSize();
-                        //std::vector<double> const pos = vertex.getPosition()-lxy;
+                        //std::cout << pos[0] << " " << pos[1] << std::endl;
                         double len = std::sqrt(pos[0]*pos[0]+pos[1]*pos[1]);
                         if (len<1e-10) {
                             len=1e-10;
