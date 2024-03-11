@@ -925,6 +925,7 @@ Keratin model.
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
                     keratin.emplace(it->first, 0);          // zero initial value
+                    pressure.emplace(it->first, 0);         // changed in KeratinModel::addAllForces
                 }
             }
         }
@@ -946,7 +947,7 @@ Keratin model.
         void addForce(Vertex const& vertex) override {
 
             // reset cell pressure
-            pressure.emplace(vertex.getIndex(), 0);
+            pressure[vertex.getIndex()] = 0;
 
             // cell area and perimeter
             area.emplace(vertex.getIndex(),
@@ -1065,7 +1066,7 @@ Keratin model.
         }
 
         void addAllForces() override {
-            pressure.clear(); area.clear(); tension.clear();
+            area.clear(); tension.clear();
             VertexForce<ForcesType>::addAllForces();
         }
 
@@ -1076,7 +1077,7 @@ Keratin model.
             double const amp = parameters.at("sigma")*sqrt(2.*dt_);
             for (auto it=keratin.begin(); it != keratin.end(); ++it) {
                 double const kon = 1 + (*time/parameters.at("tauon"));  // time-dependent on rate
-                double const koff = 1 + exp(-parameters.at("k0")*(      // keratin-dependent off rate
+                double const koff = 1 + exp(parameters.at("k0")*(       // keratin-dependent off rate
                     pressure[it->first] - parameters.at("p0")));        // addAllForces sets pressure
                 keratin[it->first] +=
                     dt_*(kon - koff*keratin[it->first]) // deterministic part
