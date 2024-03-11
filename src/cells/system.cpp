@@ -124,6 +124,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
             halfEdgeIndices.push_back((it->second).getIndex());
         }
     }
+    if (halfEdgeIndices.size() == 0) return;
     random.shuffle(halfEdgeIndices);    // do T1s in a random order
 
     // perform T1s
@@ -261,7 +262,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
             { (it->second)->createEdge(cre); }
 
     }
-//     if (halfEdgeIndices.size() > 0) { checkMesh(); }
+//     checkMesh();
 }
 
 void VertexModel::checkMesh(std::vector<std::string> halfEdgeTypes) const {
