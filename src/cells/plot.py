@@ -18,7 +18,8 @@ def _update_canvas(fig):
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)
 
-def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
+def plot(vm, fig=None, ax=None, update=True,
+    rainbow=None, clear=False, only_set=False):
     """
     Plot vertex model.
 
@@ -41,6 +42,9 @@ def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
     clear : bool
         Clear the plot of all cell colouring. (default: False)
         NOTE: `rainbow' and `clear' options are exclusionary.
+    only_set : bool
+        Only set the figure and do not plot anything. (default: False)
+        NOTE: `only_set' implies `clear'.
 
     Returns
     -------
@@ -51,6 +55,7 @@ def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
     """
 
     rainbow_plot = (type(rainbow) == VertexModel)   # is it a rainbow plot?
+    clear = True if only_set else clear
     if rainbow_plot and clear:
         raise ValueError("`rainbow' and `clear' options are exclusionary.")
 
@@ -139,6 +144,7 @@ def plot(vm, fig=None, ax=None, update=True, rainbow=None, clear=False):
     ax.set_xlim([0, vm.systemSize[0]])
     ax.set_ylim([0, vm.systemSize[1]])
     ax.set_aspect("equal")
+    if only_set : return fig, ax
 
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=2.5)  # all junctions
