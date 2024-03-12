@@ -165,7 +165,7 @@ if __name__ == "__main__":
         help="bond rest length")
     parser.add_argument("-alpha", type=float, default=0.1,
         help="bond elasticity per keratin concentration above threshold")
-    parser.add_argument("-kth", type=float, default=1,
+    parser.add_argument("-kth", type=float, default=0,
         help="bond keratin concentration threshold")
     parser.add_argument("-tau", type=float, default=100,
         help="keratin concentration evolution time scale")
