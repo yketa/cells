@@ -191,6 +191,8 @@ Two-dimensional ensembles of vertices and edges.
             { return halfEdges; }
         std::vector<double> const& getSystemSize() const
             { return systemSize; }
+        std::vector<double> getCentre() const
+            { return {systemSize[0]/2., systemSize[1]/2.}; }
 
         std::vector<long int> getVertexIndicesByType(
             std::string const& type, bool const& exclude_boundary=true) const {
@@ -258,7 +260,8 @@ Two-dimensional ensembles of vertices and edges.
 
         std::vector<double> wrapDiff(
             std::vector<double> const& fromPos,
-            std::vector<double> const& toPos)
+            std::vector<double> const& toPos,
+            bool const& unit=false)
             const;
         /*
         Wrap difference vector with respect to periodic boundary conditions.
@@ -269,6 +272,8 @@ Two-dimensional ensembles of vertices and edges.
             Pointer to initial point position.
         toPos :
             Pointer to final point position.
+        unit :
+            Return unitary vector.
 
         Returns
         -------

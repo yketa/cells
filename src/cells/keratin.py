@@ -3,9 +3,6 @@ Routine to run and plot in real time a simulation of the keratin vertex model.
 This does not save data.
 """
 
-import sys
-sys.argv[0] = "run.py"  # appear as "run.py"
-
 from cells.init import init_vm, A0
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
 from cells.bind import getLinesHalfEdge, getPolygonsCell
@@ -27,15 +24,13 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 
 # keratin colourbar
-cmap_keratin = plt.cm.PRGn                                        # colourmap
-norm_keratin = (lambda x: Normalize(-x, x))(1.5)                                 # interval of value represented by colourmap
-# norm_keratin = Normalize(-2, 2)                                 # interval of value represented by colourmap
+cmap_keratin = plt.cm.PRGn                                      # colourmap
+norm_keratin = Normalize(-1.5, 1.5)                             # interval of value represented by colourmap
 scalarMap_keratin = ScalarMappable(norm_keratin, cmap_keratin)  # conversion from scalar value to colour
 
 # tension colourbar
-cmap_tension = plt.cm.bwr                                     # colourmap
-norm_tension = (lambda x: Normalize(-x, x))(0.3)                                 # interval of value represented by colourmap
-# norm_tension = Normalize(-2, 2)                                 # interval of value represented by colourmap
+cmap_tension = plt.cm.bwr                                       # colourmap
+norm_tension = Normalize(-0.3, 0.3)                             # interval of value represented by colourmap
 scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)  # conversion from scalar value to colour
 
 def plot_keratin(vm, fig=None, ax=None):
@@ -53,56 +48,46 @@ def plot_keratin(vm, fig=None, ax=None):
         cbar_keratin = fig.colorbar(
             mappable=scalarMap_keratin, ax=ax,
             shrink=0.75, pad=0.01)
-        cbar_keratin.set_label(
-            r"$([\mathrm{ker}]_i - \left<[\mathrm{ker}]_i\right>)$"
-                + r"$/\mathrm{std}([\mathrm{ker}]_i)$",
+        cbar_keratin.set_label(r"$[\mathrm{ker}]_i $",
             rotation=270, labelpad=20)
-        ax_size, fig_width, fig_height = (                  #resize
+        ax_size, fig_width, fig_height = (                  # resize
             _resize_fig(ax, ax_size, fig_width, fig_height))
 
         cbar_tension = fig.colorbar(
             mappable=scalarMap_tension, ax=ax,
             shrink=0.75, pad=0.01)
-        cbar_tension.set_label(
-            r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
+        cbar_tension.set_label(r"$t_i$",
             rotation=270, labelpad=20)
-        ax_size, fig_width, fig_height = (                  #resize
+        ax_size, fig_width, fig_height = (                  # resize
             _resize_fig(ax, ax_size, fig_width, fig_height))
 
     # cells
 
     cells = vm.getVertexIndicesByType("centre")
     polygons = PatchCollection(
-        list(map(                           # all cells
+        list(map(                               # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))),
         facecolors="none")
-    ker_mean, ker_std = 0, 1
-#     ker_mean = np.mean(list(vm.vertexForces["keratin"].keratin.values()))
-#     ker_std = np.std(list(vm.vertexForces["keratin"].keratin.values()))
-    if ker_std != 0:
-        polygons.set_color(list(map(        # colour according to keratin
-            lambda i: (lambda s_ker: scalarMap_keratin.to_rgba(s_ker))(
-                (vm.vertexForces["keratin"].keratin[i] - ker_mean)/ker_std),
-            cells)))
+    polygons.set_color(list(map(                # colour according to keratin
+        lambda i: scalarMap_keratin.to_rgba(
+            vm.vertexForces["keratin"].keratin[i]),
+        cells)))
     ax.add_collection(polygons)
 
     # bonds
 
     halfEdges = list(vm.vertexForces["keratin"].tension.keys())
+    if True:    # remove inner cell half-edges (which go from or to a centre vertex)
+        halfEdges = list(set(halfEdges) - set(vm.getCentreHalfEdges()))
     if len(halfEdges) > 0:
         lines = LineCollection(
             getLinesHalfEdge(vm, halfEdges),    # all half-edges with tension
-            linewidth=0.5)
-        ten_mean, ten_std = 0, 1
-#         ten_mean = np.mean(list(vm.vertexForces["keratin"].tension.values()))
-#         ten_std = np.std(list(vm.vertexForces["keratin"].tension.values()))
-        if ten_std != 0:
-            lines.set_color(list(map(           # colour according to tension
-                lambda i: (lambda s_ten: scalarMap_tension.to_rgba(s_ten))(
-                    (vm.vertexForces["keratin"].tension[i] - ten_mean
-                        )/ten_std),
-                halfEdges)))
+            linewidth=1.5)
+        lines.set_color(list(map(               # colour according to tension
+            lambda i: scalarMap_tension.to_rgba(
+                vm.vertexForces["keratin"].tension[i]),
+            halfEdges)))
         ax.add_collection(lines)
 
     # title
@@ -114,23 +99,13 @@ def plot_keratin(vm, fig=None, ax=None):
         param["P0"]/np.sqrt(param["A0"]), param["l0"], param["alpha"])
     title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
     title += "\n"
-    title += r"$\tau=%.1e, \sigma=%.1e, \tau_{\mathrm{on}}=%.1e$" % (
-        param["tau"], param["sigma"], param["tauon"])
+    title += r"$\tau=%.1e, \sigma=%.1e$" % (
+        param["tau"], param["sigma"])
+    title += r"$, \tau_{\mathrm{on}}=$" + (
+        r"$\infty$" if param["ron"] == 0 else r"$%.1e$" % (1./param["ron"]))
     title += r"$, k_0=%.1e, T_0=%.1e$" % (
         param["k0"], param["p0"])
 
-#     for param, tex in (
-#         ("K", "K"), ("A0", "A_0"),
-#         ("Gamma", "\\Gamma"), ("P0", "P_0"),
-#         ("l0", "l_0"), ("alpha", "\\alpha"),
-#             ("kth", "[\\mathrm{ker}]_ {\\mathrm{th}.}"),
-#         ("tau", "\\tau"), ("sigma", "\\sigma"),
-#         ("tauon", "\\tau_{\\mathrm{on}}"), ("k0", "k_0"), ("p0", "p_0")):
-#         title += r"$, %s=%.2e$" % (
-#             tex, vm.vertexForces["keratin"].parameters[param])
-#         count += 1
-#         if count % 5 == 0:
-#             title += "\n"
     ax.set_title(title)
 
     # update canvas
@@ -170,8 +145,8 @@ if __name__ == "__main__":
     parser.add_argument("-tau", type=float, default=100,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
-    parser.add_argument("-tauon", type=float, default=100,
-        help="keratin concentration on-rate evolution time scale")
+    parser.add_argument("-ron", type=float, default=0,
+        help="keratin concentration on-rate evolution time rate (= 1/tauon)")
     parser.add_argument("-k0", type=float, default=1,
         help="keratin concentration off-rate inverse pressure constant")
     parser.add_argument("-pr0", type=float, default=-0.3,
@@ -183,11 +158,11 @@ if __name__ == "__main__":
 
     # KERATIN
 
-    assert len(vm.vertexForces) == 0
-    assert len(vm.halfEdgeForces) == 0
+#     assert len(vm.vertexForces) == 0
+#     assert len(vm.halfEdgeForces) == 0
     vm.addKeratinModel("keratin",
         1, A0, 1, args.vmp0*np.sqrt(A0), args.l0, args.alpha, args.kth,
-        args.tau, args.sigma, args.tauon, args.k0, args.pr0)
+        args.tau, args.sigma, args.ron, args.k0, args.pr0)
 
     fig, ax = plot_keratin(vm)
 
@@ -209,7 +184,6 @@ if __name__ == "__main__":
         except:
             print(traceback.format_exc(), file=sys.stderr)  # print traceback
             exit_handler()                                  # exit with handler
-        #if vm.time > 10: exit()
         # plot
         plot_keratin(vm, fig=fig, ax=ax)
 

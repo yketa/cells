@@ -302,6 +302,11 @@ PYBIND11_MODULE(bind, m) {
                 std::vector<double> const systemSize = self.getSystemSize();
                 return pybind11::array_t<double>(2, &(systemSize[0]));
             })
+        .def_property_readonly("centre",
+            [](VertexModel const& self) {
+                std::vector<double> const centre = self.getCentre();
+                return pybind11::array_t<double>(2, &(centre[0]));
+            })
         // attributes [VertexModel (system.hpp)]
         .def_property_readonly("halfEdgeForces",
             [](VertexModel const& self)
@@ -340,7 +345,8 @@ PYBIND11_MODULE(bind, m) {
         .def("wrapDiff",
             [](VertexModel const& self,
                 pybind11::array_t<double> const& fromPos,
-                pybind11::array_t<double> const& toPos) {
+                pybind11::array_t<double> const& toPos,
+                bool const& unit=false) {
                 double const* fromPosPTR =
                     (double const*) fromPos.request().ptr;
                 double const* toPosPTR =
@@ -348,7 +354,8 @@ PYBIND11_MODULE(bind, m) {
                 std::vector<double> const disp =
                     self.wrapDiff(
                         std::vector<double>(fromPosPTR, fromPosPTR + 2),
-                        std::vector<double>(toPosPTR, toPosPTR + 2));
+                        std::vector<double>(toPosPTR, toPosPTR + 2),
+                        unit);
                 return pybind11::array_t<double>(2, &(disp[0]));
             },
             "Wrap difference vector with respect to periodic boundary\n"
@@ -360,13 +367,16 @@ PYBIND11_MODULE(bind, m) {
             "    Pointer to initial point position.\n"
             "toPos : (2,) float array-like\n"
             "    Pointer to final point position.\n"
+            "unit : bool\n"
+            "    Return unitary vector. (default: False)\n"
             "\n"
             "Returns\n"
             "-------\n"
             "disp : (2,) float numpy array\n"
             "    Difference vector.",
             pybind11::arg("fromPos"),
-            pybind11::arg("toPos"))
+            pybind11::arg("toPos"),
+            pybind11::arg("unit")=false)
         .def("getNeighbourVertices",
             [](VertexModel const& self, long int const& vertexIndex) {
                 std::vector<std::vector<long int>> neighbours =
@@ -471,6 +481,31 @@ PYBIND11_MODULE(bind, m) {
             "halfEdgeIndices : list of int\n"
             "    Half-edge indices corresponding to type.",
             pybind11::arg("type"))
+        .def("getCentreHalfEdges",
+            [](VertexModel const& self) {
+                std::vector<long int> centreHalfEdgeIndices(0);
+                std::map<long int, HalfEdge> const& halfEdges =
+                    self.getHalfEdges();
+                std::vector<long int> const vertexIndices =
+                    self.getVertexIndicesByType("centre");
+                for (long int vertexIndex : vertexIndices) {
+                    std::vector<long int> halfEdgeToNeighbourIndices =
+                        self.getNeighbourVertices(vertexIndex)[1];
+                    for (long int halfEdgeIndex : halfEdgeToNeighbourIndices) {
+                        centreHalfEdgeIndices.push_back(
+                            halfEdgeIndex);
+                        centreHalfEdgeIndices.push_back(
+                            (halfEdges.at(halfEdgeIndex)).getPairIndex());
+                    }
+                }
+                return centreHalfEdgeIndices;
+            },
+            "Return all half-edges connected to a cell centre.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "halfEdgeIndices : list of int\n"
+            "    Half-edge indices.\n")
         // methods [VertexModel (system.hpp)]
         .def("nintegrate",
             [](VertexModel& self,
@@ -500,7 +535,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("delta")=0.1,
             pybind11::arg("epsilon")=0.1)
         .def("getPositions",
-            [](VertexModel& self, bool const wrapped=true) {
+            [](VertexModel const& self, bool const wrapped=true) {
                 std::map<long int, std::vector<double>> positions;
                 std::map<long int, Vertex> const vertices = self.getVertices();
                 for (auto it=vertices.begin(); it != vertices.end(); ++it) {
@@ -541,7 +576,7 @@ PYBIND11_MODULE(bind, m) {
             "forces : {int: list} dict\n"
             "    Dictionary which associates vertex indices to force applied\n"
             "    on the vertex.")
-        .def ("getCentreForces",
+        .def("getCentreForces",
             [](VertexModel& self) {
                 self.computeForces();
                 std::map<long int, std::vector<double>> const forces =
@@ -549,18 +584,18 @@ PYBIND11_MODULE(bind, m) {
                 std::map<long int, Vertex> const vertices =
                     self.getVertices();
                 std::map<long int, std::vector<double>> centreForces;
-                for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-                    if ((it->second).getType() == "centre") {
-                        std::vector<long int> const neighbours =
-                            self.getNeighbourVertices(it->first)[0];
-                        long int const nNeighbours = neighbours.size();
-                        centreForces[it->first] = {0, 0};
-                        for (long int i : neighbours) {
-                            if (inMap(forces, i)) {
-                                for (int dim=0; dim < 2; dim++) {
-                                    centreForces[it->first][dim] +=
-                                        (forces.at(i)).at(dim)/nNeighbours;
-                                }
+                std::vector<long int> const vertexIndices =
+                    self.getVertexIndicesByType("centre");
+                for (long int vertexIndex : vertexIndices) {
+                    std::vector<long int> const neighbours =
+                        self.getNeighbourVertices(vertexIndex)[0];
+                    long int const nNeighbours = neighbours.size();
+                    centreForces[vertexIndex] = {0, 0};
+                    for (long int i : neighbours) {
+                        if (inMap(forces, i)) {
+                            for (int dim=0; dim < 2; dim++) {
+                                centreForces[vertexIndex][dim] +=
+                                    (forces.at(i)).at(dim)/nNeighbours;
                             }
                         }
                     }
@@ -635,7 +670,7 @@ PYBIND11_MODULE(bind, m) {
             "name : str\n"
             "    Unique name for the force.\n"
             "Fpull : float\n"
-            "    pulling forces.",
+            "    Pulling forces.",
             pybind11::arg("name"),
             pybind11::arg("Fpull"))
         .def("addActiveBrownianForce",
@@ -811,8 +846,9 @@ PYBIND11_MODULE(bind, m) {
             "    Keratin concentration evolution time scale.\n"
             "sigma : float\n"
             "    Keratin concentration noise standard deviation.\n"
-            "tauon : float\n"
-            "    Keratin concentration on-rate evolution time scale.\n"
+            "ron : float\n"
+            "    Keratin concentration on-rate evolution time rate\n"
+            "    (=1/tauon).\n"
             "k0 : float\n"
             "    Keratin concentration off-rate inverse pressure constant.\n"
             "p0 : float\n"
@@ -827,7 +863,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("kth"),
             pybind11::arg("tau"),
             pybind11::arg("sigma"),
-            pybind11::arg("tauon"),
+            pybind11::arg("ron"),
             pybind11::arg("k0"),
             pybind11::arg("p0"))
         // initialisation methods [VertexModel (initialisation.cpp)]

@@ -201,17 +201,17 @@ def parse_args(parser=None):
         help="length below which to perform T1")
     parser.add_argument("-epsilon", type=float, default=0.1,
         help="create junction with length epsilon above threshold after T1")
-    if script == "run.py":
+    if not(script == "vm.py"):
         parser.add_argument("-iterations", type=int, default=100,
             help="number of iterations between plots")
 
     # DISPLAY
-    if script == "run.py":
+    if not(script == "vm.py"):
         parser.add_argument("-forces", action=BooleanOptionalAction,
             help="display forces on vertices")
 
     # SAVING
-    if script == "run.py":
+    if not(script == "vm.py"):
         parser.add_argument("-movie", "-m",
             action=BooleanOptionalAction,
             help="make movie from displayed frames (see %s)"

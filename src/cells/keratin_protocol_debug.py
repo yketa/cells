@@ -39,21 +39,21 @@ vm.addAreaForce("area",1, A0)
 vm.addActiveBrownianForce("abp",args.v0, args.taup)
 vm.addEdgePullForce("pull",-0.1)
 
-#fig, ax = plot(vm)
-#plt.ion()
-#plt.show()
-for k in range(100):
+fig, ax = plot(vm)
+plt.ion()
+plt.show()
+for k in range(10):
     print(k)
     vm.nintegrate(100, 0.01, 0.1, 0.11)
-    #plot(vm, fig=fig, ax=ax)
+    plot(vm, fig=fig, ax=ax)
+plt.close(fig)
 
 vm.removeVertexForce("abp")
 vm.removeVertexForce("perimeter")
 vm.removeVertexForce("area")
-#plt.close(fig)
 
 """addKeratinModel(...)
- |      addKeratinModel(self: cells.bind.VertexModel, name: str, K: float, A0: float, Gamma: float, P0: float, l0: float, alpha: float, kth: float, tau: float, sigma: float, tauon: float, k0: float, p0: float) -> None
+ |      addKeratinModel(self: cells.bind.VertexModel, name: str, K: float, A0: float, Gamma: float, P0: float, l0: float, alpha: float, kth: float, tau: float, sigma: float, ron: float, k0: float, p0: float) -> None
  |      
  |      Add keratin model.
  |      
@@ -79,20 +79,22 @@ vm.removeVertexForce("area")
  |          Keratin concentration evolution time scale.
  |      sigma : float
  |          Keratin concentration noise standard deviation.
- |      tauon : float
- |          Keratin concentration on-rate evolution time scale.
+ |      ron : float
+ |          Keratin concentration on-rate evolution time rate.
  |      k0 : float
  |          Keratin concentration off-rate inverse pressure constant.
  |      p0 : float
  |          Keratin concentration off-rate inflection pressure.
  """
 
-vm.addKeratinModel("keratin",1,A0,1,4.2*np.sqrt(A0),1,0.2,0,10,0.05,1000000,5,0.3)
+vm.addKeratinModel("keratin",1,A0,1,4.2*np.sqrt(A0),1,0.2,0,10,0.05,0,5,0.3)
 vm.addEdgePullForce("pull",args.Fpull)
 fig, ax = plot_keratin(vm)
 plt.ion()
 plt.show()
 
-for k in range(100):
+#for k in range(100):
+while True:
     vm.nintegrate(100, 0.01, 0.1, 0.11)
     plot_keratin(vm, fig=fig, ax=ax)
+

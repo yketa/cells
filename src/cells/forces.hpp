@@ -126,46 +126,45 @@ Cell area restoring force.
 };
 
 class EdgePullForce : public VertexForce<ForcesType> {
-/* 
-Pulling on Vertices at the ounter border with a constant radial tension
+/*
+Pulling on Vertices at the ounter border with a constant radial tension.
 */
     protected:
 
         Mesh* const mesh;
 
     public:
-        EdgePullForce(double const& Fpull_,  Mesh* const mesh_, ForcesType* forces_, VerticesType* const vertices_) :
-            // Do not filter types here, i.e. try for every vertex. Choose our lone boundary closing vertex below
-            VertexForce<ForcesType>("",
+        EdgePullForce(
+            double const& Fpull_,
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("", // type is "" therefore addForce is called for every vertex
+                                        // (meaning that VertexForce::addAllForces filters nothing)
+                                        // we select the special boundary vertices in addForce
                 {{"Fpull", Fpull_}},
                 forces_, vertices_),
             mesh(mesh_) {}
 
         void addForce(Vertex const& vertex) override {
-//             std::cerr <<
-//                 "Outer pulling force on vertices " << vertex.getIndex() << "."
-//                 << std::endl;
-            if (vertex.getBoundary()) {
-                //std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
-                std::vector <long int> bindices = mesh->getNeighbourVertices(vertex.getIndex())[0];
+
+            if (vertex.getBoundary()) { // force is computed for neighbours of boundary vertices
+//                 std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
+
+                std::vector <long int> bindices =
+                    mesh->getNeighbourVertices(vertex.getIndex())[0];
                 for (long int idx: bindices) {
-                    //std::cout << "Adding boundary force to " << idx << std::endl; 
+//                     std::cout << "Adding boundary force to " << idx << std::endl;
+
+                    std::vector<double> const dir = mesh->wrapDiff( // vector going...
+                        mesh->getCentre(),                          // ... from mesh centre...
+                        (vertices->at(idx)).getPosition(),          // ... to the edge vertex...
+                        true);                                      // ... and normalised
+//                     std::cout << dir[0] << " " << dir[1] << std::endl;
                     for (int dim=0; dim < 2; dim++) {
-                        // if it's the lone boundary vertex that closes the hole
-                
-                        std::vector<double> pos;
-                        std::vector<double> const centre_of_mass = {0.5*mesh->getSystemSize()[0], 0.5*mesh->getSystemSize()[1]};
-                        pos = mesh->wrapDiff(centre_of_mass, (vertices->at(idx)).getPosition());
-                        //std::cout << pos[0] << " " << pos[1] << std::endl;
-                        double len = std::sqrt(pos[0]*pos[0]+pos[1]*pos[1]);
-                        if (len<1e-10) {
-                            len=1e-10;
-                        }
-                        (*forces)[idx][dim] +=
-                        parameters.at("Fpull")*pos[dim]/len;
-                    }  
+                        (*forces)[idx][dim] += parameters.at("Fpull")*dir[dim];
+                    }
                 }
-                
+
             }
         }
 
@@ -941,8 +940,10 @@ Keratin model.
     protected:
 
         Mesh* const mesh;                       // mesh object
-        double* const time;                     // integrated time
         Random* random;                         // random number generator
+
+        double* const time;                     // integrated time
+        double const time0;                     // time at which force was initialised
 
         std::map<long int, double> keratin;     // cell keratin concentration
 
@@ -958,17 +959,18 @@ Keratin model.
             double const& Gamma_, double const& P0_,
             double const& l0_, double const& alpha_, double const& kth_,
             double const& tau_, double const& sigma_,
-            double const& tauon_, double const& k0_, double const& p0_,
-            Mesh* const mesh_, double* const time_, Random* random_,
+            double const& ron_, double const& k0_, double const& p0_,
+            Mesh* const mesh_, Random* random_,
+            double* const time_, double const& time0_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"K", K_}, {"A0", A0_},
                 {"Gamma", Gamma_}, {"P0", P0_},
                 {"l0", l0_}, {"alpha", alpha_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_},
-                {"tauon", tauon_}, {"k0", k0_}, {"p0", p0_}},
+                {"ron", ron_}, {"k0", k0_}, {"p0", p0_}},
                 forces_, vertices_),
-            mesh(mesh_), time(time_), random(random_) {
+            mesh(mesh_), random(random_), time(time_), time0(time0_) {
 
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
@@ -977,6 +979,9 @@ Keratin model.
                 }
             }
         }
+
+        double const& getTime0() const
+            { return time0; }
 
         std::map<long int, double> const& getKeratin() const
             { return keratin; }
@@ -1124,9 +1129,9 @@ Keratin model.
             double const dt_ = dt/parameters.at("tau");
             double const amp = parameters.at("sigma")*sqrt(2.*dt_);
             for (auto it=keratin.begin(); it != keratin.end(); ++it) {
-                double const kon = 1 + (*time/parameters.at("tauon"));  // time-dependent on rate
-                double const koff = 1 + exp(parameters.at("k0")*(       // keratin-dependent off rate
-                    pressure[it->first] - parameters.at("p0")));        // addAllForces sets pressure
+                double const kon = 1 + (*time - time0)*parameters.at("ron");    // time-dependent on rate
+                double const koff = 1 + exp(parameters.at("k0")*(               // keratin-dependent off rate
+                    pressure[it->first] - parameters.at("p0")));                // addAllForces sets pressure
                 keratin[it->first] +=
                     dt_*(kon - koff*keratin[it->first]) // deterministic part
                     + amp*random->gauss();              // stochastic part

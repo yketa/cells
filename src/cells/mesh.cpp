@@ -18,13 +18,24 @@ std::vector<double> Mesh::wrap(
 
 std::vector<double> Mesh::wrapDiff(
     std::vector<double> const& fromPos,
-    std::vector<double> const& toPos)
+    std::vector<double> const& toPos,
+    bool const& unit)
     const {
 
+    // compute difference bector
     std::vector<double> disp(2, 0);
     for (int dim=0; dim < 2; dim++) {
         disp[dim] = std::remainder(toPos[dim] - fromPos[dim], systemSize[dim]);
     }
+
+    // normalise
+    if (unit) {
+        double const norm = std::sqrt(disp[0]*disp[0] + disp[1]*disp[1]);
+        for (int dim=0; dim < 2; dim++) {
+            disp[dim] /= norm;
+        }
+    }
+
     return disp;
 }
 
@@ -33,18 +44,10 @@ std::vector<double> Mesh::wrapTo(
     bool const& unit)
     const {
 
-    std::vector<double> fromTo = wrapDiff(
+    return wrapDiff(
         vertices.at(fromVertexIndex).getPosition(),
-        vertices.at(toVertexIndex).getPosition());
-
-    if (unit) {
-        double norm = std::sqrt(fromTo[0]*fromTo[0] + fromTo[1]*fromTo[1]);
-        for (int dim=0; dim < 2; dim++) {
-            fromTo[dim] /= norm;
-        }
-    }
-
-    return fromTo;
+        vertices.at(toVertexIndex).getPosition(),
+        unit);
 }
 
 long int Mesh::getHalfEdgeIndex(

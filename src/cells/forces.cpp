@@ -29,7 +29,7 @@ template<> void VertexModel::addVertexForce<
     // set force
     vertexForces.add<EdgePullForce>(
         name,                       // (unique) user-defined name for forcess
-        Fpull,                     // user-defined parameters
+        Fpull,                      // user-defined parameters
         this, &forces, &vertices);  // VertexModel attributes
 }
 
@@ -166,7 +166,32 @@ template<> void VertexModel::addHalfEdgeForce<
  *
  */
 
-template<> void VertexModel::addVertexForce<
+template<> void VertexModel::addVertexForce<    // initial time as argument (for copies)
+    // derived force class
+    KeratinModel,
+    // argument types
+    double const&,
+    double const&, double const&,
+    double const&, double const&,
+    double const&, double const&, double const&,
+    double const&, double const&,
+    double const&, double const&, double const&>(
+    // user-defined arguments
+    std::string const& name,
+    double const& time0,
+    double const& K, double const& A0,
+    double const& Gamma, double const& P0,
+    double const& l0, double const& alpha, double const& kth,
+    double const& tau, double const& sigma,
+    double const& ron, double const& k0, double const& p0) {
+    // set force
+    vertexForces.add<KeratinModel>(
+        name,                                                           // (unique) user-defined name for forces
+        K, A0, Gamma, P0, l0, alpha, kth, tau, sigma, ron, k0, p0,      // user-defined parameters
+        this, &random, &time, time0, &forces, &vertices);               // VertexModel attributes and initial time
+}
+
+template<> void VertexModel::addVertexForce<    // no initial time as argument (for initialisation)
     // derived force class
     KeratinModel,
     // argument types
@@ -181,11 +206,17 @@ template<> void VertexModel::addVertexForce<
     double const& Gamma, double const& P0,
     double const& l0, double const& alpha, double const& kth,
     double const& tau, double const& sigma,
-    double const& tauon, double const& k0, double const& p0) {
+    double const& ron, double const& k0, double const& p0) {
     // set force
-    vertexForces.add<KeratinModel>(
-        name,                                                           // (unique) user-defined name for forces
-        K, A0, Gamma, P0, l0, alpha, kth, tau, sigma, tauon, k0, p0,    // user-defined parameters
-        this, &time, &random, &forces, &vertices);                      // VertexModel attributes
+    VertexModel::addVertexForce<KeratinModel,
+        double const&,
+        double const&, double const&,
+        double const&, double const&,
+        double const&, double const&, double const&,
+        double const&, double const&,
+        double const&, double const&, double const&>(
+        name,                                                           // (unique) user-defined name for force
+        time,                                                           // current simulation time
+        K, A0, Gamma, P0, l0, alpha, kth, tau, sigma, ron, k0, p0);     // user-defined parameters
 }
 
