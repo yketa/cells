@@ -17,8 +17,9 @@ Provide templates for pickling operations on C++ objects via pybind11.
 #include "system.hpp"
 
 /*
-General functions to save to and load from pickle.
-*/
+ *  General functions to save to and load from pickle.
+ *
+ */
 
 void checkSize(pybind11::tuple const& t, pybind11::size_t const& correctSize) {
 /*
@@ -42,15 +43,48 @@ Python __setstate__ (converts tuple back to object).
     { checkSize(t, 1); return t[0].cast<T>(); }
 
 /*
-Specific functions to save and loaf force computation object from pickle.
-*/
+ *  Specific functions to save and load maps from pickle.
+ *
+ */
+
+template<class T, class TT>
+pybind11::tuple pybind11_getstate_map(std::map<T, TT> const& obj) {
+    // convert data
+    std::map<pybind11::tuple, pybind11::tuple> data;
+    for (auto it=obj.begin(); it != obj.end(); ++it) {
+        data.emplace(
+            pybind11_getstate<T>(it->first),
+            pybind11_getstate<TT>(it->second));
+    }
+    // return data
+    return pybind11::make_tuple(data);
+}
+
+template<class T, class TT>
+std::map<T, TT> pybind11_setstate_map(pybind11::tuple const& t) {
+    // check
+    checkSize(t, 1);
+    // convert data
+    std::map<pybind11::tuple, pybind11::tuple> const data =
+        t[0].cast<std::map<pybind11::tuple, pybind11::tuple>>();
+    std::map<T, TT> obj;
+    for (auto it=data.begin(); it != data.end(); ++it) {
+        obj.emplace(
+            pybind11_setstate<T>(it->first),
+            pybind11_setstate<TT>(it->second));
+    }
+    // return object
+    return obj;
+}
+
+/*
+ *  Specific functions to save and load force computation object from pickle.
+ *
+ */
 
 template<class Force>
 std::map<std::string, pybind11::tuple> pybind11_getstate_force_class_factory(
     ClassFactory<Force> const& classFactory) {
-/*
-Save data from forces.
-*/
     std::map<std::string, pybind11::tuple> stateMap;
     for (auto it=classFactory.cbegin(); it != classFactory.cend(); ++it)
         { stateMap.emplace(it->first, (it->second)->pybind11_getstate()); }
@@ -68,9 +102,6 @@ pybind11_getstate_force_class_factory<VertexForce<ForcesType>>
 template<class Force>
 void pybind11_setstate_force_class_factory(
     VertexModel& vm, std::map<std::string, pybind11::tuple> const& stateMap);
-/*
-Load data from forces.
-*/
 
 #endif
 

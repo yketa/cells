@@ -20,38 +20,6 @@ pybind11.
 #include "system.hpp"
 #include "tools.hpp"
 
-// std::map<T, TT>
-
-template<class T, class TT>
-pybind11::tuple pybind11_getstate_map(std::map<T, TT> const& obj) {
-    // convert data
-    std::map<pybind11::tuple, pybind11::tuple> data;
-    for (auto it=obj.begin(); it != obj.end(); ++it) {
-        data.emplace(
-            pybind11_getstate<T>(it->first),
-            pybind11_getstate<TT>(it->second));
-    }
-    // return data
-    return pybind11::make_tuple(data);
-}
-
-template<class T, class TT>
-std::map<T, TT> pybind11_setstate_map(pybind11::tuple const& t) {
-    // check
-    checkSize(t, 1);
-    // convert data
-    std::map<pybind11::tuple, pybind11::tuple> const data =
-        t[0].cast<std::map<pybind11::tuple, pybind11::tuple>>();
-    std::map<T, TT> obj;
-    for (auto it=data.begin(); it != data.end(); ++it) {
-        obj.emplace(
-            pybind11_setstate<T>(it->first),
-            pybind11_setstate<TT>(it->second));
-    }
-    // return object
-    return obj;
-}
-
 /*
  *  [random.hpp]
  *

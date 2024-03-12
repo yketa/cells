@@ -7,6 +7,7 @@ Objects for simulation.
 
 #include "class_factory.hpp"
 #include "forces.hpp"
+#include "integrators.hpp"
 #include "mesh.hpp"
 #include "random.hpp"
 #include "tools.hpp"
@@ -24,9 +25,12 @@ class VertexModel : public Mesh {
         std::vector<double> systemSize; // std::vector<double> Mesh::getSystemSize
         */
 
+        ForcesType forces;                                      // force applied on each vertex
         ClassFactory<HalfEdgeForce<ForcesType>> halfEdgeForces; // forces deriving from half-edge properties
         ClassFactory<VertexForce<ForcesType>> vertexForces;     // forces deriving from vertex properties
-        ForcesType forces;                                      // force applied on each vertex
+
+        VelocitiesType velocities;                                              // velocities
+        std::shared_ptr<BaseIntegrator<ForcesType, VelocitiesType>> integrator; // integrator
 
         long int const seed;    // random number generator seed
         Random random;      	// random number generator
@@ -42,22 +46,39 @@ class VertexModel : public Mesh {
         /*
         Clear all data.
         */
+
             Mesh::clear();
+
+            forces.clear();
+            halfEdgeForces.clear();
+            vertexForces.clear();
+
+            velocities.clear();
+            integrator = std::make_shared<UnitOverdamped>(
+                &forces, &velocities);
+
             time = 0;
             nT1 = 0;
         }
 
         // GETTERS AND SETTERS
 
+        ForcesType const& getForces()
+            const
+            { return forces; }
         ClassFactory<HalfEdgeForce<ForcesType>> const& getHalfEdgeForces()
             const
             { return halfEdgeForces; }
         ClassFactory<VertexForce<ForcesType>> const& getVertexForces()
             const
             { return vertexForces; }
-        ForcesType const& getForces()
+
+        VelocitiesType const& getVelocities()
             const
-            { return forces; }
+            { return velocities; }
+        std::shared_ptr<BaseIntegrator<ForcesType, VelocitiesType>> const&
+            getIntegrator() const
+            { return integrator; }
 
         long int const& getSeed() const { return seed; }
         Random const& getRandom() const { return random; }
@@ -68,33 +89,21 @@ class VertexModel : public Mesh {
 
         // CONSTRUCTORS
 
-        VertexModel(long int const& seed_=0) : seed(seed_), random(seed) {}
-        /*
-        Parameters
-        ----------
-        seed_ :
-            Random number generator seed.
-        */
+        VertexModel(long int const& seed_=0) :
+            // default integrator
+            integrator(std::make_shared<UnitOverdamped>(&forces, &velocities)),
+            // integration quantities
+            seed(seed_), random(seed) {}
 
         VertexModel(                            // used to initiate state
             Mesh const& mesh_,
             long int const& seed_, double const time_, long int const nT1_) :
             // geometrical objects (Mesh)
             Mesh(mesh_),
+            // default integrator
+            integrator(std::make_shared<UnitOverdamped>(&forces, &velocities)),
             // integration quantities
             seed(seed_), random(seed), time(time_), nT1(nT1_) {}
-
-        VertexModel(VertexModel const& vM) :    // copy constructor
-            // geometrical objects (Mesh)
-            Mesh(vM),
-            // force objects
-            halfEdgeForces(vM.getHalfEdgeForces()),
-            vertexForces(vM.getVertexForces()),
-            // integration quantities
-            seed(vM.getSeed()),
-            random(vM.getRandom()),
-            time(vM.getTime()),
-            nT1(vM.getnT1()) {}
 
         // FORCE "SETTERS"
 
@@ -109,6 +118,11 @@ class VertexModel : public Mesh {
         void removeVertexForce(
             std::string const& name)
             { vertexForces.remove(name); }
+
+        // INTEGRATOR "SETTERS"
+
+        template<class IntegratorType, typename... Args> void setIntegrator(
+            Args ...args);
 
         // METHODS
 

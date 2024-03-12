@@ -39,17 +39,25 @@ clean:
 %.o: %.cpp
 	$(CXX) -o $@ -c $< $(CFLAGS)
 
-bind.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp forces_pickle.hpp base_pickle.hpp class_factory.hpp system.hpp plot.hpp system_pickle.hpp
+bind.o: bind.cpp forces.hpp base_forces.hpp base.hpp mesh.hpp random.hpp \
+ tools.hpp forces_pickle.hpp base_pickle.hpp class_factory.hpp system.hpp \
+ integrators.hpp base_integrators.hpp plot.hpp system_pickle.hpp
 
-forces.o: forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp system.hpp class_factory.hpp
+forces.o: forces.cpp forces.hpp base_forces.hpp base.hpp mesh.hpp \
+ random.hpp tools.hpp system.hpp class_factory.hpp integrators.hpp \
+ base_integrators.hpp
 
-initialisation.o: system.hpp class_factory.hpp forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp
+initialisation.o: initialisation.cpp system.hpp class_factory.hpp \
+ forces.hpp base_forces.hpp base.hpp mesh.hpp random.hpp tools.hpp \
+ integrators.hpp base_integrators.hpp
 
-mesh.o: mesh.hpp tools.hpp
+mesh.o: mesh.cpp mesh.hpp tools.hpp
 
-system.o: system.hpp class_factory.hpp forces.hpp base_forces.hpp mesh.hpp random.hpp tools.hpp
+system.o: system.cpp system.hpp class_factory.hpp forces.hpp \
+ base_forces.hpp base.hpp mesh.hpp random.hpp tools.hpp integrators.hpp \
+ base_integrators.hpp
 
-tools.o: tools.hpp
+tools.o: tools.cpp tools.hpp
 
 bind.o forces.o initialisation.o system.o: CFLAGS+=$(PYTHONFLAGS)
 

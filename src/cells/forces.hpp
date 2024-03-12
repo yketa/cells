@@ -14,8 +14,6 @@ Forces definitions.
 #include "random.hpp"
 #include "tools.hpp"
 
-typedef std::map<long int, std::vector<double>> ForcesType;
-
 class PerimeterForce : public VertexForce<ForcesType> {
 /*
 Cell perimeter restoring force.

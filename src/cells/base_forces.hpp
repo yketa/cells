@@ -12,9 +12,8 @@ Base types for forces.
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "base.hpp"
 #include "mesh.hpp"
-
-typedef std::map<std::string, double> ParametersType;
 
 // GENERAL BASE
 
@@ -34,9 +33,9 @@ All forces.
 
         // GETTERS
 
-        std::string const getType() const
+        std::string const& getType() const
             { return type; }
-        ParametersType const getParameters() const
+        ParametersType const& getParameters() const
             { return parameters; }
         T* getForces()
             { return forces; }
