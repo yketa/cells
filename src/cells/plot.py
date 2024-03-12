@@ -17,6 +17,7 @@ from matplotlib.collections import PatchCollection, LineCollection
 def _update_canvas(fig):
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)
+    assert(plt.fignum_exists(fig.number))
 
 def plot(vm, fig=None, ax=None, update=True,
     rainbow=None, clear=False, only_set=False):
@@ -55,7 +56,7 @@ def plot(vm, fig=None, ax=None, update=True,
     """
 
     rainbow_plot = (type(rainbow) == VertexModel)   # is it a rainbow plot?
-    clear = True if only_set else clear
+    if only_set: clear = True
     if rainbow_plot and clear:
         raise ValueError("`rainbow' and `clear' options are exclusionary.")
 
@@ -93,6 +94,7 @@ def plot(vm, fig=None, ax=None, update=True,
 
     if fig is None or ax is None:
 
+        plt.ioff()
         fig, ax = plt.subplots()
         fig.set_size_inches(10, 10)                                         # set figure size
         try: fig.canvas.window().setFixedSize(fig.canvas.window().size())   # set window size
@@ -144,7 +146,7 @@ def plot(vm, fig=None, ax=None, update=True,
     ax.set_xlim([0, vm.systemSize[0]])
     ax.set_ylim([0, vm.systemSize[1]])
     ax.set_aspect("equal")
-    if only_set : return fig, ax
+    if only_set: return fig, ax
 
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=2.5)  # all junctions
