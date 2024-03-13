@@ -435,7 +435,7 @@ VertexModel::addVertexForce<KeratinModel,
         parameters.at("ron"), parameters.at("k0"), parameters.at("p0"));
     // set internal degrees of freedom state
     std::map<long int, double> const keratin =
-        t[2].cast<std::map<long int, double>>();
+        t[3].cast<std::map<long int, double>>();
     std::shared_ptr<KeratinModel> k =
         std::static_pointer_cast<KeratinModel>(
             vertexForces[name]);
