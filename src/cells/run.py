@@ -3,9 +3,8 @@ Routine to run and plot in real time a simulation of the vertex model. This
 does not save data.
 """
 
-from cells.init import init_vm
+from cells.init import init_vm, out_fname, movie_sh_fname
 from cells.plot import plot, plot_forces
-from cells import __path__
 
 import matplotlib.pyplot as plt
 
@@ -18,13 +17,15 @@ from tempfile import mkdtemp
 import atexit
 import traceback
 
+import pickle
+
 if __name__ == "__main__":
 
     def exit_handler(*_args, **_kwargs):
         # make movie on exit
         if "args" in globals() and args.movie:
             try:
-                subprocess.call([os.path.join(__path__[0], "movie.sh"),
+                subprocess.call([movie_sh_fname,
                     "-d", tmpdir, "-p", sys.executable, # "-f", args.ffmpeg,
                     "-y"])
             except:
@@ -54,6 +55,10 @@ if __name__ == "__main__":
             try: count += 1
             except NameError: count = 0
             fig.savefig(os.path.join(tmpdir, "%05d.png" % count))
+        # save system state
+        if args.save:
+            with open(out_fname, "wb") as dump:
+                pickle.dump(vm, dump)
         # integrate
         try:
             vm.nintegrate(args.iterations,

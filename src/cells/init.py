@@ -16,8 +16,10 @@ import numpy as np
 import os
 import sys
 
-A0 = (3./2.)/np.tan(np.pi/6.)           # area of a regular hexagon with edge length 1
-script = os.path.basename(sys.argv[0])  # name of invoking script
+A0 = (3./2.)/np.tan(np.pi/6.)                           # area of a regular hexagon with edge length 1
+script = os.path.basename(sys.argv[0])                  # name of invoking script
+out_fname = "out.p"                                     # default saving file name
+movie_sh_fname = os.path.join(__path__[-1], "movie.sh") # movie making shell script file name
 
 def init_vm(parser=None):
     """
@@ -214,10 +216,12 @@ def parse_args(parser=None):
     if not(script == "vm.py"):
         parser.add_argument("-movie", "-m",
             action=BooleanOptionalAction,
-            help="make movie from displayed frames (see %s)"
-                % os.path.join(__path__[0], "movie.sh"))
+            help="make movie from displayed frames (see %s)" % movie_sh_fname)
 #         parser.add_argument("-ffmpeg", type=str, default="",
 #             help="FFmpeg executable")
+        parser.add_argument("-save", "-s",
+            action=BooleanOptionalAction,
+            help="pickle last system state to %s" % out_fname)
     if script == "vm.py":
         parser.add_argument("-init", type=int, default=0,
             help="number of initial iterations")
