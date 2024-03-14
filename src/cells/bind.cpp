@@ -886,6 +886,21 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("ron"),
             pybind11::arg("k0"),
             pybind11::arg("p0"))
+        // set integrator [BaseIntegrator (integrators.hpp, integrators.hpp, integrators.cpp)]
+        .def("setUnitOverdampedIntegrator",
+            &VertexModel::setIntegrator<UnitOverdamped>,
+            "Unit vertex-substrate drag coefficient overdamped integrator.")
+        .def("setPairFrictionIntegrator",
+            &VertexModel::setIntegrator<PairFriction, double const&>,
+            "Cell corner pair friction and unit vertex-substrate drag\n"
+            "coefficient overdamped integrator.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "eta : float\n"
+            "    Ratio of vertex-vertex over vertex-substrate friction\n"
+            "    friction coefficient.",
+            pybind11::arg("eta"))
         // initialisation methods [VertexModel (initialisation.cpp)]
         .def("initRegularTriangularLattice",
             &VertexModel::initRegularTriangularLattice,

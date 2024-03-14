@@ -100,6 +100,11 @@ def init_vm(parser=None):
         vm.addModel4("model4",
             args.Gamma, args.taur, args.sigma, args.taup)
 
+    # INTEGRATORS
+
+    if args.eta != 0:
+        vm.setPairFrictionIntegrator(args.eta)
+
     # initialise velocities and forces
     # this should in principle be called each time a force is added or deleted
     if args.input is None: vm.nintegrate(1, 0)
@@ -195,6 +200,10 @@ def parse_args(parser=None):
     parser.add_argument("-model4",
         action=BooleanOptionalAction,
         help="add model 4")
+
+    # INTEGRATORS
+    parser.add_argument("-eta", type=float, default=0,
+        help="ratio of vertex-vertex friction over vertex-substrate friction")
 
     # ALGORITHM
     parser.add_argument("-seed", type=int, default=0,

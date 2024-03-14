@@ -90,6 +90,11 @@ def plot(vm, fig=None, ax=None, update=True,
             if model in vm.halfEdgeForces:
                 taur = vm.halfEdgeForces[model].parameters["taur"]
 
+    # integrators parameters
+
+    if "eta" in vm.integrator.parameters:
+        eta = vm.integrator.parameters["eta"]
+
     # initialise figure
 
     if fig is None or ax is None:
@@ -202,6 +207,8 @@ def plot(vm, fig=None, ax=None, update=True,
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
+    if "eta" in locals():
+        title += r"$, \eta=%.1e$" % eta
     if "p0" in locals():
         title += r"$, p_0=%.2f$" % p0
     if "P0" in locals():

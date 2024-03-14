@@ -28,35 +28,35 @@ void VertexModel::integrate(double const& dt,
 
     // move cell centres
 
-    if (true) {
-        std::vector<double> cellUPosition(0), initialCellPosition(0);
-        std::vector<long int> neighbourVerticesIndices(0);
-        long int numberNeighbours;
-        std::vector<double> disp(0);
-	    std::vector<long int> const cellCentreVertexIndices =
-            getVertexIndicesByType("centre");
-        for (long int vertexIndex : cellCentreVertexIndices) {  // only consider cell centres
+    #if true
+    std::vector<double> cellUPosition(0), initialCellPosition(0);
+    std::vector<long int> neighbourVerticesIndices(0);
+    long int numberNeighbours;
+    std::vector<double> disp(0);
+    std::vector<long int> const cellCentreVertexIndices =
+        getVertexIndicesByType("centre");
+    for (long int vertexIndex : cellCentreVertexIndices) {  // only consider cell centres
 
-            cellUPosition = vertices.at(vertexIndex).getUPosition();
-            initialCellPosition = vertices.at(vertexIndex).getPosition();
+        cellUPosition = vertices.at(vertexIndex).getUPosition();
+        initialCellPosition = vertices.at(vertexIndex).getPosition();
 
-            neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
-            numberNeighbours = neighbourVerticesIndices.size();
-            for (long int neighbourVertexIndex : neighbourVerticesIndices) {
-                disp = wrapDiff(
-                    initialCellPosition,
-                    vertices.at(neighbourVertexIndex).getPosition());
+        neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
+        numberNeighbours = neighbourVerticesIndices.size();
+        for (long int neighbourVertexIndex : neighbourVerticesIndices) {
+            disp = wrapDiff(
+                initialCellPosition,
+                vertices.at(neighbourVertexIndex).getPosition());
 
-                for (int dim=0; dim < 2; dim++) {
-                    cellUPosition[dim] += disp[dim]/numberNeighbours;
-                }
+            for (int dim=0; dim < 2; dim++) {
+                cellUPosition[dim] += disp[dim]/numberNeighbours;
             }
-            vertices[vertexIndex].setUPosition( // unwrapped position
-                cellUPosition);
-            vertices[vertexIndex].setPosition(  // (wrapped) position
-                wrap(vertices.at(vertexIndex).getUPosition()));
         }
+        vertices[vertexIndex].setUPosition( // unwrapped position
+            cellUPosition);
+        vertices[vertexIndex].setPosition(  // (wrapped) position
+            wrap(vertices.at(vertexIndex).getUPosition()));
     }
+    #endif
 
     // perform T1s and update internal degrees of freedom
 
@@ -83,7 +83,7 @@ void VertexModel::integrateVelocities(double const& dt) {
     // clear forces and velocities
     forces.clear();
     for (auto it=vertices.begin(); it != vertices.end(); ++it)
-        { forces[it->first] = {0, 0}; }
+        { if (!(it->second).getBoundary()) { forces[it->first] = {0, 0}; } }
 
     // compute forces
     for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)
@@ -92,18 +92,18 @@ void VertexModel::integrateVelocities(double const& dt) {
         { (it->second)->addAllForces(); }
 
     // remove centre of mass force
-    if (true) {
-        long int const numberVertices = forces.size();
-        double avForce[2] = {0, 0};
-        for (int dim=0; dim < 2; dim++) {
-            for (auto it=forces.begin(); it != forces.end(); ++it) {
-                avForce[dim] += forces[it->first][dim]/numberVertices;
-            }
-            for (auto it=forces.begin(); it != forces.end(); ++it) {
-                forces[it->first][dim] -= avForce[dim];
-            }
+    #if true
+    long int const numberVertices = forces.size();
+    double avForce[2] = {0, 0};
+    for (int dim=0; dim < 2; dim++) {
+        for (auto it=forces.begin(); it != forces.end(); ++it) {
+            avForce[dim] += forces[it->first][dim]/numberVertices;
+        }
+        for (auto it=forces.begin(); it != forces.end(); ++it) {
+            forces[it->first][dim] -= avForce[dim];
         }
     }
+    #endif
 
     // get velocities
     integrator->integrate(dt);

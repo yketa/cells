@@ -18,3 +18,16 @@ template<> void VertexModel::setIntegrator<
         &forces, &velocities);  // VertexModel attributes
 }
 
+template<> void VertexModel::setIntegrator<
+    // derived integrator class
+    PairFriction,
+    // argument types
+    double const&>(
+    // user-defined arguments
+    double const& eta) {
+    // set integrator
+    integrator = std::make_shared<PairFriction>(
+        eta,                            // user-defined parameters
+        this, &forces, &velocities);    // VertexModel attributes
+}
+
