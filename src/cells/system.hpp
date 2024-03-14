@@ -97,9 +97,12 @@ class VertexModel : public Mesh {
 
         VertexModel(                            // used to initiate state
             Mesh const& mesh_,
+            VelocitiesType const& velocities_,
             long int const& seed_, double const time_, long int const nT1_) :
             // geometrical objects (Mesh)
             Mesh(mesh_),
+            // velocities
+            velocities(velocities_),
             // default integrator
             integrator(std::make_shared<UnitOverdamped>(&forces, &velocities)),
             // integration quantities

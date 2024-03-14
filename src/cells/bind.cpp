@@ -14,6 +14,8 @@ https://pybind11.readthedocs.io/en/stable/index.html
 
 #include "forces.hpp"
 #include "forces_pickle.hpp"
+#include "integrators.hpp"
+#include "integrators_pickle.hpp"
 #include "mesh.hpp"
 #include "plot.hpp"
 #include "system_pickle.hpp"

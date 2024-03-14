@@ -81,9 +81,9 @@ void VertexModel::integrate(double const& dt,
 void VertexModel::integrateVelocities(double const& dt) {
 
     // clear forces and velocities
-    forces.clear(); velocities.clear();
+    forces.clear();
     for (auto it=vertices.begin(); it != vertices.end(); ++it)
-        { forces[it->first] = {0, 0}; velocities[it->first] = {0, 0}; }
+        { forces[it->first] = {0, 0}; }
 
     // compute forces
     for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)

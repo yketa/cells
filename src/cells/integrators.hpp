@@ -21,6 +21,8 @@ Unit vertex-substrate drag coefficient overdamped integrator.
 
         void integrate(double const& dt) override { *velocities = *forces; }
 
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 #endif
