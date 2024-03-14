@@ -102,7 +102,7 @@ def init_vm(parser=None):
 
     # initialise velocities and forces
     # this should in principle be called each time a force is added or deleted
-    vm.nintegrate(1, 0)
+    if args.input is None: vm.nintegrate(1, 0)
 
     return args, vm
 
