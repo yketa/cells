@@ -17,7 +17,7 @@ from matplotlib.collections import PatchCollection, LineCollection
 def _update_canvas(fig):
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)
-    assert(plt.fignum_exists(fig.number))
+    plt.fignum_exists(fig.number) or exit(0)
 
 def plot(vm, fig=None, ax=None, update=True,
     rainbow=None, clear=False, only_set=False):
@@ -221,10 +221,10 @@ def plot(vm, fig=None, ax=None, update=True,
 
     return fig, ax
 
-def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, centres=False,
+def plot_velocities(vm, fig=None, ax=None, av_norm=0.2, hide_centres=True,
     **kwargs):
     """
-    Plot vertex model with forces on vertices.
+    Plot vertex model with velocities on vertices.
 
     Parameters
     ----------
@@ -236,13 +236,10 @@ def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, centres=False,
     ax : matplotlib.axes._subplots.AxesSubplot or None
         Axes subplot on which to plot. (default: None)
         NOTE: if ax == None then a new figure and axes subplot is created.
-    zero : float
-        Discard arrows with infinite norm below threshold. (default: 1e-10)
     av_norm : float
         Average norm of arrows. (default: 0.2)
-    centres : bool
-        Only display average forces of cell cornes on centre vertices.
-        (default: False)
+    hide_centres : bool
+        Do not display velocities of cell centres. (default: True)
 
     Additional keywords arguments are passed to cells.plot.plot.
 
@@ -257,29 +254,35 @@ def plot_forces(vm, fig=None, ax=None, zero=1e-10, av_norm=0.2, centres=False,
     fig, ax = plot(vm, fig=fig, ax=ax, update=False, **kwargs)
 
     positions = vm.getPositions(wrapped=True)
+    velocities = vm.velocities
 
-    if centres: forces = vm.getCentreForces()
-    else: forces = vm.getForces()
-    forces = (
-        lambda f: {i: f[i]
-            for i in f if np.abs(f[i]).max() > zero and i in positions})(
-        forces)
-    av_norm = (1./av_norm)*np.sqrt(
-        (np.array(list(forces.values()), dtype=float)**2).sum(axis=-1).mean())
+    if len(velocities) > 0:
+        indices = list(
+            set(list(velocities)).intersection(set(list(positions))))   # vertices which have both a velocity and a position
+        if hide_centres:                                                # remove cell centres
+            centres = vm.getVertexIndicesByType("centre")
+            indices = list(set(indices) - set(centres))
 
-    if av_norm != 0:
-        scalarMap = ScalarMappable(
-            norm=Normalize(vmin=0, vmax=2*np.pi), cmap=plt.cm.hsv)
-        arrows = PatchCollection(
-            list(map(
-                lambda i:
-                    plt.arrow(*positions[i], *np.array(forces[i])/av_norm,
-                        width=5e-2, head_width=4e-1,
-                        length_includes_head=False,
-                        color=scalarMap.to_rgba(angle2(*forces[i])%(2*np.pi)),
-                        zorder=10),
-                forces)))
-        ax.add_collection(arrows)
+        av_norm = (1./av_norm)*np.sqrt(
+            (np.array(list(map(lambda i: velocities[i], indices)))**2)
+                .sum(axis=-1)
+                    .mean())
+
+        if av_norm != 0:
+            scalarMap = ScalarMappable(
+                norm=Normalize(vmin=0, vmax=2*np.pi), cmap=plt.cm.hsv)
+            arrows = PatchCollection(
+                list(map(
+                    lambda i:
+                        plt.arrow(*positions[i],
+                            *np.array(velocities[i])/av_norm,
+                            width=5e-2, head_width=4e-1,
+                            length_includes_head=False,
+                            color=scalarMap.to_rgba(
+                                angle2(*velocities[i])%(2*np.pi)),
+                            zorder=10),
+                    indices)))
+            ax.add_collection(arrows)
 
     _update_canvas(fig)
 

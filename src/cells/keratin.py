@@ -119,7 +119,7 @@ if __name__ == "__main__":
         # make movie on exit
         if "args" in globals() and args.movie:
             subprocess.call([os.path.join(__path__[0], "movie.sh"),
-                "-d", tmpdir.name, "-p", sys.executable, # "-f", args.ffmpeg,
+                "-d", tmpdir.name, "-p", sys.executable, # "-F", args.ffmpeg,
                 "-y"])
             tmpdir.cleanup()
         # exit

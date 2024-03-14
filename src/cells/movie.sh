@@ -31,7 +31,7 @@ OPTIONS
     -c  Clear the plot of all cell colouring.
         NOTE: Does nothing if -d option is used.
               Options -r and -c are exclusionary.
-    -f  Display forces on vertices.
+    -v  Display velocities on vertices.
 
     -d  Make movie from frames in directory.
         DEFAULT: (not specified)
@@ -48,7 +48,7 @@ OPTIONS
 
 # OPTIONS
 
-while getopts "hrcfd:p:F:y" OPTION; do
+while getopts "hrcvd:p:F:y" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
@@ -56,8 +56,8 @@ while getopts "hrcfd:p:F:y" OPTION; do
             __RAINBOW=true;;
         c)  # clear plot
             __CLEAR=true;;
-        f)  # force plot
-            __FORCES=true;;
+        v)  # velocity plot
+            __VELOCITIES=true;;
         d)  # frames directory
             __DIR="$OPTARG";;
         p)  # python executable
@@ -91,7 +91,7 @@ Save frames from simulation file.
 """
 
 from cells.read import Read, _progressbar
-${__FORCES:+from cells.plot import plot_forces}
+${__VELOCITIES:+from cells.plot import plot_velocities}
 
 import os
 
@@ -105,7 +105,8 @@ for frame in frames:
 
     # plot
     r.plot(frame
-        ${__RAINBOW:+, rainbow=r.t0[0]} ${__FORCES:+, override=plot_forces})
+        ${__RAINBOW:+, rainbow=r.t0[0]}
+        ${__VELOCITIES:+, override=plot_velocities})
     # save
     r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame)))
 

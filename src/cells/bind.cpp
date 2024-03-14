@@ -266,6 +266,29 @@ PYBIND11_MODULE(bind, m) {
             &KeratinModel::getTension);
 
     /*
+     *  [base_integrators.hpp]
+     *
+     */
+
+    pybind11::class_<BaseIntegrator<ForcesType, VelocitiesType>,
+        std::shared_ptr<BaseIntegrator<ForcesType, VelocitiesType>>>(
+        m, "BaseIntegrator",
+        "Python wrapper around C++ integrator object.")
+        // attributes
+        .def_property_readonly("parameters",
+            &BaseIntegrator<ForcesType, VelocitiesType>::getParameters)
+        // methods
+        .def("integrate",
+            &BaseIntegrator<ForcesType, VelocitiesType>::integrate,
+            "Integrate velocities.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "dt : float\n"
+            "    Integration time step.",
+            pybind11::arg("dt"));
+
+    /*
      *  [system.hpp]
      *
      *  Also defines some wrappers for functions inherited from Mesh in
@@ -308,12 +331,18 @@ PYBIND11_MODULE(bind, m) {
                 return pybind11::array_t<double>(2, &(centre[0]));
             })
         // attributes [VertexModel (system.hpp)]
+        .def_property_readonly("forces",
+            &VertexModel::getForces)
         .def_property_readonly("halfEdgeForces",
             [](VertexModel const& self)
                 { return (self.getHalfEdgeForces()).map(); })
         .def_property_readonly("vertexForces",
             [](VertexModel const& self)
                 { return (self.getVertexForces()).map(); })
+        .def_property_readonly("velocities",
+            &VertexModel::getVelocities)
+        .def_property_readonly("integrator",
+            &VertexModel::getIntegrator)
         .def_property_readonly("seed",
             &VertexModel::getSeed)
         .def_property_readonly("time",
@@ -566,19 +595,8 @@ PYBIND11_MODULE(bind, m) {
             "    Dictionary which associates vertex indices to position of\n"
             "    vertex.",
             pybind11::arg("wrapped")=true)
-        .def("getForces",
-            [](VertexModel& self)
-                { self.computeForces(); return self.getForces(); },
-            "Compute forces on vertices.\n"
-            "\n"
-            "Returns\n"
-            "-------\n"
-            "forces : {int: list} dict\n"
-            "    Dictionary which associates vertex indices to force applied\n"
-            "    on the vertex.")
         .def("getCentreForces",
             [](VertexModel& self) {
-                self.computeForces();
                 std::map<long int, std::vector<double>> const forces =
                     self.getForces();
                 std::map<long int, Vertex> const vertices =

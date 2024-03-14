@@ -4,7 +4,7 @@ does not save data.
 """
 
 from cells.init import init_vm
-from cells.plot import plot, plot_forces
+from cells.plot import plot, plot_velocities
 from cells import __path__
 
 import matplotlib.pyplot as plt
@@ -25,7 +25,7 @@ if __name__ == "__main__":
         if "args" in globals() and args.movie:
             try:
                 subprocess.call([os.path.join(__path__[0], "movie.sh"),
-                    "-d", tmpdir, "-p", sys.executable, # "-f", args.ffmpeg,
+                    "-d", tmpdir, "-p", sys.executable, # "-F", args.ffmpeg,
                     "-y"])
             except:
                 print(traceback.format_exc(), file=sys.stderr)  # print traceback
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # INITIALISATION
 
     args, vm = init_vm()
-    if args.forces: plot = plot_forces
+    if args.velocities: plot = plot_velocities
     fig, ax = plot(vm)
 
     if args.movie: tmpdir = mkdtemp()

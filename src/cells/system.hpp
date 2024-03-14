@@ -131,6 +131,9 @@ class VertexModel : public Mesh {
         /*
         Compute forces, integrate one time step, and perform T1s.
 
+        WARNING: This explicitly move cell centres to match the centre of mass
+                 of cell corners.
+
         Parameters
         ----------
         dt :
@@ -141,9 +144,12 @@ class VertexModel : public Mesh {
             Create two vertices at distance `delta' + `epsilon' after T1.
         */
 
-        void computeForces();
+        void integrateVelocities(double const& dt);
         /*
-        Compute forces on vertices from forces objects.
+        Compute forces on vertices from forces objects and integrate velocities
+        from integrator.
+
+        WARNING: This explicitly remove centre of mass force.
         */
 
         void doT1(double const& delta=0.1, double const& epsilon=0.1);

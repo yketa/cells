@@ -8,54 +8,34 @@
 void VertexModel::integrate(double const& dt,
     double const& delta, double const& epsilon) {
 
-    // get forces
-
-    computeForces();
-
-    // remove centre of mass force
-
-    if (true) {
-        long int const numberVertices = forces.size();
-        double avForce[2] = {0, 0};
-        for (int dim=0; dim < 2; dim++) {
-            for (auto it=forces.begin(); it != forces.end(); ++it) {
-                avForce[dim] += forces[it->first][dim]/numberVertices;
-            }
-            for (auto it=forces.begin(); it != forces.end(); ++it) {
-                forces[it->first][dim] -= avForce[dim];
-            }
-        }
-    }
-
-    // get velocities
-
-    integrator->integrate(dt);
-
     // integrate positions
 
     long int vertexIndex;
     std::vector<double> uposition;
-    for (auto it=velocities.begin(); it != velocities.end(); ++it) {
-        vertexIndex = it->first;
-        uposition = vertices.at(vertexIndex).getUPosition();
-        for (int dim=0; dim < 2; dim++) {
-            uposition[dim] += velocities[vertexIndex][dim]*dt;  // Euler integration of position
+    if (dt > 0) {
+        for (auto it=velocities.begin(); it != velocities.end(); ++it) {
+            vertexIndex = it->first;
+            uposition = vertices.at(vertexIndex).getUPosition();
+            for (int dim=0; dim < 2; dim++) {
+                uposition[dim] += velocities[vertexIndex][dim]*dt;  // Euler integration of position
+            }
+            vertices[vertexIndex].setUPosition(                     // unwrapped position
+                uposition);
+            vertices[vertexIndex].setPosition(                      // (wrapped) position
+                wrap(vertices[vertexIndex].getUPosition()));
         }
-        vertices[vertexIndex].setUPosition(                     // unwrapped position
-            uposition);
-        vertices[vertexIndex].setPosition(                      // (wrapped) position
-            wrap(vertices[vertexIndex].getUPosition()));
     }
 
     // move cell centres
 
     if (true) {
         std::vector<double> cellUPosition(0), initialCellPosition(0);
-        std::vector<long int> neighbourVerticesIndices(0); int numberNeighbours;
+        std::vector<long int> neighbourVerticesIndices(0);
+        long int numberNeighbours;
         std::vector<double> disp(0);
-        for (auto it=vertices.begin(); it != vertices.end(); ++it) {
-            if ((it->second).getType() != "centre") { continue; }   // only consider cell centres
-            vertexIndex = (it->second).getIndex();
+	    std::vector<long int> const cellCentreVertexIndices =
+            getVertexIndicesByType("centre");
+        for (long int vertexIndex : cellCentreVertexIndices) {  // only consider cell centres
 
             cellUPosition = vertices.at(vertexIndex).getUPosition();
             initialCellPosition = vertices.at(vertexIndex).getPosition();
@@ -80,7 +60,7 @@ void VertexModel::integrate(double const& dt,
 
     // perform T1s and update internal degrees of freedom
 
-    doT1(delta, epsilon);
+    if (dt > 0) { doT1(delta, epsilon); }
 
     // integrate internal degrees of freedom
 
@@ -89,23 +69,44 @@ void VertexModel::integrate(double const& dt,
     for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
         { (it->second)->integrate(dt); }
 
+    // compute forces and integrate velocities
+
+    integrateVelocities(dt);
+
     // update time
 
     time += dt;
 }
 
-void VertexModel::computeForces() {
+void VertexModel::integrateVelocities(double const& dt) {
 
-    // clear forces
-    forces.clear();
+    // clear forces and velocities
+    forces.clear(); velocities.clear();
     for (auto it=vertices.begin(); it != vertices.end(); ++it)
-        { forces[it->first] = {0, 0}; }
+        { forces[it->first] = {0, 0}; velocities[it->first] = {0, 0}; }
 
     // compute forces
     for (auto it=halfEdgeForces.begin(); it != halfEdgeForces.end(); ++it)
         { (it->second)->addAllForces(); }
     for (auto it=vertexForces.begin(); it != vertexForces.end(); ++it)
         { (it->second)->addAllForces(); }
+
+    // remove centre of mass force
+    if (true) {
+        long int const numberVertices = forces.size();
+        double avForce[2] = {0, 0};
+        for (int dim=0; dim < 2; dim++) {
+            for (auto it=forces.begin(); it != forces.end(); ++it) {
+                avForce[dim] += forces[it->first][dim]/numberVertices;
+            }
+            for (auto it=forces.begin(); it != forces.end(); ++it) {
+                forces[it->first][dim] -= avForce[dim];
+            }
+        }
+    }
+
+    // get velocities
+    integrator->integrate(dt);
 }
 
 void VertexModel::doT1(double const& delta, double const& epsilon) {

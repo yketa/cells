@@ -4,7 +4,7 @@ Define functions to initialise a vertex model.
 
 from cells.bind import VertexModel
 from cells.read import Read
-from cells.plot import plot, plot_forces
+from cells.plot import plot
 from cells.keratin import plot_keratin
 from cells import __path__
 

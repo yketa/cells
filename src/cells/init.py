@@ -98,6 +98,10 @@ def init_vm(parser=None):
         vm.addModel4("model4",
             args.Gamma, args.taur, args.sigma, args.taup)
 
+    # initialise velocities and forces
+    # this should in principle be called each time a force is added or deleted
+    vm.nintegrate(1, 0)
+
     return args, vm
 
 def parse_args(parser=None):
@@ -207,8 +211,8 @@ def parse_args(parser=None):
 
     # DISPLAY
     if not(script == "vm.py"):
-        parser.add_argument("-forces", action=BooleanOptionalAction,
-            help="display forces on vertices")
+        parser.add_argument("-velocities", action=BooleanOptionalAction,
+            help="display velocities on vertices")
 
     # SAVING
     if not(script == "vm.py"):
