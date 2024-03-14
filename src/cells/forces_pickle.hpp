@@ -435,7 +435,7 @@ VertexModel::addVertexForce<KeratinModel,
         parameters.at("ron"), parameters.at("k0"), parameters.at("p0"));
     // set internal degrees of freedom state
     std::map<long int, double> const keratin =
-        t[2].cast<std::map<long int, double>>();
+        t[3].cast<std::map<long int, double>>();
     std::shared_ptr<KeratinModel> k =
         std::static_pointer_cast<KeratinModel>(
             vertexForces[name]);
@@ -465,8 +465,14 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         else if ( forceName == "AreaForce" ) {
             addVertexForce.template operator()<AreaForce>();
         }
+        else if ( forceName == "EdgePullForce" ) {
+            addVertexForce.template operator()<EdgePullForce>();
+        }
         else if ( forceName == "ActiveBrownianForce" ) {
             addVertexForce.template operator()<ActiveBrownianForce>();
+        }
+        else if ( forceName == "KeratinModel" ) {
+            addVertexForce.template operator()<KeratinModel>();
         }
         // throw error if force not recognised
         else {

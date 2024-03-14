@@ -3,10 +3,9 @@ Routine to run and plot in real time a simulation of the keratin vertex model.
 This does not save data.
 """
 
-from cells.init import init_vm, A0
+from cells.init import init_vm, A0, movie_sh_fname
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
 from cells.bind import getLinesHalfEdge, getPolygonsCell
-from cells import __path__
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -77,7 +76,9 @@ def plot_keratin(vm, fig=None, ax=None):
 
     # bonds
 
-    halfEdges = list(vm.vertexForces["keratin"].tension.keys())
+    halfEdges = list(
+        set(list(vm.vertexForces["keratin"].tension.keys())).intersection(
+            set(list(vm.halfEdges))))
     if True:    # remove inner cell half-edges (which go from or to a centre vertex)
         halfEdges = list(set(halfEdges) - set(vm.getCentreHalfEdges()))
     if len(halfEdges) > 0:
