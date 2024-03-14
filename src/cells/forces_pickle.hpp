@@ -459,19 +459,19 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
                 it->first, it->second);
         };
         // --- MANUAL ASSOCIATION TO FORCES ---
-        if ( forceName == "PerimeterForce" ) {
+        if (forceName == "PerimeterForce") {
             addVertexForce.template operator()<PerimeterForce>();
         }
-        else if ( forceName == "AreaForce" ) {
+        else if (forceName == "AreaForce") {
             addVertexForce.template operator()<AreaForce>();
         }
-        else if ( forceName == "EdgePullForce" ) {
+        else if (forceName == "EdgePullForce") {
             addVertexForce.template operator()<EdgePullForce>();
         }
-        else if ( forceName == "ActiveBrownianForce" ) {
+        else if (forceName == "ActiveBrownianForce") {
             addVertexForce.template operator()<ActiveBrownianForce>();
         }
-        else if ( forceName == "KeratinModel" ) {
+        else if (forceName == "KeratinModel") {
             addVertexForce.template operator()<KeratinModel>();
         }
         // throw error if force not recognised
@@ -499,22 +499,22 @@ pybind11_setstate_force_class_factory<HalfEdgeForce<ForcesType>>(
                 it->first, it->second);
         };
         // --- MANUAL ASSOCIATION TO FORCES ---
-        if ( forceName == "OrnsteinUhlenbeckTension" ) {
+        if (forceName == "OrnsteinUhlenbeckTension") {
             addHalfEdgeForce.template operator()<OrnsteinUhlenbeckTension>();
         }
-        else if ( forceName == "Model0" ) {
+        else if (forceName == "Model0") {
             addHalfEdgeForce.template operator()<Model0>();
         }
-        else if ( forceName == "Model1" ) {
+        else if (forceName == "Model1") {
             addHalfEdgeForce.template operator()<Model1>();
         }
-        else if ( forceName == "Model2" ) {
+        else if (forceName == "Model2") {
             addHalfEdgeForce.template operator()<Model2>();
         }
-        else if ( forceName == "Model3" ) {
+        else if (forceName == "Model3") {
             addHalfEdgeForce.template operator()<Model3>();
         }
-        else if ( forceName == "Model4" ) {
+        else if (forceName == "Model4") {
             addHalfEdgeForce.template operator()<Model4>();
         }
         // throw error if force not recognised
