@@ -168,7 +168,7 @@ def parse_args(parser=None):
     # Ornstein-Uhlenbeck tension
     parser.add_argument("-out",
         action=BooleanOptionalAction,
-        help="add perimeter force")
+        help="add Ornstein-Uhlenbeck tension")
     parser.add_argument("-t0", type=float, default=1,
         help="active tension mean")
     parser.add_argument("-st0", type=float, default=5e-1,
