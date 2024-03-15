@@ -25,7 +25,7 @@ if __name__ == "__main__":
         # make movie on exit
         if "args" in globals() and args.movie:
             try:
-                subprocess.call([movie_sh_name,
+                subprocess.call([movie_sh_fname,
                     "-d", tmpdir, "-p", sys.executable, # "-F", args.ffmpeg,
                     "-y"])
             except:
