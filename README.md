@@ -111,9 +111,15 @@ Definitions of forces belong in `forces.hpp`. Script `forces.cpp` provides defin
 
 Descriptions of some forces can be found in `docs/forces.pdf` and `docs/active_junction.pdf`.
 
+### Integrators
+
+Integrators compute, from the velocities and forces at a given time, the velocities at the next time step. Header `base_integrators.hpp` provides their base class. They are defined separately and are attached to the `VertexModel` through a smart pointer which enables to switch between integrators.
+
+Definitions of integrators belong in `integrators.hpp`. Script `integrators.cpp` provides definitions of `VertexModel` methods to set them in the simulation object. Header `integrators_pickle.hpp` provides definitions of own and `VertexModel` methods to pickle and unpickle these integrators and their state. Finally, integrators are exposed to Python in `bind.cpp`. On the Python side, integrators are initialised in `init.py`.
+
 ### Pickling
 
-`VertexModel` instances including the associated forces can be pickled via Python (see `forces_pickle.hpp` and `system_pickle.hpp`).
+`VertexModel` instances (including forces and integrators) can be pickled via Python (see `*_pickle.hpp`).
 
 ## Authors
 
