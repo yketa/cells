@@ -9,7 +9,7 @@ Integrators definitions.
 #include <map>
 #include <vector>
 
-#include <eigen3/Eigen/Sparse>
+#include <Eigen/Sparse>
 
 #include "base_integrators.hpp"
 #include "mesh.hpp"

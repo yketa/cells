@@ -25,6 +25,12 @@ PYTHONFLAGS=
 # python libraries
 # PYTHONFLAGS+=$(shell $(PYTHON)-config --includes)
 PYTHONFLAGS+=$(shell $(PYTHON) -m pybind11 --includes)
+# -- external libraries flags --
+EXTERNFLAGS=
+# use pkg-config to find libraries
+EXTERNFLAGS+=$(shell pkg-config --cflags eigen3 2> /dev/null)
+# as a backup search in extern
+EXTERNFLAGS+=-Iextern
 
 .PHONY: clean
 
@@ -64,7 +70,7 @@ system.o: system.cpp system.hpp class_factory.hpp forces.hpp \
 
 tools.o: tools.cpp tools.hpp
 
-bind.o forces.o initialisation.o integrators.o system.o: CFLAGS+=$(PYTHONFLAGS)
+bind.o forces.o initialisation.o integrators.o system.o: CFLAGS+=$(PYTHONFLAGS) $(EXTERNFLAGS)
 
 # LIBRARIES
 

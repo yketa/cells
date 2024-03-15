@@ -18,8 +18,8 @@ OSVersion: stable
 %post -c /bin/bash -e
 
     # INSTALL PYTHON
-    apt install -y g++ python3 python3-pip ffmpeg   # install g++ (C++ compiler), python3, pip, ffmpeg
-    ln -sf "$(which python3)" ${PATH%%:*}/python    # `python` command is python3
+    apt install -y g++ python3 python3-pip ffmpeg libeigen3-dev # install g++ (C++ compiler), python3, pip, ffmpeg, eigen3
+    ln -sf "$(which python3)" ${PATH%%:*}/python                # `python` command is python3
 
     # BUILD AND INSTALL PACKAGE
     python -m pip install /opt/cells --verbose --break-system-packages
