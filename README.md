@@ -61,9 +61,9 @@ Note that package `cells` is then available through the `python` interpreter of 
 
 Library [`eigen3`](https://eigen.tuxfamily.org/index.php) should preferably be installed through your distribution package manager (e.g. `sudo apt install libeigen3-dev` on Debian Linux), or through environment modules (e.g. check it is available with `module avail eigen` then load it with `module load ...`).
 
-Makefile `src/cells/Makefile` calls `pkg-config` to append include paths. As a backup for when this fails (e.g. because `pkg-config` does not exist) the makefile also adds `src/cells/extern` as an include path, therefore directory [`Eigen`](https://gitlab.com/libeigen/eigen/-/tree/master/Eigen) should be placed there (e.g. with a symbolic link).
+Makefile `src/cells/Makefile` calls `pkg-config` to append include paths which are not already part of [`$CPATH`](https://gcc.gnu.org/onlinedocs/gcc/Environment-Variables.html). As a backup for when this fails (e.g. because `pkg-config` does not exist and `Eigen` is not found in any of the directories in `$CPATH`) the makefile also adds `src/cells/extern` as an include path, therefore directory [`Eigen`](https://gitlab.com/libeigen/eigen/-/tree/master/Eigen) should be placed there (e.g. with a symbolic link).
 
-It is possible to clone the library by executing *from the directory containing this readme file* the following commands
+It is possible to clone the complete library by executing *from the directory containing this readme file* the following commands
 ```sh
 git clone https://gitlab.com/libeigen/eigen.git src/cells/extern/eigen.git  # clone repository to extern
 ln -s eigen.git/Eigen src/cells/extern                                      # symlink to library
