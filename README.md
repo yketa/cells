@@ -14,9 +14,9 @@ This readme assumes that `python` is the Python3 command.
 
 This requires C++20 compiler and [`eigen3`](https://eigen.tuxfamily.org/index.php).
 
-Configuration file `pyproject.toml` defines instructions to install the `cells` package using `pip`. This is achieved by executing *from the directory containing this readme file* the following commands
+Configuration file `pyproject.toml` defines instructions to install the `cells` package using `pip`. This is achieved by executing *from the directory containing this readme file* the following command
 ```sh
-[ -f README.md ] && python -m pip install . --verbose --break-system-packages
+python -m pip install . --verbose --break-system-packages
 ```
 then -- after successful completion -- package information should be given by `python -m pip show cells`.
 
@@ -28,21 +28,18 @@ Replacing `install` with `install --editable` will enable [editable mode](https:
 
 This requires a C++20 compiler and [`eigen3`](https://eigen.tuxfamily.org/index.php), as well as `pybind11` (`python -m pip install -r requirements.txt --break-system-packages`).
 
-Makefile `src/cells/Makefile` defines instructions to build the libraries. Compilation is achieved by executing *from the directory containing this readme file* the following commands
-```sh
-[ -f README.md ] && (cd src/cells && make)
-```
-then -- after successful completion -- the shared library path should be given by `[ -f README.md ] && python -c "from src.cells import bind; print(bind.__file__)"`.
+Makefile `src/cells/Makefile` defines instructions to build the libraries. Compilation is achieved by executing *from the source code directory (`src/cells`)* the command `make`.
 
-Addition of the `cells` package to the `$PYTHONPATH` is achieved by executing *from the directory containing this readme file* the following commands
+Addition of the `cells` package to the `$PYTHONPATH` (i.e. making it discoverable to `python`) is achieved by executing *from the directory containing this readme file* the following commands
 ```sh
-[ -f README.md ] && echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/src" >> ~/.${0}rc && source ~/.${0}rc
+echo "export PYTHONPATH=\$PYTHONPATH:${PWD}/src" >> ~/.${0}rc   # append to shell configuration file
+source ~/.${0}rc                                                # reload shell configuration file
 ```
 then -- after successful completion -- the module path should be given by `python -c "import cells; print(cells.__path__)"`.
 
-Addition to the `$PYTHONPATH` in the shell configuration file can be reverted by executing
+Addition to the `$PYTHONPATH` in the shell configuration file can be reverted by executing *from the directory containing this readme file* the following command
 ```sh
-[ -f README.md ] && sed -i '/'"export PYTHONPATH=\$PYTHONPATH:${PWD//'/'/'\/'}"'\/src/d' ~/.${0}rc
+sed -i '/'"export PYTHONPATH=\$PYTHONPATH:${PWD//'/'/'\/'}"'\/src/d' ~/.${0}rc
 ```
 even though it is preferable to perform this operation manually (e.g. `vim + ~/.${0}rc`).
 
@@ -52,11 +49,11 @@ This requires [`singularity`](https://docs.sylabs.io/guides/latest/user-guide/) 
 
 Configuration file `container.def` and makefile `container.makefile` define instructions to build the container. This is achieved by executing *from the directory containing this readme file* the following command
 ```sh
-[ -f README.md ] && make -f container.makefile
+make -f container.makefile
 ```
 then -- after successful completion -- package information should be given by `./container.sif python -m pip show cells`.
 
-This operation is reverted by `[ -f README.md ] && rm -iv container.sif`
+This operation is reverted by `rm -iv container.sif`
 
 Note that package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
 
@@ -64,9 +61,12 @@ Note that package `cells` is then available through the `python` interpreter of 
 
 Library [`eigen3`](https://eigen.tuxfamily.org/index.php) should preferably be installed through your distribution package manager (e.g. `sudo apt install libeigen3-dev` on Debian Linux), or through environment modules (e.g. check it is available with `module avail eigen` then load it with `module load ...`).
 
-It is also possible to clone the library by executing *from the directory containing this readme file* the following commands
+Makefile `src/cells/Makefile` calls `pkg-config` to append include paths. As a backup for when this fails (e.g. because `pkg-config` does not exist) the makefile also adds `src/cells/extern` as an include path, therefore directory [`Eigen`](https://gitlab.com/libeigen/eigen/-/tree/master/Eigen) should be placed there (e.g. with a symbolic link).
+
+It is possible to clone the library by executing *from the directory containing this readme file* the following commands
 ```sh
-[ -f README.md ] && git clone https://gitlab.com/libeigen/eigen.git src/cells/extern/eigen && ln -s eigen/Eigen src/cells/extern
+git clone https://gitlab.com/libeigen/eigen.git src/cells/extern/eigen.git  # clone repository to extern
+ln -s eigen.git/Eigen src/cells/extern                                      # symlink to library
 ```
 then -- after succesful completion -- the library header files should be given by `ls src/cells/Eigen`.
 

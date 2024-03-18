@@ -70,6 +70,11 @@ WARNING: This explicitly ignores centre vertices.
              *      <=> \dot{X} = \underline{M}^{-1} F
              *  \underline{M} = modified contact matrix
              *  \underline{M} = \mathbbm{1} + \xi \underline{C}
+             *
+             *  M is a strictly diagonally dominant matrix and is therefore
+             *  always invertible (as pointed out by Alan Pinoy, see
+             *  https://en.wikipedia.org/wiki/Diagonally_dominant_matrix).
+             *
              */
 
             // IDENTIFY VERTICES
