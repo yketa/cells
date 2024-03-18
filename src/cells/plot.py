@@ -20,7 +20,7 @@ def _update_canvas(fig):
     plt.fignum_exists(fig.number) or exit(0)
 
 def plot(vm, fig=None, ax=None, update=True,
-    rainbow=None, clear=False, only_set=False):
+    rainbow=None, clear=False, vertex_indices=False, only_set=False):
     """
     Plot vertex model.
 
@@ -43,6 +43,8 @@ def plot(vm, fig=None, ax=None, update=True,
     clear : bool
         Clear the plot of all cell colouring. (default: False)
         NOTE: `rainbow' and `clear' options are exclusionary.
+    vertex_indices : bool
+        Write indices alongside vertices. (default: False)
     only_set : bool
         Only set the figure and do not plot anything. (default: False)
         NOTE: `only_set' implies `clear'.
@@ -207,10 +209,11 @@ def plot(vm, fig=None, ax=None, update=True,
                 (areas - areas.mean())/areas_std)))
     ax.add_collection(polygons)
 
-#     # vertex indices
-#     list(map(
-#         lambda i: ax.text(*vm.vertices[i].position, i),
-#         vm.vertices))
+    # vertex indices
+    if vertex_indices:
+        list(map(
+            lambda i: ax.text(*vm.vertices[i].position, i),
+            vm.vertices))
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
