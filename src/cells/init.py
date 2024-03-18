@@ -78,6 +78,9 @@ def init_vm(parser=None):
     if args.area:
         vm.addAreaForce("area",
             1, A0)
+    if args.gamma != 0:
+        vm.addBoundaryTension("boundary_tension",
+            args.gamma)
     if args.abp:
         vm.addActiveBrownianForce("abp",
             args.v0, args.taup)
@@ -156,6 +159,9 @@ def parse_args(parser=None):
         help="add perimeter force")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
+    # boundary line tension
+    parser.add_argument("-gamma", type=float, default=0,
+        help="line tension on open boundary")
     # active forces
     parser.add_argument("-taup", type=float, default=1e0,
         help="persistence time of active force")

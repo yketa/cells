@@ -70,6 +70,8 @@ def plot(vm, fig=None, ax=None, update=True,
                 p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
             else:
                 P0 = vm.vertexForces["perimeter"].parameters["P0"]
+        if "boundary_tension" in vm.vertexForces:
+            gamma = vm.vertexForces["boundary_tension"].parameters["gamma"]
         if "abp" in vm.vertexForces:
             v0 = vm.vertexForces["abp"].parameters["v0"]
             taup = vm.vertexForces["abp"].parameters["taup"]
@@ -205,10 +207,17 @@ def plot(vm, fig=None, ax=None, update=True,
                 (areas - areas.mean())/areas_std)))
     ax.add_collection(polygons)
 
+#     # vertex indices
+#     list(map(
+#         lambda i: ax.text(*vm.vertices[i].position, i),
+#         vm.vertices))
+
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
     if "eta" in locals():
         title += r"$, \eta=%.1e$" % eta
+    if "gamma" in locals():
+        title += r"$, \gamma=%.1e$" % gamma
     if "p0" in locals():
         title += r"$, p_0=%.2f$" % p0
     if "P0" in locals():

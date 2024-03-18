@@ -95,6 +95,33 @@ VertexModel::addVertexForce<EdgePullForce, pybind11::tuple const&>(
 }
 
 /*
+ *  BoundaryTension
+ *
+ */
+
+// save state
+pybind11::tuple BoundaryTension::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "BoundaryTension",
+        // state
+        parameters);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<BoundaryTension, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 2);
+    assert(t[0].cast<std::string>() == "BoundaryTension");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addVertexForce<BoundaryTension, double const&>(
+        name, parameters.at("gamma"));
+}
+
+/*
  *  ActiveBrownianForce
  *
  */
@@ -467,6 +494,9 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         }
         else if (forceName == "EdgePullForce") {
             addVertexForce.template operator()<EdgePullForce>();
+        }
+        else if (forceName == "BoundaryTension") {
+            addVertexForce.template operator()<BoundaryTension>();
         }
         else if (forceName == "ActiveBrownianForce") {
             addVertexForce.template operator()<ActiveBrownianForce>();

@@ -693,6 +693,19 @@ PYBIND11_MODULE(bind, m) {
             "    Pulling forces.",
             pybind11::arg("name"),
             pybind11::arg("Fpull"))
+        .def("addBoundaryTension",
+            &VertexModel::addVertexForce<BoundaryTension,
+                double const&>,
+            "Add line tension on open boundaries.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "gamma : float\n"
+            "    Line tension.",
+            pybind11::arg("name"),
+            pybind11::arg("gamma"))
         .def("addActiveBrownianForce",
             &VertexModel::addVertexForce<ActiveBrownianForce,
                 double const&, double const&>,

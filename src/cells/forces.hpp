@@ -42,7 +42,7 @@ Cell perimeter restoring force.
                 vertex.getIndex());
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
-            int numberNeighbours = neighbourVerticesIndices.size();
+            long int const numberNeighbours = neighbourVerticesIndices.size();
             std::vector<double> toPreviousNeighbour, toNextNeighbour;
             for (int i=0; i < numberNeighbours; i++) {
                 assert(vertices->at(neighbourVerticesIndices[i]).getType()
@@ -96,7 +96,7 @@ Cell area restoring force.
                 vertex.getIndex());
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
-            int numberNeighbours = neighbourVerticesIndices.size();
+            long int const numberNeighbours = neighbourVerticesIndices.size();
             std::vector<double> crossToPreviousNeighbour, crossToNextNeighbour;
             for (int i=0; i < numberNeighbours; i++) {
                 assert(vertices->at(neighbourVerticesIndices[i]).getType()
@@ -132,6 +132,7 @@ Pulling on Vertices at the ounter border with a constant radial tension.
         Mesh* const mesh;
 
     public:
+
         EdgePullForce(
             double const& Fpull_,
             Mesh* const mesh_,
@@ -169,6 +170,55 @@ Pulling on Vertices at the ounter border with a constant radial tension.
         pybind11::tuple pybind11_getstate() const override;
 };
 
+class BoundaryTension : public VertexForce<ForcesType> {
+/*
+Line tension on open boundaries.
+*/
+
+    protected:
+
+        Mesh* const mesh;
+
+    public:
+
+        BoundaryTension(
+            double const& gamma_,
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("",
+                {{"gamma", gamma_}},
+                forces_, vertices_),
+            mesh(mesh_) {}
+
+        void addForce(Vertex const& vertex) override {
+
+            if (vertex.getBoundary()) {
+                std::vector<long int> neighbours =                      // indices of vertices on the boundary
+                    mesh->getNeighbourVertices(vertex.getIndex())[0];
+                long int const numberNeighbours = neighbours.size();    // number of vertices on the boundary
+                std::vector<double> toPreviousNeighbour, toNextNeighbour;
+                for (int i=0; i < numberNeighbours; i++) {
+                    assert(vertices->at(neighbours[i]).getType() != "centre");
+                    toPreviousNeighbour = mesh->wrapTo(
+                        neighbours[i],
+                        neighbours[pmod(i - 1, numberNeighbours)],
+                        true);
+                    toNextNeighbour = mesh->wrapTo(
+                        neighbours[i],
+                        neighbours[pmod(i + 1, numberNeighbours)],
+                        true);
+                    for (int dim=0; dim < 2; dim++) {
+                        (*forces)[neighbours[i]][dim] +=
+                            parameters.at("gamma")*(
+                                toPreviousNeighbour[dim]
+                                + toNextNeighbour[dim]);
+                    }
+                }
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+};
 
 class ActiveBrownianForce : public VertexForce<ForcesType> {
 /*
@@ -1008,7 +1058,7 @@ Keratin model.
 
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
-            int numberNeighbours = neighbourVerticesIndices.size();
+            long int const numberNeighbours = neighbourVerticesIndices.size();
             std::vector<double> radiusToCorner;
             double distRadiusToCorner;
             std::vector<double> toPreviousNeighbour, toNextNeighbour;
