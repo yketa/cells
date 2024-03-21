@@ -141,7 +141,8 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
     std::vector<long int> halfEdgeToCellsIndices;
     std::vector<long int> halfEdgeToBoundariesIndices;
     long int vertexIndex;
-    long int createHalfEdgePairIndex0, createHalfEdgePairIndex1;    // saving pair half-edge to avoid half-edge deletion when considering split of half-edge to shared boundary vertex
+    long int createHalfEdgeIndex0, createHalfEdgeIndex1;            // saving both half-edge index...
+    long int createHalfEdgePairIndex0, createHalfEdgePairIndex1;    // ... and pair half-edge index in case either one is deleted in the process
     double angle;
     for (long int mergeHalfEdgeIndex : halfEdgeIndices) {
         nT1++;
@@ -165,12 +166,12 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         halfEdgeToBoundariesIndices.clear();
         for (int i=0; i < numberNeighbours; i++) {
             vertexIndex = neighboursFromMerge[i];
-            if (vertices[vertexIndex].getType() == "centre" &&  // centre centre neighbours of the first vertex...
-                !inVec(neighboursToMerge, vertexIndex)) {       // ... which are not neighbours of the second vertex
+            if ((vertices.at(vertexIndex)).getType() == "centre" && // centre neighbours of the first vertex...
+                !inVec(neighboursToMerge, vertexIndex)) {           // ... which are not neighbours of the second vertex
                 halfEdgeToCellsIndices.push_back(
                     halfEdgesNeighboursFromMerge[i]);
             }
-            if (vertices.at(vertexIndex).getBoundary()) {       // boundary neighbours of the first vertex
+            if (vertices.at(vertexIndex).getBoundary()) {           // boundary neighbours of the first vertex
             
                 halfEdgeToBoundariesIndices.push_back(
                     halfEdgesNeighboursFromMerge[i]);
@@ -178,16 +179,14 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         }
         assert(halfEdgeToCellsIndices.size() > 0
             || halfEdgeToBoundariesIndices.size() > 0);
-        if (halfEdgeToCellsIndices.size() > 0) {                // randomly pick one preferably towards a cell
-            createHalfEdgePairIndex0 =
-                halfEdges[random.pick(halfEdgeToCellsIndices)]
-                    .getPairIndex();
+        if (halfEdgeToCellsIndices.size() > 0) {                    // randomly pick one preferably towards a cell
+            createHalfEdgeIndex0 = random.pick(halfEdgeToCellsIndices);
         }
         else {
-            createHalfEdgePairIndex0 =
-                halfEdges[random.pick(halfEdgeToBoundariesIndices)]
-                    .getPairIndex();
+            createHalfEdgeIndex0 = random.pick(halfEdgeToBoundariesIndices);
         }
+        createHalfEdgePairIndex0 =
+            (halfEdges.at(createHalfEdgeIndex0)).getPairIndex();
 
         numberNeighbours = neighboursToMerge.size();
         assert(numberNeighbours == (int) halfEdgesNeighboursToMerge.size());
@@ -195,12 +194,12 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         halfEdgeToBoundariesIndices.clear();
         for (int i=0; i < numberNeighbours; i++) {
             vertexIndex = neighboursToMerge[i];
-            if (vertices[vertexIndex].getType() == "centre" &&  // centre centre neighbours of the second vertex...
-                !inVec(neighboursFromMerge, vertexIndex)) {     // ... which are not neighbours of the first vertex
+            if ((vertices.at(vertexIndex)).getType() == "centre" && // centre neighbours of the second vertex...
+                !inVec(neighboursFromMerge, vertexIndex)) {         // ... which are not neighbours of the first vertex
                 halfEdgeToCellsIndices.push_back(
                     halfEdgesNeighboursToMerge[i]);
             }
-            if (vertices.at(vertexIndex).getBoundary()) {       // boundary neighbours of the second vertex
+            if (vertices.at(vertexIndex).getBoundary()) {           // boundary neighbours of the second vertex
             
                 halfEdgeToBoundariesIndices.push_back(
                     halfEdgesNeighboursToMerge[i]);
@@ -208,16 +207,14 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
         }
         assert(halfEdgeToCellsIndices.size() > 0
             || halfEdgeToBoundariesIndices.size() > 0);
-        if (halfEdgeToCellsIndices.size() > 0) {                // randomly pick one preferably towards a cell
-            createHalfEdgePairIndex1 =
-                halfEdges[random.pick(halfEdgeToCellsIndices)]
-                    .getPairIndex();
+        if (halfEdgeToCellsIndices.size() > 0) {                    // randomly pick one preferably towards a cell
+            createHalfEdgeIndex1 = random.pick(halfEdgeToCellsIndices);
         }
         else {
-            createHalfEdgePairIndex1 =
-                halfEdges[random.pick(halfEdgeToBoundariesIndices)]
-                    .getPairIndex();
+            createHalfEdgeIndex1 = random.pick(halfEdgeToBoundariesIndices);
         }
+        createHalfEdgePairIndex1 =
+            (halfEdges.at(createHalfEdgeIndex1)).getPairIndex();
 
         angle = std::numbers::pi/2. // create new junction orthogonal to the deleted junction
             + angle2(getHalfEdgeVector(mergeHalfEdgeIndex));
@@ -225,16 +222,16 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 //         // output T1 to standard error
 // 
 //         long int cellA0, cellB0, cellA1, cellB1;
-//         cellA0 = halfEdges[                                             // first cell for which junction is created
+//         cellA0 = halfEdges[                                     // first cell for which junction is created
 //             halfEdges[mergeHalfEdgeIndex]
 //                 .getPreviousIndex()]
 //                     .getFromIndex();
-//         cellB0 = halfEdges[                                             // second cell for which junction is deleted
+//         cellB0 = halfEdges[                                     // second cell for which junction is deleted
 //             halfEdges[halfEdges[mergeHalfEdgeIndex].getPairIndex()]
 //                     .getPreviousIndex()]
 //                         .getFromIndex();
-//         cellA1 = halfEdges[createHalfEdgePairIndex0].getFromIndex();    // first cell for which junction is created
-//         cellB1 = halfEdges[createHalfEdgePairIndex1].getFromIndex();    // second cell for whch junction is created
+//         cellA1 = halfEdges[createHalfEdgeIndex0].getToIndex();  // first cell for which junction is created
+//         cellB1 = halfEdges[createHalfEdgeIndex1].getToIndex();  // second cell for whch junction is created
 //         std::cerr << "T1: #" << mergeHalfEdgeIndex
 //             << " ("
 //             << std::min(cellA0, cellB0) << "|" << std::max(cellA0, cellB0)
@@ -256,8 +253,12 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 
         TopoChangeEdgeInfoType const cre =
             createEdge(
-                halfEdges[createHalfEdgePairIndex0].getPairIndex(),
-                halfEdges[createHalfEdgePairIndex1].getPairIndex(),
+                (!inVec(std::get<1>(del), createHalfEdgeIndex0)) ?  // was this half-edge NOT deleted?
+                    createHalfEdgeIndex0 :
+                    halfEdges[createHalfEdgePairIndex0].getPairIndex(),
+                (!inVec(std::get<1>(del), createHalfEdgeIndex1)) ?  // was this half-edge NOT deleted?
+                    createHalfEdgeIndex1 :
+                    halfEdges[createHalfEdgePairIndex1].getPairIndex(),
                 angle, delta + epsilon,
                 "junction", "");
 
@@ -267,7 +268,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
             { (it->second)->createEdge(cre); }
 
     }
-//     checkMesh();
+//     checkMesh({"junction"});
 }
 
 void VertexModel::checkMesh(std::vector<std::string> halfEdgeTypes) const {
