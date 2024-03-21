@@ -1,6 +1,8 @@
-#include <iostream>
-#include <cmath>
 #include <assert.h>
+#include <cmath>
+#include <iostream>
+#include <vector>
+#include <tuple>
 
 #include "mesh.hpp"
 #include "tools.hpp"
@@ -542,5 +544,12 @@ void Mesh::checkMesh() const {
     assert(vertexIndices.size() == 0);
     assert(halfEdgeIndices.size() == 0);
     std::cerr << "OK mesh construction" << std::endl;
+}
+
+void cerrTopoChangeEdgeInfo(TopoChangeEdgeInfoType const& info) {
+    std::cerr << "vertex:     " << std::get<0>(info) << std::endl;
+    std::cerr << "half-edges: ";
+    for (long int i : std::get<1>(info)) { std::cerr << i << " "; }
+    std::cerr << std::endl;
 }
 

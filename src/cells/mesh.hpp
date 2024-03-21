@@ -482,5 +482,10 @@ Two-dimensional ensembles of vertices and edges.
 
 };
 
+void cerrTopoChangeEdgeInfo(TopoChangeEdgeInfoType const& info);
+/*
+Standard error output of topological changes edge info.
+*/
+
 #endif
 

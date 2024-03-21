@@ -180,7 +180,8 @@ def plot(vm, fig=None, ax=None, update=True,
                     lambda s_tension: scalarMap_tension.to_rgba(s_tension),
                     (tensions - tensions.mean())/tensions_std)))
     ax.add_collection(lines)
-    #ax.plot(*getLinesHalfEdge(vm), color="blue", lw=1)                          # all half-edges
+#     ax.add_collection(LineCollection(                                           # all half-edges
+#         getLinesHalfEdge(vm, list(vm.halfEdges)), colors="blue", lw=1))
 
     # cells
     polygons = PatchCollection(
