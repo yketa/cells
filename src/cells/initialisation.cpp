@@ -641,5 +641,53 @@ void VertexModel::initOpenRegularHexagonalLattice(
         }
     }
 
+    // cut corners belonging to a single cell
+    std::map<long int, std::vector<long int>> cellNeighbours;
+    std::vector<long int> outerVertices =
+        getNeighbourVertices(boundaryIndex)[0];
+    for (long int i : outerVertices) {
+        cellNeighbours[i] = std::vector<long int>(0);
+        std::vector<long int> neighbours = getNeighbourVertices(i)[0];
+        for (long int j : neighbours) {
+            if ((vertices.at(j)).getType() == "centre") {
+                cellNeighbours[i].push_back(j);
+            }
+        }
+    }
+    for (auto it=cellNeighbours.begin(); it != cellNeighbours.end(); ++it) {
+        assert((it->second).size() == 1 || (it->second).size() == 2);
+        if ((it->second).size() == 1) {
+            std::vector<long int> toNeighbours =
+                getNeighbourVertices(it->first)[1];
+            for (long int i : toNeighbours) {
+                if (
+                    // find junction
+                    halfEdges.at(i).getType() == "junction" ||
+                    halfEdges.at((halfEdges.at(i)).getPairIndex()).getType()
+                        == "junction") {
+                    // delete edge
+                    deleteEdge(i);
+                    // move cell centre
+                    halfEdgesToNeighboursIndices =
+                        getNeighbourVertices((it->second).at(0))[1];
+                    position =
+                        (vertices.at((it->second).at(0))).getPosition();
+                    std::vector<double> halfEdgeToNeighbour;
+                    for (int i=0;
+                        i < (int) halfEdgesToNeighboursIndices.size(); i++) {
+                        halfEdgeToNeighbour = getHalfEdgeVector(
+                            halfEdgesToNeighboursIndices[i], false);
+                        for (int dim=0; dim < 2; dim++) {
+                            position[dim] += halfEdgeToNeighbour[dim]
+                                /halfEdgesToNeighboursIndices.size();
+                        }
+                    }
+                    (vertices[(it->second).at(0)]).setPosition(position);
+                    break;
+                }
+            }
+        }
+    }
+
     checkMesh({"junction"});    // check mesh construction
 }
