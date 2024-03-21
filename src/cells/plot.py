@@ -101,6 +101,11 @@ def plot(vm, fig=None, ax=None, update=True,
 
     # initialise figure
 
+    def _set_lim(ax_, vm_):
+        ax_.set_xlim([0, vm_.systemSize[0]])
+        ax_.set_ylim([0, vm_.systemSize[1]])
+        ax_.set_aspect("equal")
+
     if fig is None or ax is None:
 
         plt.ioff()
@@ -148,13 +153,23 @@ def plot(vm, fig=None, ax=None, update=True,
                     ax_size, fig_width, fig_height = (
                         _resize_fig(ax, ax_size, fig_width, fig_height))
 
+        # set figure limits
+        _set_lim(ax, vm)
+        fig.canvas.mpl_connect("button_press_event",    # reset figure limits on double click
+            lambda event: event.dblclick and _set_lim(ax, vm))
+
     # plot
 
     plt.sca(ax)
-    ax.cla()
-    ax.set_xlim([0, vm.systemSize[0]])
-    ax.set_ylim([0, vm.systemSize[1]])
-    ax.set_aspect("equal")
+    try:
+        # make zoom persistent
+        # https://discourse.matplotlib.org/t/how-to-make-zoom-persistent/22663/3
+        fig.canvas.toolbar.push_current()
+        ax.cla()
+        fig.canvas.toolbar.back()
+    except AttributeError:
+        ax.cla()
+        _set_lim(ax, vm)
     if only_set: return fig, ax
 
     # junctions and half-edges
