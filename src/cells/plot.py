@@ -12,12 +12,18 @@ from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
 
+import __main__
+
 # PLOT VERTEX MODEL OBJECT
 
 def _update_canvas(fig):
     fig.canvas.draw_idle()
     fig.canvas.start_event_loop(0.001)
-    plt.fignum_exists(fig.number) or exit(0)
+    if not(plt.fignum_exists(fig.number)):
+        if hasattr(__main__, "__file__"):   # not a python console: exit
+            exit(0)
+        else:                               # python console: throw error
+            raise RuntimeError("Plotting window is closed.")
 
 def plot(vm, fig=None, ax=None, update=True,
     rainbow=None, clear=False, vertex_indices=False, only_set=False):

@@ -19,34 +19,57 @@ import traceback
 
 import pickle
 
-if __name__ == "__main__":
+def movie_on_exit():
+    """
+    Cleanup function to make movie from frames in `frames_dir` at script exit.
+    """
 
     def exit_handler(*_args, **_kwargs):
         # make movie on exit
-        if "args" in globals() and args.movie:
+        if "frames_dir" in globals():
             try:
                 subprocess.call([movie_sh_fname,
-                    "-d", tmpdir, "-p", sys.executable, # "-F", args.ffmpeg,
+                    "-d", frames_dir, "-p", sys.executable, # "-F", args.ffmpeg,
                     "-y"])
             except:
                 print(traceback.format_exc(), file=sys.stderr)  # print traceback
-            rmtree(tmpdir)
+            rmtree(frames_dir)
         # exit
         os._exit(0)
+
     signal.signal(signal.SIGINT, exit_handler)
     signal.signal(signal.SIGTERM, exit_handler)
     atexit.register(exit_handler)
 
-    # INITIALISATION
+def run(args, vm, plot_function=None):
+    """
+    Infinite loop to run and plot vertex model simulation.
 
-    args, vm = init_vm()
-    if args.velocities: plot = plot_velocities
-    fig, ax = plot(vm)
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command line arguments. (see cells.init)
+    vm : cells.bind.VertexModel
+        Vertex model object.
+    plot_function : function
+        Plotting function. (see cells.plot, default: None)
+        NOTE: if plot_function is None then
+              plot_function = cells.plot.plot_velocities if args.velocities,
+                              cells.plot.plot            otherwise.
+    """
 
-    if args.movie: tmpdir = mkdtemp()
+    if plot_function is None:
+        plot_function = plot_velocities if args.velocities else plot
 
-    # RUN
+    # frames directory
+    if args.movie:
+        global frames_dir
+        frames_dir = mkdtemp()
 
+    # initialise plot
+    fig, ax = plot_function(vm)
+
+    # infinite loop
     plt.ion()
     plt.show()
     while True:
@@ -54,7 +77,7 @@ if __name__ == "__main__":
         if args.movie:
             try: count += 1
             except NameError: count = 0
-            fig.savefig(os.path.join(tmpdir, "%05d.png" % count))
+            fig.savefig(os.path.join(frames_dir, "%05d.png" % count))
         # save system state
         if args.save:
             with open(out_fname, "wb") as dump:
@@ -65,8 +88,20 @@ if __name__ == "__main__":
                 dt=args.dt, delta=args.delta, epsilon=args.epsilon)
 #         vm.checkMesh(["junction"])
         except:
-            print(traceback.format_exc(), file=sys.stderr)      # print traceback
-            exit_handler()                                      # exit with handler
+            print(traceback.format_exc(), file=sys.stderr)  # print traceback
+            exit(0)                                         # exit with handler
         # plot
-        plot(vm, fig=fig, ax=ax)
+        plot_function(vm, fig=fig, ax=ax)
+
+if __name__ == "__main__":
+
+    movie_on_exit()
+
+    # INITIALISATION
+
+    args, vm = init_vm()
+
+    # RUN
+
+    run(args, vm, plot_function=None)
 

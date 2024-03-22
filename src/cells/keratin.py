@@ -3,21 +3,15 @@ Routine to run and plot in real time a simulation of the keratin vertex model.
 This does not save data.
 """
 
-from cells.init import init_vm, A0, movie_sh_fname
+from cells.init import init_vm, A0
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
 from cells.bind import getLinesHalfEdge, getPolygonsCell
+from cells.run import movie_on_exit, run
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
-
-import subprocess
-import os
-import signal
-from tempfile import TemporaryDirectory
-import atexit
-import traceback
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
@@ -106,6 +100,9 @@ def plot_keratin(vm, fig=None, ax=None):
         r"$\infty$" if param["ron"] == 0 else r"$%.1e$" % (1./param["ron"]))
     title += r"$, k_0=%.1e, T_0=%.1e$" % (
         param["k0"], param["p0"])
+    if "pull" in vm.vertexForces:
+        title += r"$, F_{\mathrm{pull}}=%.1e$" % (
+            vm.vertexForces["pull"].parameters["Fpull"])
 
     ax.set_title(title)
 
@@ -116,18 +113,7 @@ def plot_keratin(vm, fig=None, ax=None):
 
 if __name__ == "__main__":
 
-    def exit_handler(*_args, **_kwargs):
-        # make movie on exit
-        if "args" in globals() and args.movie:
-            subprocess.call([movie_sh_fname,
-                "-d", tmpdir.name, "-p", sys.executable, # "-F", args.ffmpeg,
-                "-y"])
-            tmpdir.cleanup()
-        # exit
-        os._exit(0)
-    signal.signal(signal.SIGINT, exit_handler)
-    signal.signal(signal.SIGTERM, exit_handler)
-    atexit.register(exit_handler)
+    movie_on_exit()
 
     # INITIALISATION
 
@@ -135,56 +121,42 @@ if __name__ == "__main__":
     # K is 1 by default
     # A0 is (3./2.)/np.tan(np.pi/6.) by default
     # Gamma is 1 by default
-    parser.add_argument("-vmp0", type=float, default=3.72,
-        help="dimensionless target perimeter")
+    # P0 is defined by sqrt({p0})*A0
     parser.add_argument("-l0", type=float, default=1,
         help="bond rest length")
-    parser.add_argument("-alpha", type=float, default=0.1,
+    parser.add_argument("-alpha", type=float, default=0.2,
         help="bond elasticity per keratin concentration above threshold")
     parser.add_argument("-kth", type=float, default=0,
         help="bond keratin concentration threshold")
-    parser.add_argument("-tau", type=float, default=100,
+    parser.add_argument("-tau", type=float, default=10,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
     parser.add_argument("-ron", type=float, default=0,
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
-    parser.add_argument("-k0", type=float, default=1,
+    parser.add_argument("-k0", type=float, default=0.5,
         help="keratin concentration off-rate inverse pressure constant")
-    parser.add_argument("-pr0", type=float, default=-0.3,
+    parser.add_argument("-pr0", type=float, default=0.3,
         help="keratin concentration off-rate inflection pressure")
+    parser.add_argument("-fpull", type=float, default=1,
+        help="outer vertices pulling force")
 
     args, vm = init_vm(parser)
 
-    if args.movie: tmpdir = TemporaryDirectory()
-
     # KERATIN
 
-#     assert len(vm.vertexForces) == 0
-#     assert len(vm.halfEdgeForces) == 0
-    vm.addKeratinModel("keratin",
-        1, A0, 1, args.vmp0*np.sqrt(A0), args.l0, args.alpha, args.kth,
-        args.tau, args.sigma, args.ron, args.k0, args.pr0)
+    A0 = np.mean(list(map(
+        vm.getVertexToNeighboursArea,
+        vm.getVertexIndicesByType("centre"))))
 
-    fig, ax = plot_keratin(vm)
+    for _ in vm.vertexForces: vm.removeVertexForce(_)
+    for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
+    vm.addKeratinModel("keratin",
+        1, A0, 1, args.p0*np.sqrt(A0), args.l0, args.alpha, args.kth,
+        args.tau, args.sigma, args.ron, args.k0, args.pr0)
+    vm.addEdgePullForce("pull",
+        args.fpull)
 
     # RUN
 
-    plt.ion()
-    plt.show()
-    while True:
-        # save frame
-        if args.movie:
-            try: count += 1
-            except NameError: count = 0
-            fig.savefig(os.path.join(tmpdir.name, "%05d.png" % count))
-        # integrate
-        try:
-            vm.nintegrate(args.iterations,
-                dt=args.dt, delta=args.delta, epsilon=args.epsilon)
-#         vm.checkMesh(["junction"])
-        except:
-            print(traceback.format_exc(), file=sys.stderr)  # print traceback
-            exit_handler()                                  # exit with handler
-        # plot
-        plot_keratin(vm, fig=fig, ax=ax)
+    run(args, vm, plot_function=plot_keratin)
 
