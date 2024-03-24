@@ -95,7 +95,6 @@ def run(args, vm, plot_function=None):
 
 if __name__ == "__main__":
 
-    signal.signal(signal.SIGABRT, _exit_handler)
     signal.signal(signal.SIGINT, _exit_handler)
     signal.signal(signal.SIGTERM, _exit_handler)
     atexit.register(_exit_handler)
