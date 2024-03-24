@@ -21,12 +21,15 @@ script = os.path.basename(sys.argv[0])                  # name of invoking scrip
 out_fname = "out.p"                                     # default saving file name
 movie_sh_fname = os.path.join(__path__[-1], "movie.sh") # movie making shell script file name
 
-def init_vm(parser=None):
+def init_vm(user_args=None, parser=None):
     """
     Initilise VertexModel object with command line arguments.
 
     Parameters
     ----------
+    user_args : list of str or None
+        Override command line arguments with these arguments when not None.
+        (default: None) (see argparse.ArgumentParser().parse_args)
     parser : argparse.ArgumentParser or None
         Argument parser. (default: None)
 
@@ -38,7 +41,7 @@ def init_vm(parser=None):
         New instance from command line arguments.
     """
 
-    args = parse_args(parser=parser)    # command line arguments
+    args = parse_args(user_args, parser=parser) # command line arguments
 
     # INITIALISATION
 
@@ -114,12 +117,15 @@ def init_vm(parser=None):
 
     return args, vm
 
-def parse_args(parser=None):
+def parse_args(user_args=None, parser=None):
     """
     Parse command line arguments for vertex model.
 
     Parameters
     ----------
+    user_args : list of str or None
+        Override command line arguments with these arguments when not None.
+        (default: None) (see argparse.ArgumentParser().parse_args)
     parser : argparse.ArgumentParser or None
         Argument parser. (default: None)
 
@@ -265,7 +271,7 @@ def parse_args(parser=None):
             help="numerical identifier for simulation file")
 
     # PARSE
-    args = parser.parse_args()
+    args = parser.parse_args(args=user_args)
     assert(not(args.abp and args.out))  # competing active forces
 
     return args

@@ -5,12 +5,15 @@ Integrators definitions.
 #ifndef INTEGRATORS_HPP
 #define INTEGRATORS_HPP
 
-#include <assert.h>
 #include <map>
 #include <vector>
 
-#include <Eigen/Sparse>
+#include <Eigen/Sparse> // WARNING: this imports <cassert> which defines assert,
+#ifndef ASSERT_HPP
+#undef assert           //          it is undefined to avoid clash with "assert.hpp".
+#endif
 
+#include "assert.hpp"
 #include "base_integrators.hpp"
 #include "mesh.hpp"
 

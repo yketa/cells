@@ -6,7 +6,7 @@ This does not save data.
 from cells.init import init_vm, A0
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
 from cells.bind import getLinesHalfEdge, getPolygonsCell
-from cells.run import movie_on_exit, run
+from cells.run import run
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -113,8 +113,6 @@ def plot_keratin(vm, fig=None, ax=None):
 
 if __name__ == "__main__":
 
-    movie_on_exit()
-
     # INITIALISATION
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
@@ -140,7 +138,7 @@ if __name__ == "__main__":
     parser.add_argument("-fpull", type=float, default=1,
         help="outer vertices pulling force")
 
-    args, vm = init_vm(parser)
+    args, vm = init_vm(parser=parser)
 
     # KERATIN
 

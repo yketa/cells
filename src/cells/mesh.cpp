@@ -1,9 +1,9 @@
-#include <assert.h>
 #include <cmath>
 #include <iostream>
 #include <vector>
 #include <tuple>
 
+#include "assert.hpp"
 #include "mesh.hpp"
 #include "tools.hpp"
 

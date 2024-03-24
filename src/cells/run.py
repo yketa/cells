@@ -4,7 +4,7 @@ does not save data.
 """
 
 from cells.init import init_vm, out_fname, movie_sh_fname
-from cells.plot import plot, plot_velocities
+from cells.plot import plot, plot_velocities, WindowClosedException
 
 import matplotlib.pyplot as plt
 
@@ -16,30 +16,26 @@ import signal
 from tempfile import mkdtemp
 import atexit
 import traceback
+import __main__
 
 import pickle
 
-def movie_on_exit():
-    """
-    Cleanup function to make movie from frames in `frames_dir` at script exit.
-    """
-
-    def exit_handler(*_args, **_kwargs):
-        # make movie on exit
-        if "frames_dir" in globals():
-            try:
-                subprocess.call([movie_sh_fname,
-                    "-d", frames_dir, "-p", sys.executable, # "-F", args.ffmpeg,
-                    "-y"])
-            except:
-                print(traceback.format_exc(), file=sys.stderr)  # print traceback
-            rmtree(frames_dir)
-        # exit
-        os._exit(0)
-
-    signal.signal(signal.SIGINT, exit_handler)
-    signal.signal(signal.SIGTERM, exit_handler)
-    atexit.register(exit_handler)
+def _exit_handler(*_args, **_kwargs):
+    # make movie on exit
+    if "_frames_dir" in globals():
+        # make movie from frames with ffmpeg
+        try:
+            subprocess.call([movie_sh_fname,
+                "-d", _frames_dir, "-p", sys.executable, # "-F", args.ffmpeg,
+                "-y"])
+        except:
+            print(traceback.format_exc(), file=sys.stderr)  # print traceback
+        # delete frames
+        rmtree(_frames_dir)
+    # close matplotlib figures
+    plt.close("all")
+    # exit
+    if hasattr(__main__, "__file__"): os._exit(0)           # not a python console: exit
 
 def run(args, vm, plot_function=None):
     """
@@ -62,9 +58,12 @@ def run(args, vm, plot_function=None):
         plot_function = plot_velocities if args.velocities else plot
 
     # frames directory
+    global _frames_dir
     if args.movie:
-        global frames_dir
-        frames_dir = mkdtemp()
+        _frames_dir = mkdtemp()
+    else:
+        try: del _frames_dir
+        except NameError: pass
 
     # initialise plot
     fig, ax = plot_function(vm)
@@ -77,25 +76,29 @@ def run(args, vm, plot_function=None):
         if args.movie:
             try: count += 1
             except NameError: count = 0
-            fig.savefig(os.path.join(frames_dir, "%05d.png" % count))
+            fig.savefig(os.path.join(_frames_dir, "%05d.png" % count))
         # save system state
         if args.save:
             with open(out_fname, "wb") as dump:
                 pickle.dump(vm, dump)
-        # integrate
+        # integrate and plot
         try:
             vm.nintegrate(args.iterations,
                 dt=args.dt, delta=args.delta, epsilon=args.epsilon)
 #         vm.checkMesh(["junction"])
-        except:
-            print(traceback.format_exc(), file=sys.stderr)  # print traceback
-            exit(0)                                         # exit with handler
-        # plot
-        plot_function(vm, fig=fig, ax=ax)
+            plot_function(vm, fig=fig, ax=ax)
+        except Exception as e:
+            if not(type(e) is WindowClosedException):   # print traceback
+                print(traceback.format_exc(), file=sys.stderr)
+            _exit_handler()                             # exit handler
+            break                                       # break loop
 
 if __name__ == "__main__":
 
-    movie_on_exit()
+    signal.signal(signal.SIGABRT, _exit_handler)
+    signal.signal(signal.SIGINT, _exit_handler)
+    signal.signal(signal.SIGTERM, _exit_handler)
+    atexit.register(_exit_handler)
 
     # INITIALISATION
 

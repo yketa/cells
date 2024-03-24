@@ -1,6 +1,6 @@
 # Cells
 
-Python3 library written in C++ to integrate vertex models.
+Python3 library written in C++20 to integrate vertex models.
 
 ![polygonal tiling](docs/cells.svg)
 
@@ -12,9 +12,9 @@ This readme assumes that `python` is the Python3 command.
 
 ### Using `pip`
 
-This requires C++20 compiler and [`eigen3`](https://eigen.tuxfamily.org/index.php).
+This requires a C++20 compiler and [`eigen3`](https://eigen.tuxfamily.org/index.php).
 
-Configuration file `pyproject.toml` defines instructions to install the `cells` package using `pip`. This is achieved by executing *from the directory containing this readme file* the following command
+Configuration file `pyproject.toml` defines instructions to build the libraries and install the `cells` package using `pip`. This is achieved by executing *from the directory containing this readme file* the following command
 ```sh
 python -m pip install . --verbose --break-system-packages
 ```
@@ -22,7 +22,7 @@ then -- after successful completion -- package information should be given by `p
 
 Package `cells` can be uninstalled by running `python -m pip uninstall cells --break-system-packages`.
 
-Replacing `install` with `install --editable` will enable [editable mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html), in this case the libraries must be manually compiled (see section below).
+Replacing `install` with `install --editable` will enable [editable mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html), in this case the libraries must be manually compiled (see section "Compiling manually [...]").
 
 ### Compiling manually and adding to `$PYTHONPATH`
 
@@ -68,17 +68,17 @@ It is possible to clone the complete library by executing *from the directory co
 git clone https://gitlab.com/libeigen/eigen.git src/cells/extern/eigen.git  # clone repository to extern
 ln -s eigen.git/Eigen src/cells/extern                                      # symlink to library
 ```
-then -- after succesful completion -- the library header files should be given by `ls src/cells/Eigen`.
+then -- after successful completion -- the library header files should be given by `ls src/cells/Eigen`.
 
 ## Running
 
 After installation, use `python -c "import cells; print(cells.__path__)"` to find the location of the package files.
 
-Python routines `read.py`, `run.py` and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt --break-system-packages`).
+Python routines `read.py`, `run.py`, and `vm.py` require `numpy` and `matplotlib` (`python -m pip install -r requirements.txt --break-system-packages`), as well as the built libraries compiled in `bind.so` (see section "Installing").
 
 ### Routines and modules
 
-There are two default routines to simulate vertex models: `run.py` runs and plots in real time a simulation of a vertex model, and `vm.py` runs and saves a simulation of a vertex model. These routines rely on modules `init.py`, `plot.py` and `read.py`.
+There are two default routines to simulate vertex models: `run.py` runs and plots in real time a simulation of a vertex model, and `vm.py` runs and saves a simulation of a vertex model as a pickle file. These routines rely on modules `init.py`, `plot.py` and `read.py`.
 
 Module `init.py` defines functions to parse command line arguments and initialise vertex models as function of these arguments. A list of these arguments can be displayed with `python -m cells.run -h` and `python -m cells.vm -h`.
 
@@ -86,18 +86,31 @@ Module `plot.py` defines functions to plot vertex models.
 
 Module `read.py` defines objects and functions to access and plot vertex model data. Executed as a routine (`python -m cells.read`) , with a simulation file name as a command line argument, this prints `true` (respectively `false`) if the file is consistent (respectively not consistent).
 
+Module `run.py` defines functions to run and plot simultaneously vertex model simulations.
+
 ### Additional scripts
 
 Script `movie.sh` is a quick tool to make movies and requires `plot.py`, `read.py`, and [`ffmpeg`](https://ffmpeg.org/download.html). Calling module `run.py` with command line argument `-m` (or `-movie`) will save displayed frames and make a movie from these frames when exited.
 
 ### Examples
 
+Vertex models real-time simulations can be run either from the shell command line
 ```sh
 python -m cells.run -abp -area -perimeter
-python -m cells.run -abp -area -perimeter -forces
-python -m cells.run -abp -area -perimeter -forces -m
+python -m cells.run -abp -area -perimeter -velocities
+python -m cells.run -abp -area -perimeter -velocities -m
 python -m cells.run -out -area -periodic -N 12
 ```
+or from a `python` interpreter
+```python
+from cells.init import init_vm
+from cells.run import run
+args, vm = init_vm(user_args=["-abp", "-area", "-perimeter"]); run(args, vm)
+args, vm = init_vm(user_args=["-abp", "-area", "-perimeter", "-velocities"]); run(args, vm)
+args, vm = init_vm(user_args=["-abp", "-area", "-perimeter", "-velocities", "-m"]); run(args, vm)
+args, vm = init_vm(user_args=["-out", "-area", "-periodic", "-N", "12"]); run(args, vm)
+```
+and in both cases the script halts when the plotting window is closed. It is possible to zoom in on parts of the figure using the `matplotlib` magnifier tool, and to reset zoom by double clicking on the figure.
 
 ## C++ source files
 
@@ -133,6 +146,6 @@ Definitions of integrators belong in `integrators.hpp`. Script `integrators.cpp`
 
 ## Authors
 
-- [Yann-Edwin Keta](keta@lorentz.leidenuniv.nl), Instituut-Lorentz, Universiteit Leiden
-- [Silke Henkes](shenkes@lorentz.leidenuniv.nl), Instituut-Lorentz, Universiteit Leiden
+- [Yann-Edwin Keta](mailto:keta@lorentz.leidenuniv.nl), Instituut-Lorentz, Universiteit Leiden
+- [Silke Henkes](mailto:shenkes@lorentz.leidenuniv.nl), Instituut-Lorentz, Universiteit Leiden
 
