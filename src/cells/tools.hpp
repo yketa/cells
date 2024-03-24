@@ -1,14 +1,11 @@
 #ifndef TOOLS_HPP
 #define TOOLS_HPP
 
-#include <map>
-#include <vector>
 #include <algorithm>
 #include <cmath>
-#include <math.h>
 #include <iostream>
-#include <assert.h>
-#include <string>
+#include <map>
+#include <vector>
 
 /*
  *  TEMPLATED FUNCTIONS

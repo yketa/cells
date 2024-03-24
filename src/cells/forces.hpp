@@ -5,7 +5,7 @@ Forces definitions.
 #ifndef FORCES_HPP
 #define FORCES_HPP
 
-#include <math.h>
+#include <cmath>
 #include <numbers>
 #include <iostream>
 

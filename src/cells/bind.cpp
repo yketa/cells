@@ -8,9 +8,9 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include <pybind11/numpy.h> // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
 #include <pybind11/stl.h>   // https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "forces.hpp"
 #include "forces_pickle.hpp"
