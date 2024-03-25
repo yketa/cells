@@ -8,7 +8,7 @@ from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
 import numpy as np
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
 
@@ -326,6 +326,68 @@ def plot_velocities(vm, fig=None, ax=None, av_norm=0.2, hide_centres=True,
 
     return fig, ax
 
+def plot_neighbours(vm, fig=None, ax=None, **kwargs):
+    """
+    Plot vertex model with number of neighbours.
+
+    Parameters
+    ----------
+    vm : cells.bind.VertexModel
+        State of the system to plot.
+    fig : matplotlib.figure.Figure or None
+        Figure on which to plot. (default: None)
+        NOTE: if fig == None then a new figure and axes subplot is created.
+    ax : matplotlib.axes._subplots.AxesSubplot or None
+        Axes subplot on which to plot. (default: None)
+        NOTE: if ax == None then a new figure and axes subplot is created.
+
+    Additional keywords arguments are passed to cells.plot.plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure.
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Axes subplot.
+    """
+
+    set_call = (fig is None or ax is None)
+    fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
+
+    # compute number of neighbours
+    cells = vm.getVertexIndicesByType("centre")
+    nNeigh = np.array(list(map(
+        lambda i: vm.getNeighbourVertices(i)[0].size,
+        cells)))
+
+    # colourbars
+    if set_call:
+        # measure
+        ax_size, fig_width, fig_height = _measure_fig(ax)
+        # colourbar
+        cbar_neigh = fig.colorbar(
+            mappable=scalarMap_neigh, ax=ax,
+            shrink=0.75, pad=0.01)
+        cbar_neigh.set_label(
+            r"$N_{\mathrm{neighbours}}$",
+            rotation=270, labelpad=20)
+        cbar_neigh.set_ticks([
+            min(n_neigh)
+                + (0.5 + i)*(max(n_neigh) - min(n_neigh))/(len(n_neigh) - 1.)
+            for i in range(len(n_neigh) - 1)])
+        cbar_neigh.set_ticklabels(
+            [r'$%i$' % i for i in n_neigh[:-1]])
+        # resize
+        ax_size, fig_width, fig_height = (
+            _resize_fig(ax, ax_size, fig_width, fig_height))
+
+    # set colours
+    ax.collections[1].set_color(scalarMap_neigh.to_rgba(nNeigh))
+
+    _update_canvas(fig)
+
+    return fig, ax
+
 # COLOURBARS
 
 # area colourbar
@@ -342,6 +404,16 @@ scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)              # co
 cmap_orientation = plt.cm.hsv                                               # colourmap
 norm_orientation = Normalize(0, 2*np.pi)                                    # interval of value represented by colourmap
 scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
+
+# neighbours colourbar
+n_neigh = list(range(3, 10))                                                # interval of connectivity
+cmap_neigh = ListedColormap([                                               # colourmap
+    ScalarMappable(
+        norm=Normalize(vmin=min(n_neigh), vmax=max(n_neigh)), cmap=plt.cm.jet
+        ).to_rgba(x)
+    for x in n_neigh])
+norm_neigh = BoundaryNorm(n_neigh, len(n_neigh))                            # interval of value represented by colourmap
+scalarMap_neigh = ScalarMappable(cmap=cmap_neigh, norm=norm_neigh)          # conversion from scalar value to colour
 
 # resize figure with colorbars
 # (https://github.com/matplotlib/matplotlib/issues/15010#issuecomment-524438047)
