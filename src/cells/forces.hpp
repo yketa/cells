@@ -149,13 +149,29 @@ Pulling on Vertices at the ounter border with a constant radial tension.
             if (vertex.getBoundary()) { // force is computed for neighbours of boundary vertices
 //                 std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
 
+                // compute centre of mass of vertices
+                std::vector<double> posCM = {0, 0};             // position of centre of mass
+                long int N = 0;                                 // number of vertices
+                for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                    if ((it->second).getType() == "vertex") {   // we consider only "vertex" vertices
+                        std::vector<double> const pos =
+                            (it->second).getPosition();
+                        for (int dim=0; dim < 2; dim++) {
+                            posCM[dim] += pos.at(dim);
+                        }
+                        N++;
+                    }
+                }
+                for (int dim=0; dim < 2; dim++) { posCM[dim] /= N; }
+
+                // compute force
                 std::vector <long int> bindices =
                     mesh->getNeighbourVertices(vertex.getIndex())[0];
                 for (long int idx: bindices) {
 //                     std::cout << "Adding boundary force to " << idx << std::endl;
 
                     std::vector<double> const dir = mesh->wrapDiff( // vector going...
-                        mesh->getCentre(),                          // ... from mesh centre...
+                        posCM,                                      // ... from centre of mass...
                         (vertices->at(idx)).getPosition(),          // ... to the edge vertex...
                         true);                                      // ... and normalised
 //                     std::cout << dir[0] << " " << dir[1] << std::endl;
