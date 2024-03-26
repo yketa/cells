@@ -26,12 +26,11 @@ OPTIONS
 
     -h  Display this help.
 
+    PLOTTING MODE (NOTE: these do nothing if -d option is used)
     -r  Make rainbow plot.
-        NOTE: Does nothing if -d option is used.
     -c  Clear the plot of all cell colouring.
-        NOTE: Does nothing if -d option is used.
-              Options -r and -c are exclusionary.
     -v  Display velocities on vertices.
+    -n  Highlight number of neighbours per cell.
 
     -d  Make movie from frames in directory.
         DEFAULT: (not specified)
@@ -48,7 +47,7 @@ OPTIONS
 
 # OPTIONS
 
-while getopts "hrcvd:p:F:y" OPTION; do
+while getopts "hrcvnd:p:F:y" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
@@ -58,6 +57,8 @@ while getopts "hrcvd:p:F:y" OPTION; do
             __CLEAR=true;;
         v)  # velocity plot
             __VELOCITIES=true;;
+        n)  # neighbours plot
+            __NEIGHBOURS=true;;
         d)  # frames directory
             __DIR="$OPTARG";;
         p)  # python executable
@@ -92,6 +93,7 @@ Save frames from simulation file.
 
 from cells.read import Read, _progressbar
 ${__VELOCITIES:+from cells.plot import plot_velocities}
+${__NEIGHBOURS:+from cells.plot import plot_neighbours}
 
 import os
 
@@ -106,7 +108,9 @@ for frame in frames:
     # plot
     r.plot(frame
         ${__RAINBOW:+, rainbow=r.t0[0]}
-        ${__VELOCITIES:+, override=plot_velocities})
+        ${__CLEAR:+, clear=True}
+        ${__VELOCITIES:+, override=plot_velocities}
+        ${__NEIGHBOURS:+, override=plot_neighbours})
     # save
     r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame)))
 

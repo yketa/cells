@@ -259,74 +259,8 @@ def plot(vm, fig=None, ax=None, update=True,
 
     return fig, ax
 
-def plot_velocities(vm, fig=None, ax=None, av_norm=0.2, hide_centres=True,
+def plot_neighbours(vm, fig=None, ax=None, update=True,
     **kwargs):
-    """
-    Plot vertex model with velocities on vertices.
-
-    Parameters
-    ----------
-    vm : cells.bind.VertexModel
-        State of the system to plot.
-    fig : matplotlib.figure.Figure or None
-        Figure on which to plot. (default: None)
-        NOTE: if fig == None then a new figure and axes subplot is created.
-    ax : matplotlib.axes._subplots.AxesSubplot or None
-        Axes subplot on which to plot. (default: None)
-        NOTE: if ax == None then a new figure and axes subplot is created.
-    av_norm : float
-        Average norm of arrows. (default: 0.2)
-    hide_centres : bool
-        Do not display velocities of cell centres. (default: True)
-
-    Additional keywords arguments are passed to cells.plot.plot.
-
-    Returns
-    -------
-    fig : matplotlib.figure.Figure
-        Figure.
-    ax : matplotlib.axes._subplots.AxesSubplot
-        Axes subplot.
-    """
-
-    fig, ax = plot(vm, fig=fig, ax=ax, update=False, **kwargs)
-
-    positions = vm.getPositions(wrapped=True)
-    velocities = vm.velocities
-
-    if len(velocities) > 0:
-        indices = list(
-            set(list(velocities)).intersection(set(list(positions))))   # vertices which have both a velocity and a position
-        if hide_centres:                                                # remove cell centres
-            centres = vm.getVertexIndicesByType("centre")
-            indices = list(set(indices) - set(centres))
-
-        av_norm = (1./av_norm)*np.sqrt(
-            (np.array(list(map(lambda i: velocities[i], indices)))**2)
-                .sum(axis=-1)
-                    .mean())
-
-        if av_norm != 0:
-            scalarMap = ScalarMappable(
-                norm=Normalize(vmin=0, vmax=2*np.pi), cmap=plt.cm.hsv)
-            arrows = PatchCollection(
-                list(map(
-                    lambda i:
-                        plt.arrow(*positions[i],
-                            *np.array(velocities[i])/av_norm,
-                            width=5e-2, head_width=4e-1,
-                            length_includes_head=False,
-                            color=scalarMap.to_rgba(
-                                angle2(*velocities[i])%(2*np.pi)),
-                            zorder=10),
-                    indices)))
-            ax.add_collection(arrows)
-
-    _update_canvas(fig)
-
-    return fig, ax
-
-def plot_neighbours(vm, fig=None, ax=None, **kwargs):
     """
     Plot vertex model with number of neighbours.
 
@@ -340,6 +274,8 @@ def plot_neighbours(vm, fig=None, ax=None, **kwargs):
     ax : matplotlib.axes._subplots.AxesSubplot or None
         Axes subplot on which to plot. (default: None)
         NOTE: if ax == None then a new figure and axes subplot is created.
+    update : bool
+        Update figure canvas. (default: True)
 
     Additional keywords arguments are passed to cells.plot.plot.
 
@@ -350,6 +286,8 @@ def plot_neighbours(vm, fig=None, ax=None, **kwargs):
     ax : matplotlib.axes._subplots.AxesSubplot
         Axes subplot.
     """
+
+    assert(not("clear" in kwargs) or not(kwargs["clear"]))  # not compatible with clear plot
 
     set_call = (fig is None or ax is None)
     fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
@@ -384,7 +322,80 @@ def plot_neighbours(vm, fig=None, ax=None, **kwargs):
     # set colours
     ax.collections[1].set_color(scalarMap_neigh.to_rgba(nNeigh))
 
-    _update_canvas(fig)
+    # update canvas
+    if update: _update_canvas(fig)
+
+    return fig, ax
+
+def plot_velocities(vm, fig=None, ax=None, update=True,
+    av_norm=0.2, hide_centres=True, **kwargs):
+    """
+    Plot vertex model with velocities on vertices.
+
+    Parameters
+    ----------
+    vm : cells.bind.VertexModel
+        State of the system to plot.
+    fig : matplotlib.figure.Figure or None
+        Figure on which to plot. (default: None)
+        NOTE: if fig == None then a new figure and axes subplot is created.
+    ax : matplotlib.axes._subplots.AxesSubplot or None
+        Axes subplot on which to plot. (default: None)
+        NOTE: if ax == None then a new figure and axes subplot is created.
+    update : bool
+        Update figure canvas. (default: True)
+    av_norm : float
+        Average norm of arrows. (default: 0.2)
+    hide_centres : bool
+        Do not display velocities of cell centres. (default: True)
+
+    Additional keywords arguments are passed to cells.plot.plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure.
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Axes subplot.
+    """
+
+    assert(not("clear" in kwargs) or not(kwargs["clear"]))  # not compatible with clear plot
+
+    fig, ax = plot(vm, fig=fig, ax=ax, update=False, **kwargs)
+
+    positions = vm.getPositions(wrapped=True)
+    velocities = vm.velocities
+
+    if len(velocities) > 0:
+        indices = list(
+            set(list(velocities)).intersection(set(list(positions))))   # vertices which have both a velocity and a position
+        if hide_centres:                                                # remove cell centres
+            centres = vm.getVertexIndicesByType("centre")
+            indices = list(set(indices) - set(centres))
+
+        av_norm = (1./av_norm)*np.sqrt(
+            (np.array(list(map(lambda i: velocities[i], indices)))**2)
+                .sum(axis=-1)
+                    .mean())
+
+        if av_norm != 0:
+            scalarMap = ScalarMappable(
+                norm=Normalize(vmin=0, vmax=2*np.pi), cmap=plt.cm.hsv)
+            arrows = PatchCollection(
+                list(map(
+                    lambda i:
+                        plt.arrow(*positions[i],
+                            *np.array(velocities[i])/av_norm,
+                            width=5e-2, head_width=4e-1,
+                            length_includes_head=False,
+                            color=scalarMap.to_rgba(
+                                angle2(*velocities[i])%(2*np.pi)),
+                            zorder=10),
+                    indices)))
+            ax.add_collection(arrows)
+
+    # update canvas
+    if update: _update_canvas(fig)
 
     return fig, ax
 
