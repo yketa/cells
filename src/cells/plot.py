@@ -118,7 +118,7 @@ def plot(vm, fig=None, ax=None, update=True,
         except AttributeError: pass
 
         # all force-related colorbars
-        if not(rainbow_plot):
+        if not(rainbow_plot) and not(clear):
 
             ax_size, fig_width, fig_height = _measure_fig(ax)
 
@@ -369,7 +369,7 @@ def plot_neighbours(vm, fig=None, ax=None, **kwargs):
             mappable=scalarMap_neigh, ax=ax,
             shrink=0.75, pad=0.01)
         cbar_neigh.set_label(
-            r"$N_{\mathrm{neighbours}}$",
+            r"number of neighbours",
             rotation=270, labelpad=20)
         cbar_neigh.set_ticks([
             min(n_neigh)

@@ -4,7 +4,7 @@ When executed this checks the consistency of a simulation file.
 """
 
 from cells.bind import VertexModel
-from cells.plot import plot
+from cells.plot import WindowClosedException, plot
 
 import os
 import sys
@@ -162,7 +162,13 @@ class Read:
         plt.show()
         for frame in frames[1:]:
             _progressbar(frames.index(frame)/len(frames))
-            self.plot(frame, **kwargs)
+            try:
+                self.plot(frame, **kwargs)
+            except WindowClosedException:       # when window is closed
+                plt.close(self.fig)             # close figure
+                self.fig, self.ax = None, None  # and reset figure and axis
+                _progressbar(1)
+                return
         if loop: self.play(frames=frames, loop=loop, **kwargs)
         _progressbar(1)
 
