@@ -4,7 +4,8 @@ does not save data.
 """
 
 from cells.init import init_vm, out_fname, movie_sh_fname
-from cells.plot import plot, plot_velocities, WindowClosedException
+from cells.plot import plot, plot_velocities, plot_neighbours,\
+    WindowClosedException
 
 import matplotlib.pyplot as plt
 
@@ -51,11 +52,18 @@ def run(args, vm, plot_function=None):
         Plotting function. (see cells.plot, default: None)
         NOTE: if plot_function is None then
               plot_function = cells.plot.plot_velocities if args.velocities,
+                              cells.plot.plot_neighbours if args.neighbours,
                               cells.plot.plot            otherwise.
     """
 
     if plot_function is None:
-        plot_function = plot_velocities if args.velocities else plot
+        assert(not(args.velocities and args.neighbours))    # not compatible
+        if args.velocities:
+            plot_function = plot_velocities
+        elif args.neighbours:
+            plot_function = plot_neighbours
+        else:
+            plot_function = plot
 
     # frames directory
     global _frames_dir
