@@ -67,35 +67,34 @@ def plot(vm, fig=None, ax=None, update=True,
 
     # forces parameters
 
-    if not(clear):
+    if "area" in vm.vertexForces:
+        A0 = vm.vertexForces["area"].parameters["A0"]
+    if "perimeter" in vm.vertexForces:
         if "area" in vm.vertexForces:
-            A0 = vm.vertexForces["area"].parameters["A0"]
-        if "perimeter" in vm.vertexForces:
+            p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
+        else:
+            P0 = vm.vertexForces["perimeter"].parameters["P0"]
+    if "boundary_tension" in vm.vertexForces:
+        gamma = vm.vertexForces["boundary_tension"].parameters["gamma"]
+    if "abp" in vm.vertexForces:
+        v0 = vm.vertexForces["abp"].parameters["v0"]
+        taup = vm.vertexForces["abp"].parameters["taup"]
+    if "out" in vm.halfEdgeForces:
+        t0 = vm.halfEdgeForces["out"].parameters["t0"]
+        taup = vm.halfEdgeForces["out"].parameters["taup"]
+    for model in ("model0", "model1"):
+        if model in vm.halfEdgeForces:
             if "area" in vm.vertexForces:
-                p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
+                p0 = vm.halfEdgeForces[model].parameters["P0"]/np.sqrt(A0)
             else:
-                P0 = vm.vertexForces["perimeter"].parameters["P0"]
-        if "boundary_tension" in vm.vertexForces:
-            gamma = vm.vertexForces["boundary_tension"].parameters["gamma"]
-        if "abp" in vm.vertexForces:
-            v0 = vm.vertexForces["abp"].parameters["v0"]
-            taup = vm.vertexForces["abp"].parameters["taup"]
-        if "out" in vm.halfEdgeForces:
-            t0 = vm.halfEdgeForces["out"].parameters["t0"]
-            taup = vm.halfEdgeForces["out"].parameters["taup"]
-        for model in ("model0", "model1"):
-            if model in vm.halfEdgeForces:
-                if "area" in vm.vertexForces:
-                    p0 = vm.halfEdgeForces[model].parameters["P0"]/np.sqrt(A0)
-                else:
-                    P0 = vm.halfEdgeForces[model].parameters["P0"]
-        for model in ("model0", "model1", "model2", "model3", "model4"):
-            if model in vm.halfEdgeForces:
-                sT0 = vm.halfEdgeForces[model].parameters["sigma"]
-                taup = vm.halfEdgeForces[model].parameters["taup"]
-        for model in ("model2", "model4"):
-            if model in vm.halfEdgeForces:
-                taur = vm.halfEdgeForces[model].parameters["taur"]
+                P0 = vm.halfEdgeForces[model].parameters["P0"]
+    for model in ("model0", "model1", "model2", "model3", "model4"):
+        if model in vm.halfEdgeForces:
+            sT0 = vm.halfEdgeForces[model].parameters["sigma"]
+            taup = vm.halfEdgeForces[model].parameters["taup"]
+    for model in ("model2", "model4"):
+        if model in vm.halfEdgeForces:
+            taur = vm.halfEdgeForces[model].parameters["taur"]
 
     # integrators parameters
 
@@ -177,7 +176,7 @@ def plot(vm, fig=None, ax=None, update=True,
 
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=2.5)  # all junctions
-    if not(rainbow_plot):
+    if not(rainbow_plot) and not(clear):
         if ("t0" in locals() or "sT0" in locals()):
             junctions = vm.getHalfEdgeIndicesByType("junction")
             if "t0" in locals():
@@ -208,24 +207,25 @@ def plot(vm, fig=None, ax=None, update=True,
             getPolygonsCell(vm))),
         facecolors="none")
     cells = vm.getVertexIndicesByType("centre")
-    if rainbow_plot:
-        scalarMap_rainbow = ScalarMappable(
-            Normalize(0, rainbow.systemSize[0]), plt.cm.hsv)
-        positions0 = np.array(list(map(
-            lambda i: rainbow.vertices[i].position,
-            cells)))
-        polygons.set_color(list(map(        # colour according to previous position
-            lambda position0: scalarMap_rainbow.to_rgba(position0[0]),
-            positions0)))
-    elif "A0" in locals():
-        areas = np.array(list(map(
-            lambda i: vm.getVertexToNeighboursArea(i),
-            cells)))
-        areas_std = areas.std()
-        if areas_std != 0:
-            polygons.set_color(list(map(    # colour according to area
-                lambda s_area: scalarMap_area.to_rgba(s_area),
-                (areas - areas.mean())/areas_std)))
+    if not(clear):
+        if rainbow_plot:
+            scalarMap_rainbow = ScalarMappable(
+                Normalize(0, rainbow.systemSize[0]), plt.cm.hsv)
+            positions0 = np.array(list(map(
+                lambda i: rainbow.vertices[i].position,
+                cells)))
+            polygons.set_color(list(map(        # colour according to previous position
+                lambda position0: scalarMap_rainbow.to_rgba(position0[0]),
+                positions0)))
+        elif "A0" in locals():
+            areas = np.array(list(map(
+                lambda i: vm.getVertexToNeighboursArea(i),
+                cells)))
+            areas_std = areas.std()
+            if areas_std != 0:
+                polygons.set_color(list(map(    # colour according to area
+                    lambda s_area: scalarMap_area.to_rgba(s_area),
+                    (areas - areas.mean())/areas_std)))
     ax.add_collection(polygons)
 
     # vertex indices
