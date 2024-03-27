@@ -90,8 +90,8 @@ def plot_keratin(vm, fig=None, ax=None):
     param = vm.vertexForces["keratin"].parameters
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
-    title += r"$, p_0=%.2f, l_0=%.2f, \alpha=%.1e$" % (
-        param["P0"]/np.sqrt(param["A0"]), param["l0"], param["alpha"])
+    title += r"$, \tau_r=%.2f, p_0=%.2f, l_0=%.2f, \alpha=%.1e$" % (
+        param["taur"], param["p0"], param["l0"], param["alpha"])
     title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
     title += "\n"
     title += r"$\tau=%.1e, \sigma=%.1e$" % (
@@ -117,9 +117,9 @@ if __name__ == "__main__":
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     # K is 1 by default
-    # A0 is (3./2.)/np.tan(np.pi/6.) by default
+    # taur is defined by {taur}
     # Gamma is 1 by default
-    # P0 is defined by sqrt({p0})*A0
+    # p0 is defined by {p0}
     parser.add_argument("-l0", type=float, default=1,
         help="bond rest length")
     parser.add_argument("-alpha", type=float, default=0.2,
@@ -142,14 +142,10 @@ if __name__ == "__main__":
 
     # KERATIN
 
-    A0 = np.mean(list(map(
-        vm.getVertexToNeighboursArea,
-        vm.getVertexIndicesByType("centre"))))
-
     for _ in vm.vertexForces: vm.removeVertexForce(_)
     for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
     vm.addKeratinModel("keratin",
-        1, A0, 1, args.p0*np.sqrt(A0), args.l0, args.alpha, args.kth,
+        1, args.taur, 1, args.p0, args.l0, args.alpha, args.kth,
         args.tau, args.sigma, args.ron, args.k0, args.pr0)
     vm.addEdgePullForce("pull",
         args.fpull)

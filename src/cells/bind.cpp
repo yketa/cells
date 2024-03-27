@@ -260,6 +260,9 @@ PYBIND11_MODULE(bind, m) {
         .def_property("keratin",
             &KeratinModel::getKeratin,
             &KeratinModel::setKeratin)
+        .def_property("targetArea",
+            &KeratinModel::getTargetArea,
+            &KeratinModel::setTargetArea)
         .def_property_readonly("pressure",
             &KeratinModel::getPressure)
         .def_property_readonly("area",
@@ -863,12 +866,12 @@ PYBIND11_MODULE(bind, m) {
             "    Unique name for the force.\n"
             "K : float\n"
             "    Area elasticity.\n"
-            "A0 : float\n"
-            "    Target area.\n"
+            "taur : float\n"
+            "    Target area relaxation time scale.\n"
             "Gamma : float\n"
             "    Perimeter elasticity.\n"
-            "P0 : float\n"
-            "    Target perimeter.\n"
+            "p0 : float\n"
+            "    Target shape index.\n"
             "l0 : float\n"
             "    Bond rest length.\n"
             "alpha : float\n"
@@ -884,13 +887,13 @@ PYBIND11_MODULE(bind, m) {
             "    (=1/tauon).\n"
             "k0 : float\n"
             "    Keratin concentration off-rate inverse pressure constant.\n"
-            "p0 : float\n"
+            "pr0 : float\n"
             "    Keratin concentration off-rate inflection pressure.\n",
             pybind11::arg("name"),
             pybind11::arg("K"),
-            pybind11::arg("A0"),
+            pybind11::arg("taur"),
             pybind11::arg("Gamma"),
-            pybind11::arg("P0"),
+            pybind11::arg("p0"),
             pybind11::arg("l0"),
             pybind11::arg("alpha"),
             pybind11::arg("kth"),
@@ -898,7 +901,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("sigma"),
             pybind11::arg("ron"),
             pybind11::arg("k0"),
-            pybind11::arg("p0"))
+            pybind11::arg("pr0"))
         // set integrator [BaseIntegrator (integrators.hpp, integrators.hpp, integrators.cpp)]
         .def("setUnitOverdampedIntegrator",
             &VertexModel::setIntegrator<UnitOverdamped>,

@@ -193,15 +193,15 @@ template<> void VertexModel::addVertexForce<    // initial time as argument (for
     // user-defined arguments
     std::string const& name,
     double const& time0,
-    double const& K, double const& A0,
-    double const& Gamma, double const& P0,
+    double const& K, double const& taur,
+    double const& Gamma, double const& p0,
     double const& l0, double const& alpha, double const& kth,
     double const& tau, double const& sigma,
-    double const& ron, double const& k0, double const& p0) {
+    double const& ron, double const& k0, double const& pr0) {
     // set force
     vertexForces.add<KeratinModel>(
         name,                                                           // (unique) user-defined name for forces
-        K, A0, Gamma, P0, l0, alpha, kth, tau, sigma, ron, k0, p0,      // user-defined parameters
+        K, taur, Gamma, p0, l0, alpha, kth, tau, sigma, ron, k0, pr0,   // user-defined parameters
         this, &random, &time, time0, &forces, &vertices);               // VertexModel attributes and initial time
 }
 
@@ -216,11 +216,11 @@ template<> void VertexModel::addVertexForce<    // no initial time as argument (
     double const&, double const&, double const&>(
     // user-defined arguments
     std::string const& name,
-    double const& K, double const& A0,
-    double const& Gamma, double const& P0,
+    double const& K, double const& taur,
+    double const& Gamma, double const& p0,
     double const& l0, double const& alpha, double const& kth,
     double const& tau, double const& sigma,
-    double const& ron, double const& k0, double const& p0) {
+    double const& ron, double const& k0, double const& pr0) {
     // set force
     VertexModel::addVertexForce<KeratinModel,
         double const&,
@@ -231,6 +231,6 @@ template<> void VertexModel::addVertexForce<    // no initial time as argument (
         double const&, double const&, double const&>(
         name,                                                           // (unique) user-defined name for force
         time,                                                           // current simulation time
-        K, A0, Gamma, P0, l0, alpha, kth, tau, sigma, ron, k0, p0);     // user-defined parameters
+        K, taur, Gamma, p0, l0, alpha, kth, tau, sigma, ron, k0, pr0);  // user-defined parameters
 }
 

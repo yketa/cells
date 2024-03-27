@@ -52,8 +52,8 @@ vm.removeVertexForce("abp")
 vm.removeVertexForce("perimeter")
 vm.removeVertexForce("area")
 
-"""addKeratinModel(...)
- |      addKeratinModel(self: cells.bind.VertexModel, name: str, K: float, A0: float, Gamma: float, P0: float, l0: float, alpha: float, kth: float, tau: float, sigma: float, ron: float, k0: float, p0: float) -> None
+"""
+ |      addKeratinModel(self: cells.bind.VertexModel, name: str, K: float, taur: float, Gamma: float, p0: float, l0: float, alpha: float, kth: float, tau: float, sigma: float, ron: float, k0: float, pr0: float) -> None
  |      
  |      Add keratin model.
  |      
@@ -63,12 +63,12 @@ vm.removeVertexForce("area")
  |          Unique name for the force.
  |      K : float
  |          Area elasticity.
- |      A0 : float
- |          Target area.
+ |      taur : float
+ |          Target area relaxation time scale.
  |      Gamma : float
  |          Perimeter elasticity.
- |      P0 : float
- |          Target perimeter.
+ |      p0 : float
+ |          Target shape index.
  |      l0 : float
  |          Bond rest length.
  |      alpha : float
@@ -80,14 +80,15 @@ vm.removeVertexForce("area")
  |      sigma : float
  |          Keratin concentration noise standard deviation.
  |      ron : float
- |          Keratin concentration on-rate evolution time rate.
+ |          Keratin concentration on-rate evolution time rate
+ |          (=1/tauon).
  |      k0 : float
  |          Keratin concentration off-rate inverse pressure constant.
- |      p0 : float
+ |      pr0 : float
  |          Keratin concentration off-rate inflection pressure.
  """
 
-vm.addKeratinModel("keratin",1,A0,1,4.2*np.sqrt(A0),1,0.2,0,10,0.05,0,5,0.3)
+vm.addKeratinModel("keratin",1,100,1,4.2,1,0.2,0,10,0.05,0,5,0.3)
 vm.addEdgePullForce("pull",args.Fpull)
 fig, ax = plot_keratin(vm)
 plt.ion()

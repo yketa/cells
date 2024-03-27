@@ -1010,6 +1010,7 @@ Keratin model.
         double const time0;                     // time at which force was initialised
 
         std::map<long int, double> keratin;     // cell keratin concentration
+        std::map<long int, double> targetArea;  // target area
 
         // degrees of freedom computed in KeratinModel::addAllForces
         std::map<long int, double> pressure;    // cell pressure
@@ -1019,27 +1020,31 @@ Keratin model.
     public:
 
         KeratinModel(
-            double const& K_, double const& A0_,
-            double const& Gamma_, double const& P0_,
+            double const& K_, double const& taur_,
+            double const& Gamma_, double const& p0_,
             double const& l0_, double const& alpha_, double const& kth_,
             double const& tau_, double const& sigma_,
-            double const& ron_, double const& k0_, double const& p0_,
+            double const& ron_, double const& k0_, double const& pr0_,
             Mesh* const mesh_, Random* random_,
             double* const time_, double const& time0_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
-                {{"K", K_}, {"A0", A0_},
-                {"Gamma", Gamma_}, {"P0", P0_},
+                {{"K", K_}, {"taur", taur_},
+                {"Gamma", Gamma_}, {"p0", p0_},
                 {"l0", l0_}, {"alpha", alpha_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_},
-                {"ron", ron_}, {"k0", k0_}, {"p0", p0_}},
+                {"ron", ron_}, {"k0", k0_}, {"pr0", pr0_}},
                 forces_, vertices_),
             mesh(mesh_), random(random_), time(time_), time0(time0_) {
 
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
-                    keratin.emplace(it->first, 0);          // zero initial value
-                    pressure.emplace(it->first, 0);         // changed in KeratinModel::addAllForces
+                    keratin.emplace(it->first,              // zero keratin initial value
+                        0);
+                    area.emplace(it->first,                 // initial area
+                        mesh->getVertexToNeighboursArea(it->first));
+                    targetArea.emplace(it->first,           // initial area as initial target area
+                        area[it->first]);
                 }
             }
         }
@@ -1051,6 +1056,11 @@ Keratin model.
             { return keratin; }
         void setKeratin(std::map<long int, double> const& keratin_)
             { keratin = keratin_; }
+
+        std::map<long int, double> const& getTargetArea() const
+            { return targetArea; }
+        void setTargetArea(std::map<long int, double> const& targetArea_)
+            { targetArea = targetArea_; }
 
         std::map<long int, double> const& getPressure() const
             { return pressure; }
@@ -1069,8 +1079,10 @@ Keratin model.
             // cell area and perimeter
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
+            double const A0 = targetArea[vertex.getIndex()];
             double const perimeter =
                 mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
+            double const P0 = parameters.at("p0")*sqrt(A0);
 
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
@@ -1113,9 +1125,8 @@ Keratin model.
                 for (int dim=0; dim < 2; dim++) {
                     // area force
                     force = (parameters.at("K")/2.)*(
-                        area[vertex.getIndex()]             // cell area
-                            - parameters.at("A0"))*(
-                                crossToPreviousNeighbour[dim]
+                        area[vertex.getIndex()] - A0)*( // cell area
+                            crossToPreviousNeighbour[dim]
                                 - crossToNextNeighbour[dim]);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                     pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
@@ -1123,12 +1134,12 @@ Keratin model.
                             *(-force);                  // force applied on cell centre
                     // perimeter force
                     force = parameters.at("Gamma")*(
-                        perimeter - parameters.at("P0"))*(  // cell perimeter
+                        perimeter - P0)*(               // cell perimeter
                             toPreviousNeighbour[dim]        // force from previous neighbour
                                 /distToPreviousNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                     force = parameters.at("Gamma")*(
-                        perimeter - parameters.at("P0"))*(  // cell perimeter
+                        perimeter - P0)*(               // cell perimeter
                             toNextNeighbour[dim]            // force from next neighbour
                                 /distToNextNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
@@ -1195,10 +1206,16 @@ Keratin model.
             for (auto it=keratin.begin(); it != keratin.end(); ++it) {
                 double const kon = 1 + (*time - time0)*parameters.at("ron");    // time-dependent on rate
                 double const koff = 1 + exp(parameters.at("k0")*(               // keratin-dependent off rate
-                    pressure[it->first] - parameters.at("p0")));                // addAllForces sets pressure
+                    pressure[it->first] - parameters.at("pr0")));               // addAllForces sets pressure
                 keratin[it->first] +=
                     dt_*(kon - koff*keratin[it->first]) // deterministic part
                     + amp*random->gauss();              // stochastic part
+            }
+            // integrate target area
+            double const dtr_ = dt/parameters.at("taur");
+            for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
+                targetArea[it->first] +=
+                    -dtr_*(targetArea[it->first] - area[it->first]);
             }
         }
 
