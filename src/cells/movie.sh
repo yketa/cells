@@ -125,7 +125,7 @@ fi
 
 # make movie
 __MOVIE=${1:-movie}
-__MOVIE=${__MOVIE%.*}.mp4
+__MOVIE=${__MOVIE%.*}.mkv
 $__FFMPEG ${__YES:+-y} -r 5 -f image2 -s 1280x960 \
     -pattern_type glob -i "${__DIR}/*.png" -pix_fmt yuv420p $__MOVIE
 # make movie with H.265 compression (not compatible with all players)
