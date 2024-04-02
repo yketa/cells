@@ -32,6 +32,8 @@ def plot_keratin(vm, fig=None, ax=None):
     set_call = (fig is None or ax is None)
     fig, ax = plot(vm, fig=fig, ax=ax, only_set=True)   # initialise figure and axis
 
+#     print(vm.vertexForces["keratin"].pressure)
+
     # colorbars
 
     if set_call:
@@ -99,7 +101,7 @@ def plot_keratin(vm, fig=None, ax=None):
     title += r"$, \tau_{\mathrm{on}}=$" + (
         r"$\infty$" if param["ron"] == 0 else r"$%.1e$" % (1./param["ron"]))
     title += r"$, k_0=%.1e, T_0=%.1e$" % (
-        param["k0"], param["p0"])
+        param["k0"], param["pr0"])
     if "pull" in vm.vertexForces:
         title += r"$, F_{\mathrm{pull}}=%.1e$" % (
             vm.vertexForces["pull"].parameters["Fpull"])
@@ -133,7 +135,7 @@ if __name__ == "__main__":
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
     parser.add_argument("-k0", type=float, default=0.5,
         help="keratin concentration off-rate inverse pressure constant")
-    parser.add_argument("-pr0", type=float, default=0.3,
+    parser.add_argument("-pr0", type=float, default=-0.3,
         help="keratin concentration off-rate inflection pressure")
     parser.add_argument("-fpull", type=float, default=1,
         help="outer vertices pulling force")
