@@ -124,12 +124,17 @@ EOF
 fi
 
 # make movie
+# https://stackoverflow.com/questions/20847674/ffmpeg-libx264-height-not-divisible-by-2
 __MOVIE=${1:-movie}
 __MOVIE=${__MOVIE%.*}.mkv
 $__FFMPEG ${__YES:+-y} -r 5 -f image2 -s 1280x960 \
-    -pattern_type glob -i "${__DIR}/*.png" -pix_fmt yuv420p $__MOVIE
+    -pattern_type glob -i "${__DIR}/*.png" -pix_fmt yuv420p \
+    -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2:color=white" \
+    $__MOVIE
 # make movie with H.265 compression (not compatible with all players)
 # requires FFmpeg configured with --enable-gpl --enable-libx265
 # $__FFMPEG ${__YES:+-y} -r 5 -f image2 -s 1280x960 -pix_fmt yuv420p \
-#     -pattern_type glob -i "${__DIR}/*.png" -vcodec libx265 -crf 28 $__MOVIE
+#     -pattern_type glob -i "${__DIR}/*.png" -vcodec libx265 -crf 28 \
+#     -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2:color=white" \
+#     $__MOVIE
 
