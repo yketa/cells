@@ -158,8 +158,9 @@ class Read:
 
         _progressbar(0)
         self.plot(frames[0], **kwargs)
-        plt.ion()
-        plt.show()
+        if not(plt.isinteractive()):
+            plt.ion()
+            plt.show()
         for frame in frames[1:]:
             _progressbar(frames.index(frame)/len(frames))
             try:
@@ -169,8 +170,12 @@ class Read:
                 self.fig, self.ax = None, None  # and reset figure and axis
                 _progressbar(1)
                 return
-        if loop: self.play(frames=frames, loop=loop, **kwargs)
-        _progressbar(1)
+        if loop:
+            self.play(frames=frames, loop=loop, **kwargs)   # play again
+        else:
+            self.fig, self.ax = None, None      # reset figure and axis
+            _progressbar(1)
+            return
 
     def __getitem__(self, frame):
         """
