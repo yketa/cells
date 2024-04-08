@@ -6,6 +6,7 @@ from cells.bind import VertexModel
 from cells.read import Read
 from cells.plot import plot
 from cells.keratin import plot_keratin
+from cells.init import A0
 from cells import __path__
 
 import pickle
@@ -18,8 +19,6 @@ import matplotlib.pyplot as plt
 
 import os
 import sys
-
-A0 = (3./2.)/np.tan(np.pi/6.)           # area of a regular hexagon with edge length 1
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument("-N", type=int, default=400)

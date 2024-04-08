@@ -6,9 +6,11 @@
 #include "tools.hpp"
 
 void VertexModel::initRegularTriangularLattice(
-    long int const& size, double const& junctionLength) {
+    long int const& size, double const& hexagonArea) {
 
     assert(size%6 == 0);
+    double const junctionLength =
+        std::sqrt((2*hexagonArea)/(3*tan(std::numbers::pi/3.)));
 
     clear();                                                // clear vertices and half-edges
     systemSize[0] = size*junctionLength;                    // length of the periodic box in the x-direction
@@ -118,10 +120,12 @@ void VertexModel::initRegularTriangularLattice(
 }
 
 void VertexModel::initOpenRegularTriangularLattice(
-    long int const& size, double const& junctionLength) {
+    long int const& size, double const& hexagonArea) {
     // (TESTING) replace a single cell with a hole
 
     assert(size%6 == 0);
+    double const junctionLength =
+        std::sqrt((2*hexagonArea)/(3*tan(std::numbers::pi/3.)));
 
     clear();                                                // clear vertices and half-edges
     systemSize[0] = size*junctionLength;                    // length of the periodic box in the x-direction
@@ -233,10 +237,12 @@ void VertexModel::initOpenRegularTriangularLattice(
 }
 
 void VertexModel::initOpenRegularHexagonalLattice(
-    long int const& nCells, double const& junctionLength) {
+    long int const& nCells, double const& hexagonArea) {
 
     long int const nnCells = sqrt(nCells);
     assert(nnCells*nnCells == nCells);
+    double const junctionLength =
+        std::sqrt((2*hexagonArea)/(3*tan(std::numbers::pi/3.)));
 
     clear();                                    // clear vertices and half-edges
     systemSize[0] = 3*nnCells*junctionLength;   // length of the periodic box in the x-direction

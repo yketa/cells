@@ -3,7 +3,7 @@ Routine to run and plot in real time a simulation of the keratin vertex model.
 This does not save data.
 """
 
-from cells.init import init_vm, A0
+from cells.init import init_vm, K, A0
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
 from cells.bind import getLinesHalfEdge, getPolygonsCell
 from cells.run import run
@@ -118,9 +118,10 @@ if __name__ == "__main__":
     # INITIALISATION
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    # K is 1 by default
+    # K is set by default in cells.init
+    # A0 is set by default in cells.init
     # taur is defined by {taur}
-    # Gamma is 1 by default
+    # Gamma is defined by {Gamma}
     # p0 is defined by {p0}
     parser.add_argument("-l0", type=float, default=1,
         help="bond rest length")
@@ -147,7 +148,7 @@ if __name__ == "__main__":
     for _ in vm.vertexForces: vm.removeVertexForce(_)
     for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
     vm.addKeratinModel("keratin",
-        1, args.taur, 1, args.p0, args.l0, args.alpha, args.kth,
+        K, args.taur, args.Gamma, args.p0, args.l0, args.alpha, args.kth,
         args.tau, args.sigma, args.ron, args.k0, args.pr0)
     vm.addEdgePullForce("pull",
         args.fpull)

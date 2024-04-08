@@ -928,10 +928,10 @@ PYBIND11_MODULE(bind, m) {
             "    Number of vertices in both horizontal and vertical\n"
             "    directions. (default: 6)\n"
             "    NOTE: This must be a multiple of 6.\n"
-            "junctionLength : float\n"
-            "    Length of nearest neighbour junctions. (default: 1)",
+            "hexagonArea : float\n"
+            "    Area of regular hexagons. (default: 1)",
             pybind11::arg("size")=6,
-            pybind11::arg("junctionLength")=1)
+            pybind11::arg("hexagonArea")=1)
         .def("initOpenRegularTriangularLattice",
             &VertexModel::initOpenRegularTriangularLattice,
             "Initialises a regular triangular lattice with a cell replaced\n"
@@ -943,10 +943,10 @@ PYBIND11_MODULE(bind, m) {
             "    Number of vertices in both horizontal and vertical\n"
             "    directions. (default: 6)\n"
             "    NOTE: This must be a multiple of 6.\n"
-            "junctionLength : float\n"
-            "    Length of nearest neighbour junctions. (default: 1)",
+            "hexagonArea : float\n"
+            "    Area of regular hexagons. (default: 1)",
             pybind11::arg("size")=6,
-            pybind11::arg("junctionLength")=1)
+            pybind11::arg("hexagonArea")=1)
         .def("initOpenRegularHexagonalLattice",
             &VertexModel::initOpenRegularHexagonalLattice,
             "Initialise a regular square lattice with open outer bondary.\n"
@@ -955,10 +955,10 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "nCells : int\n"
             "    Number of cells. (default: 1)\n"
-            "junctionLength : float\n"
-            "    Length of nearest neighbour junctions. (default: 1)",
+            "hexagonArea : float\n"
+            "    Area of regular hexagons. (default: 1)",
             pybind11::arg("nCells")=1,
-            pybind11::arg("junctionLength")=1)
+            pybind11::arg("hexagonArea")=1)
         // pickle
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,

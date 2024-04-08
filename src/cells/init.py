@@ -16,7 +16,8 @@ import numpy as np
 import os
 import sys
 
-A0 = (3./2.)/np.tan(np.pi/6.)                           # area of a regular hexagon with edge length 1
+K = 1                                                   # area elasticity
+A0 = 1                                                  # area of a regular hexagon
 script = os.path.basename(sys.argv[0])                  # name of invoking script
 out_fname = "out.p"                                     # default saving file name
 movie_sh_fname = os.path.join(__path__[-1], "movie.sh") # movie making shell script file name
@@ -52,10 +53,10 @@ def init_vm(user_args=None, parser=None):
         vm = VertexModel(args.seed)
 
         if args.periodic:
-            vm.initRegularTriangularLattice(size=args.N)
+            vm.initRegularTriangularLattice(size=args.N, hexagonArea=A0)
         else:
-            vm.initOpenRegularHexagonalLattice(nCells=args.N)
-#             vm.initOpenRegularTriangularLattice(size=args.N)
+            vm.initOpenRegularHexagonalLattice(nCells=args.N, hexagonArea=A0)
+#             vm.initOpenRegularTriangularLattice(size=args.N, hexagonArea=A0)
 
     else:
 
@@ -77,10 +78,10 @@ def init_vm(user_args=None, parser=None):
 
     if args.perimeter:
         vm.addPerimeterForce("perimeter",
-            1, args.p0*np.sqrt(A0))
+            args.Gamma, args.p0*np.sqrt(A0))
     if args.area:
         vm.addAreaForce("area",
-            1, A0)
+            K, A0)
     if args.gamma != 0:
         vm.addBoundaryTension("boundary_tension",
             args.gamma)
@@ -163,6 +164,8 @@ def parse_args(user_args=None, parser=None):
     parser.add_argument("-perimeter",
         action=BooleanOptionalAction,
         help="add perimeter force")
+    parser.add_argument("-Gamma", type=float, default=1,
+        help="junction/perimeter elasticity constant")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
     # boundary line tension
@@ -175,20 +178,18 @@ def parse_args(user_args=None, parser=None):
     parser.add_argument("-abp",
         action=BooleanOptionalAction,
         help="add active Brownian force")
-    parser.add_argument("-v0", type=float, default=5e-1,
+    parser.add_argument("-v0", type=float, default=2e-1,
         help="vertex self-propulsion velocity")
     # Ornstein-Uhlenbeck tension
     parser.add_argument("-out",
         action=BooleanOptionalAction,
         help="add Ornstein-Uhlenbeck tension")
-    parser.add_argument("-t0", type=float, default=1,
+    parser.add_argument("-t0", type=float, default=4e-1,
         help="active tension mean")
-    parser.add_argument("-st0", type=float, default=5e-1,
+    parser.add_argument("-st0", type=float, default=2e-1,
         help="active tension standard deviation")
     # MODELS 0-4
-    parser.add_argument("-Gamma", type=float, default=1,
-        help="junction/perimeter elasticity constant")
-    parser.add_argument("-sigma", type=float, default=1e-1,
+    parser.add_argument("-sigma", type=float, default=4e-2,
         help="noise amplitude")
     parser.add_argument("-taur", type=float, default=1e0,
         help="relaxation time")
