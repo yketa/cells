@@ -192,6 +192,9 @@ class Read:
             dump.seek(self.skip[self.frames.tolist().index(frame)]) # skip until object (https://stackoverflow.com/questions/76252112)
             vm = pickle.load(dump)
             assert type(vm) == VertexModel
+            if False:
+                # initialise velocities and forces
+                vm.nintegrate(1, 0)
 
         return vm
 
