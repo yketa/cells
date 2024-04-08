@@ -26,7 +26,7 @@ cmap_tension = plt.cm.bwr                                       # colourmap
 norm_tension = Normalize(-0.3, 0.3)                             # interval of value represented by colourmap
 scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)  # conversion from scalar value to colour
 
-def plot_keratin(vm, fig=None, ax=None):
+def plot_keratin(vm, fig=None, ax=None, **kwargs):
 
     assert("keratin" in vm.vertexForces)
     set_call = (fig is None or ax is None)
