@@ -209,13 +209,13 @@ def plot(vm, fig=None, ax=None, update=True,
     cells = vm.getVertexIndicesByType("centre")
     if not(clear):
         if rainbow_plot:
-            scalarMap_rainbow = ScalarMappable(
-                Normalize(0, rainbow.systemSize[0]), plt.cm.hsv)
             positions0 = np.array(list(map(
-                lambda i: rainbow.vertices[i].position,
+                lambda i: rainbow.vertices[i].position[0],
                 cells)))
+            scalarMap_rainbow = ScalarMappable(
+                Normalize(positions0.min(), positions0.max(), plt.cm.hsv))
             polygons.set_color(list(map(        # colour according to previous position
-                lambda position0: scalarMap_rainbow.to_rgba(position0[0]),
+                lambda position0: scalarMap_rainbow.to_rgba(position0),
                 positions0)))
         elif "A0" in locals():
             areas = np.array(list(map(

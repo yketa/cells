@@ -56,6 +56,9 @@ def run(args, vm, plot_function=None):
                               cells.plot.plot            otherwise.
     """
 
+    vm0 = vm    # initial vertex model object
+
+    # plotting function
     if plot_function is None:
         assert(not(args.velocities and args.neighbours))    # not compatible
         if args.velocities:
@@ -64,6 +67,9 @@ def run(args, vm, plot_function=None):
             plot_function = plot_neighbours
         else:
             plot_function = plot
+    def _plot(*pargs, **kwargs):
+        return plot_function(*pargs, **kwargs,
+            rainbow=vm0 if args.rainbow else None)
 
     # frames directory
     global _frames_dir
@@ -74,7 +80,7 @@ def run(args, vm, plot_function=None):
         except NameError: pass
 
     # initialise plot
-    fig, ax = plot_function(vm)
+    fig, ax = _plot(vm)
 
     # infinite loop
     plt.ion()
@@ -94,7 +100,7 @@ def run(args, vm, plot_function=None):
             vm.nintegrate(args.iterations,
                 dt=args.dt, delta=args.delta, epsilon=args.epsilon)
 #         vm.checkMesh(["junction"])
-            plot_function(vm, fig=fig, ax=ax)
+            _plot(vm, fig=fig, ax=ax)
         except Exception as e:
             if not(type(e) is WindowClosedException):   # print traceback
                 print(traceback.format_exc(), file=sys.stderr)

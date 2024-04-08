@@ -235,6 +235,8 @@ def parse_args(user_args=None, parser=None):
 
     # DISPLAY
     if not(script == "vm.py"):
+        parser.add_argument("-rainbow", action=BooleanOptionalAction,
+            help="display rainbow plot")
         parser.add_argument("-velocities", action=BooleanOptionalAction,
             help="display velocities on vertices")
         parser.add_argument("-neighbours", action=BooleanOptionalAction,
