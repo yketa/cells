@@ -76,7 +76,7 @@ class Read:
             try:
                 with open(data_fname, "rb") as dump:
                     self.skip = pickle.load(dump)
-                print("Data loaded from %s." % data_fname, file=sys.stderr)
+                print("Data loaded from \"%s\"." % data_fname, file=sys.stderr)
                 return
             except: pass
 
@@ -106,7 +106,7 @@ class Read:
         # save skipped directory
         with open(data_fname, "wb") as dump:
             pickle.dump(self.skip, dump)
-        print("Data saved to %s." % data_fname, file=sys.stderr)
+        print("Data saved to \"%s\"." % data_fname, file=sys.stderr)
 
     def plot(self, frame, rainbow=None, override=None, **kwargs):
         """
