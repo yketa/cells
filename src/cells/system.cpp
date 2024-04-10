@@ -26,10 +26,14 @@ void VertexModel::integrate(double const& dt,
         }
     }
 
+    // perform T1s and update internal degrees of freedom
+
+    if (dt > 0) { doT1(delta, epsilon); }
+
     // move cell centres
 
     #if true
-    std::vector<double> cellUPosition(0), initialCellPosition(0);
+    std::vector<double> upos(0);
     std::vector<long int> neighbourVerticesIndices(0);
     long int numberNeighbours;
     std::vector<double> disp(0);
@@ -37,30 +41,37 @@ void VertexModel::integrate(double const& dt,
         getVertexIndicesByType("centre");
     for (long int vertexIndex : cellCentreVertexIndices) {  // only consider cell centres
 
-        cellUPosition = vertices.at(vertexIndex).getUPosition();
-        initialCellPosition = vertices.at(vertexIndex).getPosition();
+        double const cellArea = getVertexToNeighboursArea(vertexIndex);
 
+        upos = {0, 0};
         neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
         numberNeighbours = neighbourVerticesIndices.size();
-        for (long int neighbourVertexIndex : neighbourVerticesIndices) {
-            disp = wrapDiff(
-                initialCellPosition,
-                vertices.at(neighbourVertexIndex).getPosition());
-
+        std::vector<double> const uposr =           // use cell centre as reference rather than vertex
+            vertices.at(vertexIndex).getUPosition();
+        for (long int i=0; i < numberNeighbours; i++) {
+            long int const index0 =
+                neighbourVerticesIndices[i];
+            std::vector<double> const upos0 =       // from reference position
+                wrapDiff(uposr, vertices.at(index0).getUPosition());
+            long int const index1 =
+                neighbourVerticesIndices[pmod(i + 1, numberNeighbours)];
+            std::vector<double> const upos1 =       // from reference position
+                wrapDiff(uposr, vertices.at(index1).getUPosition());
             for (int dim=0; dim < 2; dim++) {
-                cellUPosition[dim] += disp[dim]/numberNeighbours;
+                upos[dim] +=
+                    (upos0[dim] + upos1[dim])*(
+                        upos0[0]*upos1[1] - upos1[0]*upos0[1]
+                    )/(6*cellArea);
             }
         }
+        for (int dim=0; dim < 2; dim++)             // add reference position
+            { upos[dim] += uposr[dim]; }
         vertices[vertexIndex].setUPosition( // unwrapped position
-            cellUPosition);
+            upos);
         vertices[vertexIndex].setPosition(  // (wrapped) position
             wrap(vertices.at(vertexIndex).getUPosition()));
     }
     #endif
-
-    // perform T1s and update internal degrees of freedom
-
-    if (dt > 0) { doT1(delta, epsilon); }
 
     // integrate internal degrees of freedom
 

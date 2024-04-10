@@ -8,6 +8,7 @@ https://pybind11.readthedocs.io/en/stable/index.html
 #include <pybind11/numpy.h> // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
 #include <pybind11/stl.h>   // https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html
 
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -600,38 +601,56 @@ PYBIND11_MODULE(bind, m) {
             "    Dictionary which associates vertex indices to position of\n"
             "    vertex.",
             pybind11::arg("wrapped")=true)
-        .def("getCentreForces",
+        .def("getCentreVelocities",
             [](VertexModel& self) {
-                std::map<long int, std::vector<double>> const forces =
-                    self.getForces();
+                std::map<long int, std::vector<double>> const velocities =
+                    self.getVelocities();
                 std::map<long int, Vertex> const vertices =
                     self.getVertices();
-                std::map<long int, std::vector<double>> centreForces;
+                std::map<long int, std::vector<double>> centreVelocities;
                 std::vector<long int> const vertexIndices =
                     self.getVertexIndicesByType("centre");
                 for (long int vertexIndex : vertexIndices) {
+                    std::vector<double> const upos =
+                        vertices.at(vertexIndex).getUPosition();
+                    double const cellArea =
+                        self.getVertexToNeighboursArea(vertexIndex);
                     std::vector<long int> const neighbours =
                         self.getNeighbourVertices(vertexIndex)[0];
                     long int const nNeighbours = neighbours.size();
-                    centreForces[vertexIndex] = {0, 0};
-                    for (long int i : neighbours) {
-                        if (inMap(forces, i)) {
-                            for (int dim=0; dim < 2; dim++) {
-                                centreForces[vertexIndex][dim] +=
-                                    (forces.at(i)).at(dim)/nNeighbours;
-                            }
+                    centreVelocities[vertexIndex] = {0, 0};
+                    for (long int i=0; i < nNeighbours; i++) {
+                        long int const index0 =
+                            neighbours[i];
+                        std::vector<double> const upos0 = self.wrapDiff(upos,
+                            vertices.at(index0).getUPosition());
+                        long int const index1 =
+                            neighbours[pmod(i + 1, nNeighbours)];
+                        std::vector<double> const upos1 = self.wrapDiff(upos,
+                            vertices.at(index1).getUPosition());
+                        for (int dim=0; dim < 2; dim++) {
+                            centreVelocities[vertexIndex][dim] +=
+                                ((velocities.at(index0).at(dim)
+                                    + velocities.at(index1).at(dim))*(
+                                    upos0[0]*upos1[1] - upos1[0]*upos0[1])
+                                + (upos0[dim] + upos1[dim])*(
+                                    velocities.at(index0).at(0)*upos1[1]
+                                    + upos0[0]*velocities.at(index1).at(1)
+                                    - velocities.at(index1).at(0)*upos0[1]
+                                    - upos1[0]*velocities.at(index0).at(1))
+                                )/(6*cellArea);
                         }
                     }
                 }
-                return centreForces;
+                return centreVelocities;
             },
-            "Compute average force around corners of each cell centre.\n"
+            "Compute velocities of the centroid of each cell.\n"
             "\n"
             "Returns\n"
             "-------\n"
-            "centreForces : {int: list} dict\n"
+            "centreVelocities : {int: list} dict\n"
             "    Dictionary which associates cell centre vertex indices to \n"
-            "    average force applied on its cell corner vertices.")
+            "    the velocity of the centroid of the cell.")
         .def("removeHalfEdgeForce",
             &VertexModel::removeHalfEdgeForce,
             "Remove half-edge force.\n"
@@ -949,7 +968,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("hexagonArea")=1)
         .def("initOpenRegularHexagonalLattice",
             &VertexModel::initOpenRegularHexagonalLattice,
-            "Initialise a regular square lattice with open outer bondary.\n"
+            "Initialise a regular square lattice with open outer boundary.\n"
             "\n"
             "Parameters\n"
             "----------\n"
@@ -963,6 +982,111 @@ PYBIND11_MODULE(bind, m) {
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,
             &pybind11_setstate<std::unique_ptr<VertexModel>>));
+
+    /*
+     *  Miscellaneous
+     *
+     */
+
+    m.def("getPercentageKeptNeighbours",
+        [](VertexModel const& vm0, VertexModel const& vm1, double const& a) {
+
+            long int nNeigh = 0;    // total number of neighbours
+            long int nKept = 0;     // number of kept neighbours
+
+            std::map<long int, HalfEdge> const halfEdges0 =
+                vm0.getHalfEdges();
+            std::map<long int, Vertex> const vertices0 =
+                vm0.getVertices();
+
+            std::map<long int, HalfEdge> const halfEdges1 =
+                vm1.getHalfEdges();
+            std::map<long int, Vertex> const vertices1 =
+                vm1.getVertices();
+
+            std::vector<long int> const junctions0 =
+                vm0.getHalfEdgeIndicesByType("junction");
+            for (long int index0 : junctions0) {
+
+                long int const cellA0 =                             // first cell of pair
+                    halfEdges0.at(
+                        halfEdges0.at(index0).getNextIndex()
+                    ).getToIndex();
+                long int const cellB0 =                             // second cell of pair
+                    halfEdges0.at(
+                        halfEdges0.at(
+                            halfEdges0.at(index0).getPairIndex()
+                        ).getNextIndex()
+                    ).getToIndex();
+                std::vector<double> const initSep =         // initial separation
+                    vm0.wrapTo(cellA0, cellB0);
+
+                if (norm2(initSep) > a) { continue; }       // too far for neighbours
+                nNeigh++;
+
+                std::vector<long int> const neighbours1 =           // half-edges to neighbours
+                    vm1.getNeighbourVertices(cellA0)[1];
+                for (long int index1 : neighbours1) {
+                    long int const cellB1 =                         // tentative second cell of pair
+                        halfEdges1.at(
+                            halfEdges1.at(
+                                halfEdges1.at(
+                                    halfEdges1.at(index1).getNextIndex()
+                                ).getPairIndex()
+                            ).getNextIndex()
+                        ).getToIndex();
+                    if (cellB1 == cellB0) {                 // these are the same cells...
+
+                        std::vector<double> const uposA0 =  // initial position of first cell
+                            vertices0.at(cellA0).getUPosition();
+                        std::vector<double> const uposA1 =  // final position of first cell
+                            vertices1.at(cellA0).getUPosition();
+
+                        std::vector<double> const uposB0 =  // initial position of second cell
+                            vertices0.at(cellB0).getUPosition();
+                        std::vector<double> const uposB1 =  // final position of second cell
+                            vertices1.at(cellB0).getUPosition();
+
+                        std::vector<double> const finSep =  // final separation
+                            {initSep[0]
+                                + (uposB1[0] - uposB0[0])
+                                - (uposA1[0] - uposA0[0]),
+                            initSep[1]
+                                + (uposB1[1] - uposB0[1])
+                                - (uposA1[1] - uposA0[1])};
+
+                        if (!(norm2(finSep) > a))           // ... which are still neighbours
+                            { nKept++; break; }
+                    }
+                }
+            }
+
+            if (nNeigh == 0) { return (double) 0; }
+            return (double) nKept/(double) nNeigh;
+        },
+        "Return percentage of kept cell neighbours between two states of a\n"
+        "vertex model.\n"
+        "\n"
+        "NOTE: It is assumed that cell centre indices match.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "vm0 : cells.bind.VertexModel\n"
+        "    Initial vertex model object.\n"
+        "vm1 : cells.bind.VertexModel\n"
+        "    Final vertex model object.\n"
+        "a : float\n"
+        "    Maximum distance between cell centres in unwrapped coordinates\n"
+        "    for them to be considered neighbours, in addition to sharing a\n"
+        "    junction. (default: inf)\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "p : float\n"
+        "    Percentage of kept cell neighbours.",
+        pybind11::arg("vm0"),
+        pybind11::arg("vm1"),
+        pybind11::arg("a")=std::numeric_limits<double>::infinity());
 
 }
 

@@ -46,7 +46,7 @@ The edges of the mesh (Fig.~\ref{fig:schematic}) divide the entire system in adj
 \end{enumerate}
 We refer to the ensemble of half-edges and vertices as the \textit{half-edge construction}. We propose in Alg.~\ref{alg:check} a way to check its consistency. Compared to the sole definition of vertices and (unoriented) edges, this construction allows for faster and in some cases easier computations. (Such information redundancy comes at the cost of memory usage.) We show with Alg.~\ref{alg:neighbours} how to identify all neighbours of any vertex given that each vertex contains the information of (at least) one half-edge leaving the vertex.
 
-Computationally, we define two elementary classes \textsc{Vertex} and \textsc{HalfEdge} which are collected in a class \textsc{Mesh} (see \href{../mesh.hpp}{\textsc{mesh.hpp}}). Physical properties are described through an attribute \textsc{type} of these elementary classes. This attribute does not interfere with basic operations on the mesh, in this way we separate the geometrical construction from the physical construction.
+Computationally, we define two elementary classes \textsc{Vertex} and \textsc{HalfEdge} which are collected in a class \textsc{Mesh} (see \href{../src/cells/mesh.hpp}{\textsc{mesh.hpp}}). Physical properties are described through an attribute \textsc{type} of these elementary classes. This attribute does not interfere with basic operations on the mesh, in this way we separate the geometrical construction from the physical construction.
 
 \section{T1 transition}
 
@@ -75,7 +75,7 @@ Merging two vertices amounts, in the half-edge construction, to deleting 2 trian
 \end{figure}
 
 \begin{algorithm}[!t]
-\caption{Delete an edge (see \textsc{Mesh::deleteEdge} in \href{../mesh.cpp}{\textsc{mesh.cpp}}).}
+\caption{Delete an edge (see \textsc{Mesh::deleteEdge} in \href{../src/cells/mesh.cpp}{\textsc{mesh.cpp}}).}
 \label{alg:delete}
 \begin{algorithmic}[1]
 \REQUIRE Half-edge $\boldsymbol{h}$ belonging to the edge to delete. \COMMENT[0.4\textwidth]{Thick {\color{red}red} half-edge in Fig.~\ref{fig:delete}.}
@@ -122,33 +122,57 @@ Creating an edge involves the same steps as deleting an edge but in reverse orde
 We can now use these algorithms (to delete an edge and create a new one) in order to perform the T1 transition of Fig.~\ref{fig:t1} (see Alg.~\ref{alg:t1}). We discard the stabilisation of four-fold vertices \cite{spencer2017vertex} then, apart from the junction to delete, additional information needed to do this transition are the direction of new junction as well as its length. A possible choice is to create the junction orthogonal to the original junction.
 
 \begin{algorithm}[H]
-\caption{Perform T1 (see \textsc{System::doT1} in \href{../system.cpp}{\textsc{system.cpp}}).}
+\caption{Perform T1 (see \textsc{System::doT1} in \href{../src/cells/system.cpp}{\textsc{system.cpp}}).}
 \label{alg:t1}
 \begin{algorithmic}[1]
 \REQUIRE Half-edge $\boldsymbol{h}$ belonging to the junction to delete, length $\ell$ of the new junction to create.
 \STATE Set $\mu, \nu =$ origin and destination vertices of $\boldsymbol{h}$.
 \LINECOMMENT{Identify half-edge to split to create new junction.}
 \STATE Set $\mathcal{N}_{\mu}, \mathcal{N}_{\nu} =$ neighbours of $\mu$ and $\nu$. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:neighbours}.}
-\STATE Set ensemble of half-edges $\Omega = \emptyset$.
+\STATE Set ensembles of half-edges $\Omega = \emptyset$ and $\Omega^{\prime} = \emptyset$.
 \FOR{$\xi \in \mathcal{N}_{\mu}$}
     \IF{$\xi$ is a cell centre and $\xi \notin \mathcal{N}_{\nu}$}
         \STATE Add half-edge $\mu \to \xi$ to $\Omega$.
     \ENDIF
+    \IF{$\xi$ is a boundary vertex}
+        \STATE Add half-edge $\mu \to \xi$ to $\Omega^{\prime}$.
+    \ENDIF
 \ENDFOR
-\ASSERT $\Omega \neq \emptyset$
-\STATE Set $\boldsymbol{h}^{\prime} =$ randomly picked element of $\Omega$.
-\STATE Set ensemble of half-edges $\Omega = \emptyset$.
+\ASSERT $\Omega \neq \emptyset$ or $\Omega^{\prime} \neq \emptyset$
+\IF{$\Omega \neq \emptyset$}
+    \STATE Set $\boldsymbol{h}^{\prime} =$ randomly picked element of $\Omega$. \COMMENT[0.53\textwidth]{Privilege half-edge to a cell centre over half-edge to a boundary.}
+\ELSE
+    \STATE Set $\boldsymbol{h}^{\prime} =$ randomly picked element of $\Omega^{\prime}$.
+\ENDIF
+\STATE Set $\boldsymbol{h}^{\prime\dagger} =$ pair half-edge of $\boldsymbol{h}^{\prime}$. \COMMENT[0.53\textwidth]{Save both the half-edge and its pair in case one is deleted on l.~\ref{line:del}.}
+\STATE Set ensembles of half-edges $\Omega = \emptyset$ and $\Omega^{\prime} = \emptyset$.
 \FOR{$\xi \in \mathcal{N}_{\nu}$}
     \IF{$\xi$ is a cell centre and $\xi \notin \mathcal{N}_{\mu}$}
         \STATE Add half-edge $\nu \to \xi$ to $\Omega$.
     \ENDIF
+    \IF{$\xi$ is a boundary vertex}
+        \STATE Add half-edge $\mu \to \xi$ to $\Omega^{\prime}$.
+    \ENDIF
 \ENDFOR
-\ASSERT $\Omega \neq \emptyset$
-\STATE Set $\boldsymbol{h}^{\prime\prime} =$ randomly picked element of $\Omega$.
+\ASSERT $\Omega \neq \emptyset$ or $\Omega^{\prime} \neq \emptyset$
+\IF{$\Omega \neq \emptyset$}
+    \STATE Set $\boldsymbol{h}^{\prime\prime} =$ randomly picked element of $\Omega$.
+\ELSE
+    \STATE Set $\boldsymbol{h}^{\prime\prime} =$ randomly picked element of $\Omega^{\prime}$.
+\ENDIF
+\STATE Set $\boldsymbol{h}^{\prime\prime\dagger} =$ pair half-edge of $\boldsymbol{h}^{\prime\prime}$.
 \LINECOMMENT{Determine angle of new junction.}
 \STATE Set $\alpha = \mathrm{arg}(\boldsymbol{h}) + \pi/2$.
 \LINECOMMENT{Perform T1.}
-\STATE Delete edge to which $\boldsymbol{h}$ belongs. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:delete}. At this point $\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$ go out of the same vertex $\nu$.}
+\STATE Delete edge containing $\boldsymbol{h}$, set $\Omega =$ \{deleted half-edges\}. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:delete}.}%
+\label{line:del}
+\IF{$\boldsymbol{h}^{\prime} \in \Omega$} \COMMENT[0.53\textwidth]{Half-edge $\boldsymbol{h}^{\prime}$ was deleted in the previous step.}
+    \STATE Set $\boldsymbol{h}^{\prime} =$ pair half-edge of $\boldsymbol{h}^{\prime\dagger}$. \COMMENT[0.53\textwidth]{Not both $\boldsymbol{h}^{\prime}$ and its pair can be deleted at the same time.}
+\ENDIF
+\IF{$\boldsymbol{h}^{\prime\prime} \in \Omega$}
+    \STATE Set $\boldsymbol{h}^{\prime\prime} =$ pair half-edge of $\boldsymbol{h}^{\prime\prime\dagger}$.
+\ENDIF
+\LINECOMMENT{At this point $\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$ go out of the same vertex $\nu$.}
 \STATE Create an edge from $\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$ with additional vertex $\xi$. \COMMENT[0.53\textwidth]{Use Alg.~\ref{alg:create}. Index of vertex $\xi$ is returned by the algorithm.}
 \STATE Move vertices $\nu$ and $\xi$ a distance $\ell$ apart in the direction given by $\alpha$.
 \end{algorithmic}
@@ -158,7 +182,23 @@ We can now use these algorithms (to delete an edge and create a new one) in orde
 
 Open boundaries are treated as special vertices for which the orientation condition (Alg.~\ref{alg:check},~l.~\ref{alg:checkori}) is not checked. It is important that the half-edge construction remains well defined so that it is possible to move along the boundary. Finally, when performing T1s (Alg.~\ref{alg:t1}), half-edges towards an open boundary can be considered as half-edges to be split ($\boldsymbol{h}^{\prime}$ and $\boldsymbol{h}^{\prime\prime}$) even though the boundary is a shared neighbour of two vertices, the only important condition is that at least one of these two half-edges has to not go to the boundary.
 
-% \bibliography{ref}
+\section{Movement of cell centres}
+
+In the absence of forces acting on the vertices corresponding to cell centres, we propose to identify them with the centroid of the polygon corresponding to the cell. In the case of a planar mesh this polygon is not intersecting and we write the position of the centroid of cell $i$ \cite{enwiki:1211908656, enwiki:1216991738}
+\begin{subequations}
+\begin{align}
+&\boldsymbol{r}_i - \boldsymbol{r}^0 = \frac{1}{6 A_i} \sum_{\mu \in i} \Big[(\boldsymbol{r}_{\mu} - \boldsymbol{r}^0) + (\boldsymbol{r}_{\mu+1} - \boldsymbol{r}^0)\Big]\Big[(x_{\mu} - x^0) (y_{\mu+1} - y^0) - (x_{\mu+1} - x^0)(y_{\mu} - y^0)\Big],\\
+\label{eq:centrevel}
+&\begin{aligned}
+\dot{\boldsymbol{r}}_i &= \frac{1}{6 A_i} \sum_{\mu \in i} \Bigg[\Big[(\boldsymbol{r}_{\mu} - \boldsymbol{r}^0) + (\boldsymbol{r}_{\mu+1} - \boldsymbol{r}^0)\Big]\Big[\dot{x}_{\mu}(y_{\mu+1} - y^0) + (x_{\mu} - x^0)\dot{y}_{\mu+1} - \dot{x}_{\mu+1}(y_{\mu} - y^0) - (x_{\mu+1} - x^0)\dot{y}_{\mu}\Big]\\
+&\qquad\qquad\qquad+ \Big[\dot{\boldsymbol{r}}_{\mu} + \dot{\boldsymbol{r}}_{\mu+1}\Big]\Big[(x_{\mu} - x^0)(y_{\mu+1} - y^0) - (x_{\mu+1} - x^0)(y_{\mu} - y^0)\Big]\Bigg]\\
+&\qquad - \frac{\dot{A}_i}{2 A_i} (\boldsymbol{r}_i - \boldsymbol{r}^0),
+\end{aligned}
+\end{align}
+\end{subequations}
+where $A_i$ is the area of the cell, the indices $\mu$ are ordered along the perimeter of the polygon, and $\boldsymbol{r}^0$ some reference point which can be set as $\boldsymbol{r}_i$ in \eqref{eq:centrevel} to cancel the last term.
+
+\bibliography{ref}
 
 \appendix
 
@@ -166,7 +206,7 @@ Open boundaries are treated as special vertices for which the orientation condit
 \section{Half-edge construction algorithms}
 
 \begin{algorithm}[H]
-\caption{Check half-edge construction (see \textsc{Mesh::checkMesh} in \href{../mesh.cpp}{\textsc{mesh.cpp}}).}
+\caption{Check half-edge construction (see \textsc{Mesh::checkMesh} in \href{../src/cells/mesh.cpp}{\textsc{mesh.cpp}}).}
 \label{alg:check}
 \begin{algorithmic}[1]
 \REQUIRE Ensemble $\mathcal{V}$ of all vertices, ensemble $\mathcal{H}$ of all half-edges.
@@ -197,7 +237,7 @@ Open boundaries are treated as special vertices for which the orientation condit
 \end{algorithm}
 
 \begin{algorithm}[H]
-\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices (see \textsc{Mesh::getNeighbourVertices} in \href{../mesh.cpp}{\textsc{mesh.cpp}}).}
+\caption{Find all neighbours of an arbitrary vertex and all half-edges from this vertex to its neighbours. All vertices (cell centre or not) are denoted with latin indices (see \textsc{Mesh::getNeighbourVertices} in \href{../cells/src/mesh.cpp}{\textsc{mesh.cpp}}).}
 \label{alg:neighbours}
 \begin{algorithmic}[1]
 \REQUIRE Arbitrary half-edge $\boldsymbol{h}$ departing from a given vertex $v$.
@@ -221,7 +261,7 @@ Open boundaries are treated as special vertices for which the orientation condit
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[scale=0.65*\scale]
+\begin{tikzpicture}[scale=0.55*\scale]
 \input{figs/create}
 \end{tikzpicture}
 \caption{Representation of edge creation and deletion in the half-edge construction. (See Fig.~\ref{fig:delete} for representation in the orthogonal direction.)}
@@ -229,7 +269,7 @@ Open boundaries are treated as special vertices for which the orientation condit
 \end{figure}
 
 \begin{algorithm}[H]
-\caption{Create an edge (see \textsc{Mesh::createEdge} in \href{../mesh.cpp}{\textsc{mesh.cpp}}).}
+\caption{Create an edge (see \textsc{Mesh::createEdge} in \href{../src/cells/mesh.cpp}{\textsc{mesh.cpp}}).}
 \label{alg:create}
 \begin{algorithmic}[1]
 \REQUIRE Half-edges $\boldsymbol{h}$ and $\boldsymbol{h}^{\prime}$ going out of the same vertex. \COMMENT[0.45\textwidth]{Thick {\color{green}green} and {\color{yellow}yellow} half-edges in Fig.~\ref{fig:create}.}

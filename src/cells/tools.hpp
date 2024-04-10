@@ -26,11 +26,14 @@ template<class T> void eraseInVec(std::vector<T>& vec, T const& val) {          
     if (position != vec.end()) { vec.erase(position); } // if element was found
 }
 
+template<class T> T norm2(std::vector<T> vec)                                   // norm 2 of vector
+    { T nsq = 0; for (T el : vec) nsq += el*el; return sqrt(nsq); }
+
 template<class T>
-bool const inVec(std::vector<T> const& vec, T const& val)   // is value in vector
+bool const inVec(std::vector<T> const& vec, T const& val)                       // is value in vector
     { return (std::find(vec.begin(), vec.end(), val) != vec.end()); }
 template<class T, class TT>
-bool const inMap(std::map<T, TT> const& map, T const& key)  // is key in map
+bool const inMap(std::map<T, TT> const& map, T const& key)                      // is key in map
     { return (map.find(key) != map.end()); }
 
 template<class T, class TT> T const maxKey(std::map<T, TT> const& map)          // return max key of map (https://stackoverflow.com/questions/1660195)
