@@ -262,7 +262,7 @@ def plot(vm, fig=None, ax=None, update=True,
 def plot_neighbours(vm, fig=None, ax=None, update=True,
     **kwargs):
     """
-    Plot vertex model with number of neighbours.
+    Plot vertex model with number of neighbours per cell.
 
     Parameters
     ----------
@@ -327,6 +327,80 @@ def plot_neighbours(vm, fig=None, ax=None, update=True,
 
     return fig, ax
 
+def plot_hexatic(vm, fig=None, ax=None, update=True,
+    **kwargs):
+    """
+    Plot vertex model with hexatic bond orientational order parameter per cell.
+
+    Parameters
+    ----------
+    vm : cells.bind.VertexModel
+        State of the system to plot.
+    fig : matplotlib.figure.Figure or None
+        Figure on which to plot. (default: None)
+        NOTE: if fig == None then a new figure and axes subplot is created.
+    ax : matplotlib.axes._subplots.AxesSubplot or None
+        Axes subplot on which to plot. (default: None)
+        NOTE: if ax == None then a new figure and axes subplot is created.
+    update : bool
+        Update figure canvas. (default: True)
+
+    Additional keywords arguments are passed to cells.plot.plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure.
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Axes subplot.
+    """
+
+    assert(not("clear" in kwargs) or not(kwargs["clear"]))  # not compatible with clear plot
+
+    set_call = (fig is None or ax is None)
+    fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
+
+    # compute hexatic bond orientational order parameter
+    cells = vm.getVertexIndicesByType("centre")
+    vectorsToNeighbours = vm.getVectorsToNeighbouringCells()
+    psi6 = np.array(list(map(
+        lambda i: np.mean(list(map(
+            lambda v: np.exp(1j*6*angle2(*v)),
+            vectorsToNeighbours[i]))),
+        cells)))
+
+    # colourbars
+    if set_call:
+        # measure
+        ax_size, fig_width, fig_height = _measure_fig(ax)
+        # colourbar
+        cbar_psi6 = fig.colorbar(
+            mappable=scalarMap_orientation, ax=ax,
+            shrink=0.75, pad=0.01)
+        cbar_psi6.set_label(
+            r"$\mathrm{arg}(\psi_{6,i})$",
+            rotation=270, labelpad=20)
+        cbar_psi6.set_ticks(
+            [-np.pi, -2*np.pi/3, -np.pi/3, 0,
+                np.pi/3, 2*np.pi/3, np.pi])
+        cbar_psi6.set_ticklabels(
+            [r"$-\pi$", r"$-\frac{2\pi}{3}$", r"$\frac{\pi}{3}$", r"$0$",
+                r"$\frac{\pi}{3}$", r"$\frac{2\pi}{3}$", r"$\pi$"])
+        # resize
+        ax_size, fig_width, fig_height = (
+            _resize_fig(ax, ax_size, fig_width, fig_height))
+
+    # set colours
+    ax.collections[1].set_color(scalarMap_orientation.to_rgba(
+        angle2(psi6.real, psi6.imag)))
+    ax.collections[1].set_alpha(
+        np.abs(psi6))
+
+    # update canvas
+    if update: _update_canvas(fig)
+
+    return fig, ax
+
 def plot_velocities(vm, fig=None, ax=None, update=True,
     av_norm=0.2, hide_centres=True, **kwargs):
     """
@@ -379,8 +453,6 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
                     .mean())
 
         if av_norm != 0:
-            scalarMap = ScalarMappable(
-                norm=Normalize(vmin=0, vmax=2*np.pi), cmap=plt.cm.hsv)
             arrows = PatchCollection(
                 list(map(
                     lambda i:
@@ -388,8 +460,8 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
                             *np.array(velocities[i])/av_norm,
                             width=5e-2, head_width=4e-1,
                             length_includes_head=False,
-                            color=scalarMap.to_rgba(
-                                angle2(*velocities[i])%(2*np.pi)),
+                            color=scalarMap_orientation.to_rgba(
+                                angle2(*velocities[i])),
                             zorder=10),
                     indices)))
             ax.add_collection(arrows)
@@ -413,7 +485,7 @@ scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)              # co
 
 # orientation colourbar
 cmap_orientation = plt.cm.hsv                                               # colourmap
-norm_orientation = Normalize(0, 2*np.pi)                                    # interval of value represented by colourmap
+norm_orientation = Normalize(-np.pi, np.pi)                                 # interval of value represented by colourmap
 scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
 
 # neighbours colourbar

@@ -31,6 +31,7 @@ OPTIONS
     -c  Clear the plot of all cell colouring.
     -v  Display velocities on vertices.
     -n  Highlight number of neighbours per cell.
+    -H  Highlight hexatic bond orientational order parameter per cell.
 
     -d  Make movie from frames in directory.
         DEFAULT: (not specified)
@@ -47,7 +48,7 @@ OPTIONS
 
 # OPTIONS
 
-while getopts "hrcvnd:p:F:y" OPTION; do
+while getopts "hrcvnHd:p:F:y" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
@@ -59,6 +60,8 @@ while getopts "hrcvnd:p:F:y" OPTION; do
             __VELOCITIES=true;;
         n)  # neighbours plot
             __NEIGHBOURS=true;;
+        H)  # hexatic plot
+            __HEXATIC=true;;
         d)  # frames directory
             __DIR="$OPTARG";;
         p)  # python executable
@@ -94,6 +97,7 @@ Save frames from simulation file.
 from cells.read import Read, _progressbar
 ${__VELOCITIES:+from cells.plot import plot_velocities}
 ${__NEIGHBOURS:+from cells.plot import plot_neighbours}
+${__HEXATIC:+from cells.plot import plot_hexatic}
 
 import os
 
@@ -110,7 +114,8 @@ for frame in frames:
         ${__RAINBOW:+, rainbow=r.t0[0]}
         ${__CLEAR:+, clear=True}
         ${__VELOCITIES:+, override=plot_velocities}
-        ${__NEIGHBOURS:+, override=plot_neighbours})
+        ${__NEIGHBOURS:+, override=plot_neighbours}
+        ${__HEXATIC:+, override=plot_hexatic})
     # save
     r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame)))
 

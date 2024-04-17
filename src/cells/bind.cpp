@@ -34,8 +34,12 @@ PYBIND11_MODULE(bind, m) {
      */
 
     m.def("angle2",
-        [](double const& x, double const& y) { return angle2(x, y); },
-        "Angle of 2D vector (x, y) with respect to horizontax axis.",
+        pybind11::vectorize([](double const& x, double const& y) {
+            return pmod(angle2(x, y)
+                + std::numbers::pi, 2*std::numbers::pi)
+                - std::numbers::pi;
+        }),
+        "Angle of vector (x, y) with respect to horizontax axis in [-pi, pi].",
         pybind11::arg("x"),
         pybind11::arg("y"));
 
@@ -601,56 +605,7 @@ PYBIND11_MODULE(bind, m) {
             "    Dictionary which associates vertex indices to position of\n"
             "    vertex.",
             pybind11::arg("wrapped")=true)
-        .def("getCentreVelocities",
-            [](VertexModel& self) {
-                std::map<long int, std::vector<double>> const velocities =
-                    self.getVelocities();
-                std::map<long int, Vertex> const vertices =
-                    self.getVertices();
-                std::map<long int, std::vector<double>> centreVelocities;
-                std::vector<long int> const vertexIndices =
-                    self.getVertexIndicesByType("centre");
-                for (long int vertexIndex : vertexIndices) {
-                    std::vector<double> const upos =
-                        vertices.at(vertexIndex).getUPosition();
-                    double const cellArea =
-                        self.getVertexToNeighboursArea(vertexIndex);
-                    std::vector<long int> const neighbours =
-                        self.getNeighbourVertices(vertexIndex)[0];
-                    long int const nNeighbours = neighbours.size();
-                    centreVelocities[vertexIndex] = {0, 0};
-                    for (long int i=0; i < nNeighbours; i++) {
-                        long int const index0 =
-                            neighbours[i];
-                        std::vector<double> const upos0 = self.wrapDiff(upos,
-                            vertices.at(index0).getUPosition());
-                        long int const index1 =
-                            neighbours[pmod(i + 1, nNeighbours)];
-                        std::vector<double> const upos1 = self.wrapDiff(upos,
-                            vertices.at(index1).getUPosition());
-                        for (int dim=0; dim < 2; dim++) {
-                            centreVelocities[vertexIndex][dim] +=
-                                ((velocities.at(index0).at(dim)
-                                    + velocities.at(index1).at(dim))*(
-                                    upos0[0]*upos1[1] - upos1[0]*upos0[1])
-                                + (upos0[dim] + upos1[dim])*(
-                                    velocities.at(index0).at(0)*upos1[1]
-                                    + upos0[0]*velocities.at(index1).at(1)
-                                    - velocities.at(index1).at(0)*upos0[1]
-                                    - upos1[0]*velocities.at(index0).at(1))
-                                )/(6*cellArea);
-                        }
-                    }
-                }
-                return centreVelocities;
-            },
-            "Compute velocities of the centroid of each cell.\n"
-            "\n"
-            "Returns\n"
-            "-------\n"
-            "centreVelocities : {int: list} dict\n"
-            "    Dictionary which associates cell centre vertex indices to \n"
-            "    the velocity of the centroid of the cell.")
+        // remove forces methods [VertexModel (system.hpp)]
         .def("removeHalfEdgeForce",
             &VertexModel::removeHalfEdgeForce,
             "Remove half-edge force.\n"
@@ -981,7 +936,116 @@ PYBIND11_MODULE(bind, m) {
         // pickle
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,
-            &pybind11_setstate<std::unique_ptr<VertexModel>>));
+            &pybind11_setstate<std::unique_ptr<VertexModel>>))
+        // analysis
+        .def("getCentreVelocities",
+            [](VertexModel& self) {
+
+                std::map<long int, std::vector<double>> centreVelocities;
+
+                std::map<long int, std::vector<double>> const velocities =
+                    self.getVelocities();
+                std::map<long int, Vertex> const vertices =
+                    self.getVertices();
+
+                std::vector<long int> const vertexIndices =
+                    self.getVertexIndicesByType("centre");
+                for (long int vertexIndex : vertexIndices) {
+
+                    std::vector<double> const upos =                            // uwrapped position of cell
+                        vertices.at(vertexIndex).getUPosition();
+                    double const cellArea =                                     // cell area
+                        self.getVertexToNeighboursArea(vertexIndex);
+
+                    std::vector<long int> const neighbours =
+                        self.getNeighbourVertices(vertexIndex)[0];
+                    long int const nNeighbours = neighbours.size(); // number of neighbours
+                    centreVelocities[vertexIndex] = {0, 0};
+                    for (long int i=0; i < nNeighbours; i++) {      // loop over neighbours
+
+                        long int const index0 =
+                            neighbours[i];
+                        std::vector<double> const upos0 = self.wrapDiff(upos,   // unwrapped position of neighbour
+                            vertices.at(index0).getUPosition());
+                        long int const index1 =
+                            neighbours[pmod(i + 1, nNeighbours)];
+                        std::vector<double> const upos1 = self.wrapDiff(upos,   // unwrapped position of next neighbour
+                            vertices.at(index1).getUPosition());
+
+                        for (int dim=0; dim < 2; dim++) {
+                            centreVelocities[vertexIndex][dim] +=
+                                ((velocities.at(index0).at(dim)
+                                    + velocities.at(index1).at(dim))*(
+                                    upos0[0]*upos1[1] - upos1[0]*upos0[1])
+                                + (upos0[dim] + upos1[dim])*(
+                                    velocities.at(index0).at(0)*upos1[1]
+                                    + upos0[0]*velocities.at(index1).at(1)
+                                    - velocities.at(index1).at(0)*upos0[1]
+                                    - upos1[0]*velocities.at(index0).at(1))
+                                )/(6*cellArea);
+                        }
+                    }
+                }
+
+                return centreVelocities;
+            },
+            "Compute velocities of the centroid of each cell.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "centreVelocities : {int: list} dict\n"
+            "    Dictionary which associates cell centre vertex indices to\n"
+            "    the velocity of the centroid of the cell.")
+        .def("getVectorsToNeighbouringCells",
+            [](VertexModel& self) {
+
+                std::map<long int, std::vector<std::vector<double>>>
+                    vectorsToNeighbours;
+
+                std::map<long int, Vertex> const vertices =
+                    self.getVertices();
+                std::map<long int, HalfEdge> const halfEdges =
+                    self.getHalfEdges();
+
+                std::vector<long int> const vertexIndices =
+                    self.getVertexIndicesByType("centre");
+                for (long int vertexIndex : vertexIndices) {
+                    vectorsToNeighbours.emplace(vertexIndex,
+                        std::vector<std::vector<double>>(0));
+
+                    std::vector<long int> const halfEdgesToNeighbours =
+                        self.getNeighbourVertices(vertexIndex)[1];
+                    for (long int index : halfEdgesToNeighbours) {  // loop over half-edges to neighbour vertices
+
+                        long int const neighbourVertexIndex =       // neighbour cell index
+                            halfEdges.at(
+                                halfEdges.at(
+                                    halfEdges.at(
+                                        halfEdges.at(index).getNextIndex()
+                                    ).getPairIndex()
+                                ).getNextIndex()
+                            ).getToIndex();
+
+                        if (vertices.at(neighbourVertexIndex).getBoundary())    // ignore boundary vertices
+                            { continue; }
+                        assert(                                                 // the vertex should be a cell centre
+                            vertices.at(neighbourVertexIndex).getType()
+                                == "centre");
+                        vectorsToNeighbours[vertexIndex].push_back(
+                            self.wrapTo(vertexIndex, neighbourVertexIndex,      // unnormalised vector to neighbouring cell
+                                false));
+                    }
+                }
+
+                return vectorsToNeighbours;
+            },
+            "Compute vectors to neighbouring cells.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "vectorsToNeighbours : {int: list} dict\n"
+            "    Dictionary which associates cell centre vertex indices to\n"
+            "    list of vectors to neighbouring cells.");
 
     /*
      *  Miscellaneous
