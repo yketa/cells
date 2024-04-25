@@ -151,6 +151,17 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
+    pybind11::class_<VolumeForce,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<VolumeForce>>(
+        m, "VolumeForce",
+        "Python wrapper around C++ volume restoring force computation object.")
+        .def_property("height",
+            &VolumeForce::getHeight,
+            &VolumeForce::setHeight)
+        .def_property_readonly("heightVelocity",
+            &VolumeForce::getHeightVelocity);
+
     pybind11::class_<ActiveBrownianForce,
         VertexForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<ActiveBrownianForce>>(
@@ -656,6 +667,25 @@ PYBIND11_MODULE(bind, m) {
             "    Target area.",
             pybind11::arg("name"),
             pybind11::arg("kA"),
+            pybind11::arg("A0"))
+        .def("addVolumeForce",
+            &VertexModel::addVertexForce<VolumeForce,
+                double const&, double const&, double const&>,
+            "Add cell volume restoring force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "kV : float\n"
+            "    Volume elasticity.\n"
+            "h0 : float\n"
+            "    Target height.\n"
+            "A0 : float\n"
+            "    Target area.",
+            pybind11::arg("name"),
+            pybind11::arg("kV"),
+            pybind11::arg("h0"),
             pybind11::arg("A0"))
         .def("addEdgePullForce",
             &VertexModel::addVertexForce<EdgePullForce,

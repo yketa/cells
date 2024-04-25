@@ -82,6 +82,9 @@ def init_vm(user_args=None, parser=None):
     if args.area:
         vm.addAreaForce("area",
             K, A0)
+    if args.volume:
+        vm.addVolumeForce("volume",
+            K, args.h0, A0)
     if args.gamma != 0:
         vm.addBoundaryTension("boundary_tension",
             args.gamma)
@@ -156,10 +159,6 @@ def parse_args(user_args=None, parser=None):
         help="input frame (< 0 gets last frame) (! used when -input != None)")
 
     # FORCES
-    # area force
-    parser.add_argument("-area",
-        action=BooleanOptionalAction,
-        help="add area force")
     # perimeter force
     parser.add_argument("-perimeter",
         action=BooleanOptionalAction,
@@ -168,6 +167,16 @@ def parse_args(user_args=None, parser=None):
         help="junction/perimeter elasticity constant")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
+    # area force
+    parser.add_argument("-area",
+        action=BooleanOptionalAction,
+        help="add area force")
+    # volume force
+    parser.add_argument("-volume",
+        action=BooleanOptionalAction,
+        help="add volume force")
+    parser.add_argument("-h0", type=float, default=1,
+        help="dimensionless target height of cell")
     # boundary line tension
     parser.add_argument("-gamma", type=float, default=0,
         help="line tension on open boundary")

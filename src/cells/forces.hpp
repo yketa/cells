@@ -123,6 +123,110 @@ Cell area restoring force.
 
 };
 
+class VolumeForce : public VertexForce<ForcesType> {
+/*
+Cell volume restoring force.
+*/
+
+    protected:
+
+        Mesh* const mesh;                           // mesh object
+        std::map<long int, double> height;          // height of each cell
+
+        std::map<long int, double> heightVelocity;  // height velocity of each cell
+
+    public:
+
+        VolumeForce(
+            double const& kV_, double const& h0_, double const& A0_,
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("centre",
+                {{"kV", kV_}, {"h0", h0_}, {"A0", A0_}},
+                forces_, vertices_),
+            mesh(mesh_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getHeight() const
+            { return height; }
+        void setHeight(std::map<long int, double> const& height_)
+            { height = height_; }
+
+        std::map<long int, double> const& getHeightVelocity() const
+            { return heightVelocity; }
+
+        void addForce(Vertex const& vertex) override {
+            double const volume = height[vertex.getIndex()]*
+                mesh->getVertexToNeighboursArea(vertex.getIndex());
+            std::vector<long int> neighbourVerticesIndices =
+                mesh->getNeighbourVertices(vertex.getIndex())[0];
+            long int const numberNeighbours = neighbourVerticesIndices.size();
+            std::vector<double> crossToPreviousNeighbour, crossToNextNeighbour;
+            for (int i=0; i < numberNeighbours; i++) {
+                assert(vertices->at(neighbourVerticesIndices[i]).getType()
+                    != "centre");
+                crossToPreviousNeighbour = cross2z(mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i - 1, numberNeighbours)],
+                    false));
+                crossToNextNeighbour = cross2z(mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i + 1, numberNeighbours)],
+                    false));
+                for (int dim=0; dim < 2; dim++) {
+                    (*forces)[neighbourVerticesIndices[i]][dim] +=
+                        (parameters.at("kV")/2.)*height[vertex.getIndex()]*(
+                            volume - parameters.at("h0")*parameters.at("A0"))*(
+                            crossToPreviousNeighbour[dim]
+                                - crossToNextNeighbour[dim]);
+                }
+            }
+            heightVelocity[vertex.getIndex()] += -parameters.at("kV")*
+                (volume - parameters.at("h0")*parameters.at("A0"))*volume;
+        }
+
+        void integrate(double const& dt) override {
+            // index correspondence between vertices, heights, and height velocities
+            for (auto it=height.begin(); it != height.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = height.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = height.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=heightVelocity.begin();
+                it != heightVelocity.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = heightVelocity.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = heightVelocity.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if (!inMap(heightVelocity, it->first)                 // new vertex index
+                    && (it->second).getType() == type) {
+                    height[it->first] = parameters.at("h0");
+                    heightVelocity[it->first] = 0;
+                }
+            }
+            // integrate heights
+            for (auto it=height.begin(); it != height.end(); ++it) {
+                it->second += dt*heightVelocity[it->first];
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
 class EdgePullForce : public VertexForce<ForcesType> {
 /*
 Pulling on Vertices at the ounter border with a constant radial tension.

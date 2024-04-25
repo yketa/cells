@@ -74,6 +74,8 @@ def plot(vm, fig=None, ax=None, update=True,
             p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
         else:
             P0 = vm.vertexForces["perimeter"].parameters["P0"]
+    if "volume" in vm.vertexForces:
+        h0 = vm.vertexForces["volume"].parameters["h0"]
     if "boundary_tension" in vm.vertexForces:
         gamma = vm.vertexForces["boundary_tension"].parameters["gamma"]
     if "abp" in vm.vertexForces:
@@ -121,7 +123,18 @@ def plot(vm, fig=None, ax=None, update=True,
 
             ax_size, fig_width, fig_height = _measure_fig(ax)
 
-            if "area" in vm.vertexForces:
+            if "volume" in vm.vertexForces:
+                cbar_volume = fig.colorbar(
+                    mappable=scalarMap_area, ax=ax,
+                    shrink=0.75, pad=0.01)
+                cbar_volume.set_label(
+                    r"$(h_i - \left<h_i\right>)/\mathrm{std}(h_i)$",
+                    rotation=270, labelpad=20)
+                # resize
+                ax_size, fig_width, fig_height = (
+                    _resize_fig(ax, ax_size, fig_width, fig_height))
+
+            if "area" in vm.vertexForces and not("volume" in vm.vertexForces):
                 cbar_area = fig.colorbar(
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)
@@ -217,15 +230,24 @@ def plot(vm, fig=None, ax=None, update=True,
             polygons.set_color(list(map(        # colour according to previous position
                 lambda position0: scalarMap_rainbow.to_rgba(position0),
                 positions0)))
+        elif "h0" in locals():
+            heights = np.array(list(map(
+                lambda i: vm.vertexForces["volume"].height[i],
+                cells)))
+            heights_mean, heights_std = heights.mean(), heights.std()
+            if heights_std != 0:
+                polygons.set_color(list(map(    # colour according to height
+                    lambda s_height: scalarMap_area.to_rgba(s_height),
+                    (heights - heights_mean)/heights_std)))
         elif "A0" in locals():
             areas = np.array(list(map(
                 lambda i: vm.getVertexToNeighboursArea(i),
                 cells)))
-            areas_std = areas.std()
+            areas_mean, areas_std = areas.mean(), areas.std()
             if areas_std != 0:
                 polygons.set_color(list(map(    # colour according to area
                     lambda s_area: scalarMap_area.to_rgba(s_area),
-                    (areas - areas.mean())/areas_std)))
+                    (areas - areas_mean)/areas_std)))
     ax.add_collection(polygons)
 
     # vertex indices

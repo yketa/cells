@@ -68,6 +68,40 @@ VertexModel::addVertexForce<AreaForce, pybind11::tuple const&>(
 }
 
 /*
+ *  VolumeForce
+ *
+ */
+
+// save state
+pybind11::tuple VolumeForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "VolumeForce",
+        // state
+        parameters, height);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<VolumeForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 3);
+    assert(t[0].cast<std::string>() == "VolumeForce");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addVertexForce<VolumeForce, double const&, double const&, double const&>(
+        name, parameters.at("kV"), parameters.at("h0"), parameters.at("A0"));
+    // set internal degrees of freedom state
+    std::map<long int, double> const height =
+        t[2].cast<std::map<long int, double>>();
+    std::shared_ptr<VolumeForce> vf =
+        std::static_pointer_cast<VolumeForce>(
+            vertexForces[name]);
+    vf->setHeight(height);
+}
+
+/*
  *  EdgePullForce
  *
  */
@@ -494,6 +528,9 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         }
         else if (forceName == "AreaForce") {
             addVertexForce.template operator()<AreaForce>();
+        }
+        else if (forceName == "VolumeForce") {
+            addVertexForce.template operator()<VolumeForce>();
         }
         else if (forceName == "EdgePullForce") {
             addVertexForce.template operator()<EdgePullForce>();

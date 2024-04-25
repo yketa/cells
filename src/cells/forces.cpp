@@ -35,6 +35,21 @@ template<> void VertexModel::addVertexForce<
 
 template<> void VertexModel::addVertexForce<
     // derived force class
+    VolumeForce,
+    // argument types
+    double const&, double const&, double const&>(
+    // user-defined arguments
+    std::string const& name,
+    double const& kV, double const& h0, double const& A0) {
+    // set force
+    vertexForces.add<VolumeForce>(
+        name,                       // (unique) user-defined name for forcess
+        kV, h0, A0,                 // user-defined parameters
+        this, &forces, &vertices);  // VertexModel attributes
+}
+
+template<> void VertexModel::addVertexForce<
+    // derived force class
     EdgePullForce,
     // argument types
     double const&>(
