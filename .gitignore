@@ -13,8 +13,12 @@ test*
 *.pickle
 *.mov
 *.mp4
+*.mkv
 *.data
 *~
+out*
+cachegrind*
+src/**/*.png
 *.aux
 *.bbl
 *.blg
