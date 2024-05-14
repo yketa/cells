@@ -188,7 +188,8 @@ def plot(vm, fig=None, ax=None, update=True,
     if only_set: return fig, ax
 
     # junctions and half-edges
-    lines = LineCollection(getLinesJunction(vm), colors="red", linewidths=2.5)  # all junctions
+    lines = LineCollection(getLinesJunction(vm), colors="pink",                 # all junctions
+        linewidths=2.5/max(1, np.sqrt(len(vm.vertices))/12))                    # scale junction width with linear system size
     if not(rainbow_plot) and not(clear):
         if ("t0" in locals() or "sT0" in locals()):
             junctions = vm.getHalfEdgeIndicesByType("junction")
@@ -215,10 +216,10 @@ def plot(vm, fig=None, ax=None, update=True,
 
     # cells
     polygons = PatchCollection(
-        list(map(                           # all cells
+        list(map(                                   # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))),
-        facecolors="none")
+        facecolors="none", edgecolors="none")
     cells = vm.getVertexIndicesByType("centre")
     if not(clear):
         if rainbow_plot:
@@ -227,7 +228,7 @@ def plot(vm, fig=None, ax=None, update=True,
                 cells)))
             scalarMap_rainbow = ScalarMappable(
                 Normalize(positions0.min(), positions0.max(), plt.cm.hsv))
-            polygons.set_color(list(map(        # colour according to previous position
+            polygons.set_facecolor(list(map(        # colour according to previous position
                 lambda position0: scalarMap_rainbow.to_rgba(position0),
                 positions0)))
         elif "h0" in locals():
@@ -236,7 +237,7 @@ def plot(vm, fig=None, ax=None, update=True,
                 cells)))
             heights_mean, heights_std = heights.mean(), heights.std()
             if heights_std != 0:
-                polygons.set_color(list(map(    # colour according to height
+                polygons.set_facecolor(list(map(    # colour according to height
                     lambda s_height: scalarMap_area.to_rgba(s_height),
                     (heights - heights_mean)/heights_std)))
         elif "A0" in locals():
@@ -245,7 +246,7 @@ def plot(vm, fig=None, ax=None, update=True,
                 cells)))
             areas_mean, areas_std = areas.mean(), areas.std()
             if areas_std != 0:
-                polygons.set_color(list(map(    # colour according to area
+                polygons.set_facecolor(list(map(    # colour according to area
                     lambda s_area: scalarMap_area.to_rgba(s_area),
                     (areas - areas_mean)/areas_std)))
     ax.add_collection(polygons)
@@ -342,14 +343,14 @@ def plot_neighbours(vm, fig=None, ax=None, update=True,
             _resize_fig(ax, ax_size, fig_width, fig_height))
 
     # set colours
-    ax.collections[1].set_color(scalarMap_neigh.to_rgba(nNeigh))
+    ax.collections[1].set_facecolor(scalarMap_neigh.to_rgba(nNeigh))
 
     # update canvas
     if update: _update_canvas(fig)
 
     return fig, ax
 
-def plot_hexatic(vm, fig=None, ax=None, update=True,
+def plot_hexatic(vm, fig=None, ax=None, update=True, transparency=True,
     **kwargs):
     """
     Plot vertex model with hexatic bond orientational order parameter per cell.
@@ -366,6 +367,9 @@ def plot_hexatic(vm, fig=None, ax=None, update=True,
         NOTE: if ax == None then a new figure and axes subplot is created.
     update : bool
         Update figure canvas. (default: True)
+    transparency : bool
+        Set transparency to match norm of hexatic bond orientional order
+        parameter. (default: True)
 
     Additional keywords arguments are passed to cells.plot.plot.
 
@@ -413,10 +417,9 @@ def plot_hexatic(vm, fig=None, ax=None, update=True,
             _resize_fig(ax, ax_size, fig_width, fig_height))
 
     # set colours
-    ax.collections[1].set_color(scalarMap_orientation.to_rgba(
+    ax.collections[1].set_facecolor(scalarMap_orientation.to_rgba(  # argument
         angle2(psi6.real, psi6.imag)))
-    ax.collections[1].set_alpha(
-        np.abs(psi6))
+    if transparency: ax.collections[1].set_alpha(np.abs(psi6))      # norm
 
     # update canvas
     if update: _update_canvas(fig)
@@ -424,7 +427,8 @@ def plot_hexatic(vm, fig=None, ax=None, update=True,
     return fig, ax
 
 def plot_velocities(vm, fig=None, ax=None, update=True,
-    av_norm=0.2, hide_centres=True, **kwargs):
+    av_norm=0.2, hide_centres=True, hide_vertices=False, override=None,
+    **kwargs):
     """
     Plot vertex model with velocities on vertices.
 
@@ -444,8 +448,14 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
         Average norm of arrows. (default: 0.2)
     hide_centres : bool
         Do not display velocities of cell centres. (default: True)
+    hide_vertices : bool
+        Do not display velocities of vertices. (default: False)
+    override : function or None
+        Override plotting function. (default: None)
+        NOTE: This is expected to return a figure and an axes subplot, and
+              to support keyword argument `update'. (see cells.plot.plot)
 
-    Additional keywords arguments are passed to cells.plot.plot.
+    Additional keywords arguments are passed to the plotting function.
 
     Returns
     -------
@@ -457,7 +467,11 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
 
     assert(not("clear" in kwargs) or not(kwargs["clear"]))  # not compatible with clear plot
 
-    fig, ax = plot(vm, fig=fig, ax=ax, update=False, **kwargs)
+    fig, ax = (
+        # plotting function
+        override if not(override is None) else plot)(
+        # plotting argument
+        vm, fig=fig, ax=ax, update=False, **kwargs)
 
     positions = vm.getPositions(wrapped=True)
     velocities = vm.velocities
@@ -465,28 +479,36 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
     if len(velocities) > 0:
         indices = list(
             set(list(velocities)).intersection(set(list(positions))))   # vertices which have both a velocity and a position
+
         if hide_centres:                                                # remove cell centres
             centres = vm.getVertexIndicesByType("centre")
             indices = list(set(indices) - set(centres))
+        else:
+            velocities.update(vm.getCentreVelocities())
 
-        av_norm = (1./av_norm)*np.sqrt(
-            (np.array(list(map(lambda i: velocities[i], indices)))**2)
-                .sum(axis=-1)
-                    .mean())
+        if hide_vertices:                                               # remove vertices
+            vertices = vm.getVertexIndicesByType("vertex")
+            indices = list(set(indices) - set(vertices))
 
-        if av_norm != 0:
-            arrows = PatchCollection(
-                list(map(
-                    lambda i:
-                        plt.arrow(*positions[i],
-                            *np.array(velocities[i])/av_norm,
-                            width=5e-2, head_width=4e-1,
-                            length_includes_head=False,
-                            color=scalarMap_orientation.to_rgba(
-                                angle2(*velocities[i])),
-                            zorder=10),
-                    indices)))
-            ax.add_collection(arrows)
+        if len(indices) > 0:
+            av_norm = (1./av_norm)*np.sqrt(
+                (np.array(list(map(lambda i: velocities[i], indices)))**2)
+                    .sum(axis=-1)
+                        .mean())
+
+            if av_norm != 0:
+                arrows = PatchCollection(
+                    list(map(
+                        lambda i:
+                            plt.arrow(*positions[i],
+                                *np.array(velocities[i])/av_norm,
+                                width=4e-2, head_width=1.5e-1,
+                                length_includes_head=False,
+                                color=scalarMap_orientation.to_rgba(
+                                    angle2(*velocities[i])),
+                                zorder=10),
+                        indices)))
+                ax.add_collection(arrows)
 
     # update canvas
     if update: _update_canvas(fig)
