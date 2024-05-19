@@ -1085,8 +1085,13 @@ PYBIND11_MODULE(bind, m) {
     m.def("getPercentageKeptNeighbours",
         [](VertexModel const& vm0, VertexModel const& vm1, double const& a) {
 
-            long int nNeigh = 0;    // total number of neighbours
-            long int nKept = 0;     // number of kept neighbours
+            std::map<long int, long int> nNeigh;    // total number of neighbours
+            std::map<long int, long int> nKept;     // number of kept neighbours
+
+            std::vector<long int> const centres0 =
+                vm0.getVertexIndicesByType("centre");
+            for (long int index0 : centres0)
+                { nNeigh.emplace(index0, 0); nKept.emplace(index0, 0); }
 
             std::map<long int, HalfEdge> const halfEdges0 =
                 vm0.getHalfEdges();
@@ -1116,7 +1121,7 @@ PYBIND11_MODULE(bind, m) {
                     vm0.wrapTo(cellA0, cellB0);
 
                 if (norm2(initSep) > a) { continue; }       // too far for neighbours
-                nNeigh++;
+                nNeigh[cellA0]++; nNeigh[cellB0]++;
 
                 std::vector<long int> const neighbours1 =           // half-edges to neighbours
                     vm1.getNeighbourVertices(cellA0)[1];
@@ -1150,13 +1155,18 @@ PYBIND11_MODULE(bind, m) {
                                 - (uposA1[1] - uposA0[1])};
 
                         if (!(norm2(finSep) > a))           // ... which are still neighbours
-                            { nKept++; break; }
+                            { nKept[cellA0]++; nKept[cellB0]++; break; }
                     }
                 }
             }
 
-            if (nNeigh == 0) { return (double) 0; }
-            return (double) nKept/(double) nNeigh;
+            std::map<long int, double> pct;
+            for (long int index0 : centres0) {
+                pct.emplace(index0,
+                    nNeigh[index0] == 0 ? 0 :
+                    (double) nKept[index0]/ (double) nNeigh[index0]);
+            }
+            return pct;
         },
         "Return percentage of kept cell neighbours between two states of a\n"
         "vertex model.\n"
@@ -1176,8 +1186,9 @@ PYBIND11_MODULE(bind, m) {
         "\n"
         "Returns\n"
         "-------\n"
-        "p : float\n"
-        "    Percentage of kept cell neighbours.",
+        "pct : {int: float} dict\n"
+        "    Dictionary which associates cell centre vertex indices to the\n"
+        "    percentage of kept cell neighbours.",
         pybind11::arg("vm0"),
         pybind11::arg("vm1"),
         pybind11::arg("a")=std::numeric_limits<double>::infinity());
