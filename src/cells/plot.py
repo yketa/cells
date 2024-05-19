@@ -2,7 +2,7 @@
 Define objects functions to plot vertex model object.
 """
 
-from cells.bind import VertexModel, angle2
+from cells.bind import VertexModel, angle2, getPercentageKeptNeighbours
 from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
 
 import numpy as np
@@ -223,14 +223,22 @@ def plot(vm, fig=None, ax=None, update=True,
     cells = vm.getVertexIndicesByType("centre")
     if not(clear):
         if rainbow_plot:
-            positions0 = np.array(list(map(
-                lambda i: rainbow.vertices[i].position[0],
-                cells)))
-            scalarMap_rainbow = ScalarMappable(
-                Normalize(positions0.min(), positions0.max(), plt.cm.hsv))
-            polygons.set_facecolor(list(map(        # colour according to previous position
-                lambda position0: scalarMap_rainbow.to_rgba(position0),
-                positions0)))
+            if True:
+                positions0 = np.array(list(map(
+                    lambda i: rainbow.vertices[i].position[0],
+                    cells)))
+                scalarMap_rainbow = ScalarMappable(
+                    Normalize(positions0.min(), positions0.max(), plt.cm.hsv))
+                polygons.set_facecolor(list(map(    # colour according to previous position
+                    lambda position0: scalarMap_rainbow.to_rgba(position0),
+                    positions0)))
+            else:
+                pct = getPercentageKeptNeighbours(rainbow, vm)
+                scalarMap_rainbow = ScalarMappable(
+                    Normalize(0, 1, plt.cm.cool))
+                polygons.set_facecolor(list(map(    # colour according to percentage of lost neighbours
+                    lambda i: scalarMap_rainbow.to_rgba(1 - pct[i]),
+                    cells)))
         elif "h0" in locals():
             heights = np.array(list(map(
                 lambda i: vm.vertexForces["volume"].height[i],
