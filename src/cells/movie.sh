@@ -61,22 +61,27 @@ OPTIONS
 
 # OPTIONS
 
-unset __RAINBOW __CLEAR __VELOCITIES __NEIGHBOURS __HEXATIC __TIGHT_LAYOUT \
-    __WYC __DPI __DIR __YES __PYTHON __FFMPEG __H265
+unset __FLAGS __RAINBOW __CLEAR __VELOCITIES __NEIGHBOURS __HEXATIC \
+    __TIGHT_LAYOUT __WYC __DPI __DIR __YES __PYTHON __FFMPEG __H265
 while getopts "hrcvnHtWD:d:yp:F:C" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
         r)  # rainbow plot
-            __RAINBOW=true;;
+            __RAINBOW=true;
+            __FLAGS=${__FLAGS}r;;
         c)  # clear plot
-            __CLEAR=true;;
+            __CLEAR=true;
+            __FLAGS=${__FLAGS}c;;
         v)  # velocity plot
-            __VELOCITIES=true;;
+            __VELOCITIES=true;
+            __FLAGS=${__FLAGS}v;;
         n)  # neighbours plot
-            __NEIGHBOURS=true;;
+            __NEIGHBOURS=true;
+            __FLAGS=${__FLAGS}n;;
         H)  # hexatic plot
-            __HEXATIC=true;;
+            __HEXATIC=true;
+            __FLAGS=${__FLAGS}H;;
         t)  # tight layout
             __TIGHT_LAYOUT=true;;
         W)  # use ReadWYC
@@ -131,30 +136,24 @@ ${__TIGHT_LAYOUT:+from matplotlib.pyplot import tight_layout}
 # simulation file
 r = Read("$(realpath $1)")
 # plotted frames
-frames = list(r.t0)
+frames = list(r.t0[r.t0 <= r.frames[r.skip.size - 2]])
 
 _progressbar(0)
 for frame in frames:
 
-    try:
+    # plot
+    r.plot(frame
+        ${__RAINBOW:+, rainbow=r.t0[0]}
+        ${__CLEAR:+, clear=True}
+        ${__VELOCITIES:+, override=plot_velocities}
+        ${__NEIGHBOURS:+, override=plot_neighbours}
+        ${__HEXATIC:+, override=plot_hexatic})
+    # save
+    ${__TIGHT_LAYOUT:+tight_layout()}
+    r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame))
+        ${__DPI:+, dpi=$__DPI})
 
-        # plot
-        r.plot(frame
-            ${__RAINBOW:+, rainbow=r.t0[0]}
-            ${__CLEAR:+, clear=True}
-            ${__VELOCITIES:+, override=plot_velocities}
-            ${__NEIGHBOURS:+, override=plot_neighbours}
-            ${__HEXATIC:+, override=plot_hexatic})
-        # save
-        ${__TIGHT_LAYOUT:+tight_layout()}
-        r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame))
-            ${__DPI:+, dpi=$__DPI})
-
-        _progressbar((frames.index(frame) + 1)/len(frames))
-
-    except EOFError:
-
-        exit(0)
+    _progressbar((frames.index(frame) + 1)/len(frames))
 
 EOF
 
@@ -166,7 +165,7 @@ fi
 # make movie
 # https://stackoverflow.com/questions/20847674/ffmpeg-libx264-height-not-divisible-by-2
 __MOVIE=${1:-movie}
-__MOVIE=${__MOVIE%.*}.mkv
+__MOVIE=${__MOVIE%.*}${__FLAGS:+.$__FLAGS}.mkv
 $__FFMPEG ${__YES:+-y} -r 5 -f image2 -s 1280x960 -pix_fmt yuv420p \
     -pattern_type glob -i "${__DIR}/*.png" ${__H265:+-vcodec libx265 -crf 28} \
     -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2:color=white" \
