@@ -541,10 +541,11 @@ norm_orientation = Normalize(-np.pi, np.pi)                                 # in
 scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
 
 # neighbours colourbar
-n_neigh = list(range(3, 10))                                                # interval of connectivity
+n_neigh = (lambda n: range(6 - n, 6 + n + 2))(3)                            # interval of connectivity
 cmap_neigh = ListedColormap([                                               # colourmap
     ScalarMappable(
-        norm=Normalize(vmin=min(n_neigh), vmax=max(n_neigh)), cmap=plt.cm.jet
+        norm=Normalize(vmin=min(n_neigh), vmax=max(n_neigh) - 1),
+            cmap=plt.cm.PiYG
         ).to_rgba(x)
     for x in n_neigh])
 norm_neigh = BoundaryNorm(n_neigh, len(n_neigh))                            # interval of value represented by colourmap
