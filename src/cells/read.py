@@ -72,7 +72,8 @@ class Read:
             if not(check): return
 
             # saved skipped directory
-            data_fname = os.path.join(gettempdir(), "%s.data" % self.filename)
+            data_fname = os.path.join(
+                gettempdir(), "%s.data" % os.path.basename(self.filename))
             try:
                 with open(data_fname, "rb") as dump:
                     self.skip = pickle.load(dump)
