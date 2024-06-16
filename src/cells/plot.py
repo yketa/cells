@@ -8,7 +8,8 @@ from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
 import numpy as np
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm
+from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm,\
+    LinearSegmentedColormap
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
 
@@ -523,33 +524,7 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
 
     return fig, ax
 
-# COLOURBARS
-
-# area colourbar
-cmap_area = plt.cm.bwr                                                      # colourmap
-norm_area = Normalize(-2, 2)                                                # interval of value represented by colourmap
-scalarMap_area = ScalarMappable(norm_area, cmap_area)                       # conversion from scalar value to colour
-
-# tension colourbar
-cmap_tension = plt.cm.PRGn                                                  # colourmap
-norm_tension = Normalize(-2, 2)                                             # interval of value represented by colourmap
-scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)              # conversion from scalar value to colour
-
-# orientation colourbar
-cmap_orientation = plt.cm.hsv                                               # colourmap
-norm_orientation = Normalize(-np.pi, np.pi)                                 # interval of value represented by colourmap
-scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
-
-# neighbours colourbar
-n_neigh = (lambda n: range(6 - n, 6 + n + 2))(3)                            # interval of connectivity
-cmap_neigh = ListedColormap([                                               # colourmap
-    ScalarMappable(
-        norm=Normalize(vmin=min(n_neigh), vmax=max(n_neigh) - 1),
-            cmap=plt.cm.PiYG
-        ).to_rgba(x)
-    for x in n_neigh])
-norm_neigh = BoundaryNorm(n_neigh, len(n_neigh))                            # interval of value represented by colourmap
-scalarMap_neigh = ScalarMappable(cmap=cmap_neigh, norm=norm_neigh)          # conversion from scalar value to colour
+# RESIZE
 
 # resize figure with colorbars
 # (https://github.com/matplotlib/matplotlib/issues/15010#issuecomment-524438047)
@@ -572,4 +547,113 @@ def _resize_fig(ax, ax_size, fig_width, fig_height):
     except AttributeError: pass
     # measure again
     return _measure_fig(ax)
+
+# COLOURBARS
+
+def _make_cycle(colours):
+    """
+    Cyclic colourmap from linear interpolation between colours.
+
+    https://wildsilicon.com/blog/2018/cyclical-colormaps/
+
+    Parameters
+    ----------
+    colours : (*, 3) float array-like
+        Array of RGB colours.
+
+    Returns
+    -------
+    cmap : matplotlib.colors.ListedColormap
+        Cyclic colourmap.
+    """
+
+    colours = np.array(colours)
+    assert(colours.ndim == 2 and (colours.shape[1] in (3, 4)))
+    N = colours.shape[0]
+    C = 256
+
+    def _mod(a, b): return min(abs(a)%abs(b), abs(a)%-abs(b), key=abs)
+    def _dist(x, y, L): return np.abs(_mod(x - y, L))
+    def _kernel(i, n, N): return max(0, 1 - _dist(i/C, (1/2 + n)/N, 1)*N)
+
+    cycle = []
+    for i in range(C):
+        weights = np.array(list(map(
+            lambda n: _kernel(i, n, N),
+            range(N))))
+        cycle += [np.sum(
+            list(map(
+                lambda c, w: w*c/weights.sum(),
+                *(colours, weights))),
+            axis=0)]
+
+    return ListedColormap(cycle)
+
+# area colourbar
+cmap_area = (                                                               # colourmap
+    LinearSegmentedColormap.from_list("aroace", (                           # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Aroace_flag.svg
+        (0/4, (0.125, 0.220, 0.337)),
+        (1/4, (0.384, 0.682, 0.863)),
+        (2/4, (1.000, 1.000, 1.000)),
+        (3/4, (0.925, 0.804, 0.000)),
+        (4/4, (0.886, 0.549, 0.000))))
+    or plt.cm.bwr)
+norm_area = Normalize(-2, 2)                                                # interval of value represented by colourmap
+scalarMap_area = ScalarMappable(norm_area, cmap_area)                       # conversion from scalar value to colour
+
+# tension colourbar
+cmap_tension = (                                                            # colourmap
+    LinearSegmentedColormap.from_list("abrosexual", (                       # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Abrosexual_flag.svg
+        (0/4, (0.851, 0.267, 0.431)),
+        (1/4, (0.906, 0.588, 0.718)),
+        (2/4, (1.000, 1.000, 1.000)),
+        (3/4, (0.706, 0.894, 0.800)),
+        (4/4, (0.396, 0.761, 0.525))))
+    or LinearSegmentedColormap.from_list("new_gay_men", (                   # https://en.wikipedia.org/wiki/Gay_men%27s_flags#/media/File:New_Gay_Pride_Flag.svg
+        (0/6, (0.239, 0.102, 0.471)),
+        (1/6, (0.314, 0.286, 0.800)),
+        (2/6, (0.482, 0.678, 0.886)),
+        (3/6, (1.000, 1.000, 1.000)),
+        (4/6, (0.596, 0.910, 0.757)),
+        (5/6, (0.149, 0.808, 0.667)),
+        (6/6, (0.027, 0.553, 0.439))))
+    or LinearSegmentedColormap.from_list("genderqueer", (                   # https://en.wikipedia.org/wiki/Non-binary_gender#/media/File:Genderqueer_Pride_Flag.svg
+        (0/2, (0.290, 0.506, 0.130)),
+        (1/2, (1.000, 1.000, 1.000)),
+        (2/2, (0.710, 0.494, 0.863))))
+    or plt.cm.PRGn)
+norm_tension = Normalize(-2, 2)                                             # interval of value represented by colourmap
+scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)              # conversion from scalar value to colour
+
+# orientation colourbar
+cmap_orientation = (                                                        # colourmap
+    _make_cycle((                                                           # https://en.wikipedia.org/wiki/Rainbow_flag_(LGBT)#/media/File:Gay_Pride_Flag.svg
+        (0.467, 0.000, 0.533),
+        (0.000, 0.298, 1.000),
+        (0.008, 0.506, 0.129),
+        (1.000, 0.933, 0.000),
+        (1.000, 0.553, 0.000),
+        (0.898, 0.000, 0.000)))
+    or plt.cm.hsv)
+norm_orientation = Normalize(-np.pi, np.pi)                                 # interval of value represented by colourmap
+scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
+
+# neighbours colourbar
+n_neigh = (lambda n: range(6 - n, 6 + n + 2))(3)                            # interval of connectivity
+cmap_neigh = ListedColormap([                                               # colourmap
+    ScalarMappable(
+        norm=Normalize(vmin=min(n_neigh), vmax=max(n_neigh) - 1),
+            cmap=(LinearSegmentedColormap.from_list("lesbian_2018", (       # https://en.wikipedia.org/wiki/Lesbian_flags#/media/File:Lesbian_pride_flag_2018.svg
+                (0/6, (0.639, 0.008, 0.384)),
+#                 (1/6, (0.710, 0.337, 0.565)),
+#                 (2/6, (0.820, 0.384, 0.643)),
+                (3/6, (1.000, 1.000, 1.000)),
+#                 (4/6, (1.000, 0.604, 0.337)),
+#                 (5/6, (0.937, 0.463, 0.153)),
+                (6/6, (0.835, 0.176, 0.000))))
+            or plt.cm.PiYG)
+        ).to_rgba(x)
+    for x in n_neigh])
+norm_neigh = BoundaryNorm(n_neigh, len(n_neigh))                            # interval of value represented by colourmap
+scalarMap_neigh = ScalarMappable(cmap=cmap_neigh, norm=norm_neigh)          # conversion from scalar value to colour
 
