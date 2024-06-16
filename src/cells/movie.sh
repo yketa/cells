@@ -42,6 +42,9 @@ OPTIONS
     -D  Set frame resolution in dots per inch.
         DEFAULT: (not specified)
 
+    -f  Force check input file consistency (see cells.read.Read).
+        NOTE:    This does nothing if -d option is used.
+
     -d  Set directory with frames from which to make movie.
         DEFAULT: (not specified)
         NOTE:    Frames must be *.png and ordered.
@@ -62,8 +65,9 @@ OPTIONS
 # OPTIONS
 
 unset __FLAGS __RAINBOW __CLEAR __VELOCITIES __NEIGHBOURS __HEXATIC \
-    __TIGHT_LAYOUT __WYC __DPI __DIR __YES __PYTHON __FFMPEG __H265
-while getopts "hrcvnHtWD:d:yp:F:C" OPTION; do
+    __TIGHT_LAYOUT __WYC __DPI __FORCE_CHECK __DIR __YES __PYTHON __FFMPEG \
+    __H265
+while getopts "hrcvnHtWD:fd:yp:F:C" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
@@ -88,6 +92,8 @@ while getopts "hrcvnHtWD:d:yp:F:C" OPTION; do
             __WYC=true;;
         D)  # frame resolution
             __DPI="$OPTARG";;
+        f)  # force check
+            __FORCE_CHECK=true;;
         d)  # frames directory
             __DIR="$OPTARG";;
         y)  # yes to FFmpeg
@@ -131,12 +137,17 @@ ${__NEIGHBOURS:+from cells.plot import plot_neighbours}
 ${__HEXATIC:+from cells.plot import plot_hexatic}
 
 import os
+import numpy as np
 ${__TIGHT_LAYOUT:+from matplotlib.pyplot import tight_layout}
 
 # simulation file
-r = Read("$(realpath $1)")
+r = Read("$(realpath $1)"
+    ${__FORCE_CHECK:+, check=True})
 # plotted frames
-frames = list(r.t0[r.t0 <= r.frames[r.skip.size - 2]])
+assert(r.skip.size > 0)                                     # check there are saved frames
+frames = r.frames[r.frames >= r.t0[0]]
+if (np.diff(frames, n=2) != 0).any(): frames = r.t0         # logarithmically spaced saved frames
+frames = list(frames[frames <= r.frames[r.skip.size - 1]])  # restrict to existing saved frames
 
 _progressbar(0)
 for frame in frames:

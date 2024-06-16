@@ -39,7 +39,7 @@ class Read:
     Simulation file reading object.
     """
 
-    def __init__(self, fname, check=True):
+    def __init__(self, fname, check=None):
         """
         Extract metadata and check consistency of file.
 
@@ -47,11 +47,15 @@ class Read:
         ----------
         fname : str
             Path to input file.
-        check : bool
-            Check file consistency. This is mandatory in order to access data,
-            otherwise only metadata is read and accessible. (default: True)
+        check : None or bool
+            Check file consistency. This check must be done at least once in
+            order to access data, otherwise only metadata is read and
+            accessible. (default: None)
             NOTE: After a succesful check, a corresponding data file is saved
-                  in a temporary directory for later faster loads.
+                  in a temporary directory for later faster loads. If check is
+                  None then this file is used if it exists, otherwise or if
+                  check is True then it is computed and saved. If check is
+                  False then it is not checked at all.
             NOTE: Use cells.read.ReadWYC to access as much data as possible in
                   the case of corrupted files.
         """
@@ -69,24 +73,25 @@ class Read:
             self.t = self.metadata["t"]             # lag times
             self.frames = self.metadata["frames"]   # array of computed frames
             self.dt = self.metadata["dt"]           # integration time step
-            if not(check): return
+            if check is False: return
 
-            # saved skipped directory
+            # saved skipped dictionary
             data_fname = os.path.join(
                 gettempdir(), "%s.data" % os.path.basename(self.filename))
-            try:
-                with open(data_fname, "rb") as dump:
-                    self.skip = pickle.load(dump)
-                print("Data loaded from \"%s\"." % data_fname, file=sys.stderr)
-                return
-            except: pass
+            if check is None:
+                try:
+                    with open(data_fname, "rb") as data_dump:
+                        self.skip = pickle.load(data_dump)
+                    print("Data loaded from \"%s\"." % data_fname,
+                        file=sys.stderr)
+                    return
+                except: pass
 
             # check file consistency and build skip directory
             self.skip = np.array([], dtype=int)     # position of each object in file
             _max_diff_t = 0                         # check consistency with metadata in computed times
             for i, time in enumerate(self.frames*self.dt):
                 _progressbar(i/self.frames.size)    # display progress bar
-                self.skip = np.append(self.skip, current_pointer)
                 vm = pickle.load(dump)              # load vertex model object
                 assert(type(vm) == VertexModel)     # check object has correct type
                 if time == 0:                       # initial time (might be != 0 if started from input)
@@ -94,6 +99,7 @@ class Read:
                 else:                               # compute relative difference in time
                     _max_diff_t = (
                         max(_max_diff_t, np.abs(time0 + time - vm.time)/time))
+                self.skip = np.append(self.skip, current_pointer)
                 current_pointer = dump.tell()       # current position of the read pointer
             _progressbar(1)
             try:
@@ -104,10 +110,11 @@ class Read:
 
         assert _max_diff_t < 1e-8   # relative difference between python and C++ times
 
-        # save skipped directory
+        # save skipped dictionary
         with open(data_fname, "wb") as dump:
             pickle.dump(self.skip, dump)
-        print("Data saved to \"%s\"." % data_fname, file=sys.stderr)
+        print("Data saved to \"%s\"." % data_fname,
+            file=sys.stderr)
 
     def plot(self, frame, rainbow=None, override=None, **kwargs):
         """
@@ -236,15 +243,13 @@ class ReadWYC(Read):
         """
         CAUTION: This object is expected to be prone to errors.
 
-        All arguments are passed to cells.read.Read.__init__ except keyword
-        argument `check' which is always set to True.
+        All arguments are passed to cells.read.Read.__init__.
 
         ==== [cells.read.Read.__init__.__doc__] ====
 
         {0}
         """
 
-        kwargs["check"] = True
         try: super().__init__(*args, **kwargs)
         except: print(traceback.format_exc(), file=sys.stderr)  # print traceback
 
@@ -257,7 +262,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 2:
         try:
-            Read(sys.argv[1], check=True)
+            Read(sys.argv[1], check=None)
             print("true")   # print lowercase to be treated as bash boolean
         except:
             print("false")  # print lowercase to be treated as bash boolean
