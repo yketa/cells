@@ -41,6 +41,8 @@ OPTIONS
     (with argument)
     -D  Set frame resolution in dots per inch.
         DEFAULT: (not specified)
+    -S  Set font size.
+        DEFAULT: (not specified)
 
     -f  Force check input file consistency (see cells.read.Read).
         NOTE:    This does nothing if -d option is used.
@@ -65,9 +67,9 @@ OPTIONS
 # OPTIONS
 
 unset __FLAGS __RAINBOW __CLEAR __VELOCITIES __NEIGHBOURS __HEXATIC \
-    __TIGHT_LAYOUT __WYC __DPI __FORCE_CHECK __DIR __YES __PYTHON __FFMPEG \
-    __H265
-while getopts "hrcvnHtWD:fd:yp:F:C" OPTION; do
+    __TIGHT_LAYOUT __WYC __DPI __FONT __FORCE_CHECK __DIR __YES __PYTHON \
+    __FFMPEG __H265
+while getopts "hrcvnHtWD:S:fd:yp:F:C" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
@@ -92,6 +94,8 @@ while getopts "hrcvnHtWD:fd:yp:F:C" OPTION; do
             __WYC=true;;
         D)  # frame resolution
             __DPI="$OPTARG";;
+        S)  # font size
+            __FONT="$OPTARG";;
         f)  # force check
             __FORCE_CHECK=true;;
         d)  # frames directory
@@ -139,6 +143,7 @@ ${__HEXATIC:+from cells.plot import plot_hexatic}
 import os
 import numpy as np
 ${__TIGHT_LAYOUT:+from matplotlib.pyplot import tight_layout}
+${__FONT:+from matplotlib import rcParams; rcParams[\"font.size\"] = $__FONT}
 
 # simulation file
 r = Read("$(realpath $1)"

@@ -130,7 +130,7 @@ def plot(vm, fig=None, ax=None, update=True,
                     shrink=0.75, pad=0.01)
                 cbar_volume.set_label(
                     r"$(h_i - \left<h_i\right>)/\mathrm{std}(h_i)$",
-                    rotation=270, labelpad=20)
+                    rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
                     _resize_fig(ax, ax_size, fig_width, fig_height))
@@ -141,7 +141,7 @@ def plot(vm, fig=None, ax=None, update=True,
                     shrink=0.75, pad=0.01)
                 cbar_area.set_label(
                     r"$(A_i - \left<A_i\right>)/\mathrm{std}(A_i)$",
-                    rotation=270, labelpad=20)
+                    rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
                     _resize_fig(ax, ax_size, fig_width, fig_height))
@@ -152,7 +152,7 @@ def plot(vm, fig=None, ax=None, update=True,
                     shrink=0.75, pad=0.01)
                 cbar_tension.set_label(
                     r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
-                    rotation=270, labelpad=20)
+                    rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
                     _resize_fig(ax, ax_size, fig_width, fig_height))
@@ -164,7 +164,7 @@ def plot(vm, fig=None, ax=None, update=True,
                         shrink=0.75, pad=0.01)
                     cbar_tension.set_label(
                         r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
-                        rotation=270, labelpad=20)
+                        rotation=270, labelpad=_cbar_labelpad)
                     # resize
                     ax_size, fig_width, fig_height = (
                         _resize_fig(ax, ax_size, fig_width, fig_height))
@@ -340,7 +340,7 @@ def plot_neighbours(vm, fig=None, ax=None, update=True,
             shrink=0.75, pad=0.01)
         cbar_neigh.set_label(
             r"number of neighbours",
-            rotation=270, labelpad=20)
+            rotation=270, labelpad=_cbar_labelpad)
         cbar_neigh.set_ticks([
             min(n_neigh)
                 + (0.5 + i)*(max(n_neigh) - min(n_neigh))/(len(n_neigh) - 1.)
@@ -414,7 +414,7 @@ def plot_hexatic(vm, fig=None, ax=None, update=True, transparency=True,
             shrink=0.75, pad=0.01)
         cbar_psi6.set_label(
             r"$\mathrm{arg}(\psi_{6,i})$",
-            rotation=270, labelpad=20)
+            rotation=270, labelpad=_cbar_labelpad)
         cbar_psi6.set_ticks(
             [-np.pi, -2*np.pi/3, -np.pi/3, 0,
                 np.pi/3, 2*np.pi/3, np.pi])
@@ -524,7 +524,7 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
 
     return fig, ax
 
-# RESIZE
+# COLOURBARS
 
 # resize figure with colorbars
 # (https://github.com/matplotlib/matplotlib/issues/15010#issuecomment-524438047)
@@ -548,7 +548,7 @@ def _resize_fig(ax, ax_size, fig_width, fig_height):
     # measure again
     return _measure_fig(ax)
 
-# COLOURBARS
+_cbar_labelpad = 40 # label spacing from axis
 
 def _make_cycle(colours):
     """
