@@ -1111,9 +1111,7 @@ Keratin model.
         Random* random;                         // random number generator
 
         std::map<long int, double> keratin;     // cell keratin concentration
-        std::vector<long int> activeKeratin;    // cell indices where keratin has crossed threshold
         std::map<long int, double> targetArea;  // target area
-        std::map<long int, double> restLength;  // keratin bonds rest lengths
 
         // degrees of freedom computed in KeratinModel::addAllForces
         std::map<long int, double> pressure;    // cell pressure
@@ -1123,19 +1121,17 @@ Keratin model.
     public:
 
         KeratinModel(
-            double const& K_, double const& taur_,
+            double const& K_, double const& A0, double const& taur_,
             double const& Gamma_, double const& p0_,
-            double const& alpha_, double const& kth_,
-            double const& tau_, double const& sigma_,
-            double const& ron_,
+            double const& alpha_, double const& beta_, double const& kth_,
+            double const& tau_, double const& sigma_, double const& ron_,
             Mesh* const mesh_, Random* random_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
-                {{"K", K_}, {"taur", taur_},
+                {{"K", K_}, {"A0", A0}, {"taur", taur_},
                 {"Gamma", Gamma_}, {"p0", p0_},
-                {"alpha", alpha_}, {"kth", kth_},
-                {"tau", tau_}, {"sigma", sigma_},
-                {"ron", ron_}},
+                {"alpha", alpha_}, {"beta", beta_}, {"kth", kth_},
+                {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
             mesh(mesh_), random(random_) {
 
@@ -1146,7 +1142,7 @@ Keratin model.
                     area.emplace(it->first,                 // initial area
                         mesh->getVertexToNeighboursArea(it->first));
                     targetArea.emplace(it->first,           // initial area as initial target area
-                        area[it->first]);
+                        std::max(parameters.at("A0"), area[it->first]));
                 }
             }
         }
@@ -1156,20 +1152,10 @@ Keratin model.
         void setKeratin(std::map<long int, double> const& keratin_)
             { keratin = keratin_; }
 
-        std::vector<long int> const& getActiveKeratin() const
-            { return activeKeratin; }
-        void setActiveKeratin(std::vector<long int> const& activeKeratin_)
-            { activeKeratin = activeKeratin_; }
-
         std::map<long int, double> const& getTargetArea() const
             { return targetArea; }
         void setTargetArea(std::map<long int, double> const& targetArea_)
             { targetArea = targetArea_; }
-
-        std::map<long int, double> const& getRestLength() const
-            { return restLength; }
-        void setRestLength(std::map<long int, double> const& restLength_)
-            { restLength = restLength_; }
 
         std::map<long int, double> const& getPressure() const
             { return pressure; }
@@ -1185,7 +1171,10 @@ Keratin model.
             // reset cell pressure
             pressure[vertex.getIndex()] = 0;
 
-            // cell area and perimeter
+            // cell area elasticity, area, and perimeter
+            double const Kk = parameters.at("K")
+                + parameters.at("beta")*std::max(0.,
+                    keratin[vertex.getIndex()] - parameters.at("kth")); // keratin-dependent area elasticity
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
             double const A0 = targetArea[vertex.getIndex()];
@@ -1197,11 +1186,9 @@ Keratin model.
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
             long int const numberNeighbours = neighbourVerticesIndices.size();
             std::vector<double> radiusToCorner;
-            double distRadiusToCorner;
             std::vector<double> toPreviousNeighbour, toNextNeighbour;
             std::vector<double> crossToPreviousNeighbour, crossToNextNeighbour;
             double distToPreviousNeighbour, distToNextNeighbour;
-            long int halfEdgeIndex;
             double force;
             for (int i=0; i < numberNeighbours; i++) {  // loop over neighbours
                 assert(vertices->at(neighbourVerticesIndices[i]).getType()
@@ -1210,9 +1197,6 @@ Keratin model.
                 radiusToCorner = mesh->wrapTo(
                     vertex.getIndex(),
                     neighbourVerticesIndices[i]);
-                distRadiusToCorner = sqrt(
-                    radiusToCorner[0]*radiusToCorner[0]
-                    + radiusToCorner[1]*radiusToCorner[1]);
                 // towards previous neighbour
                 toPreviousNeighbour = mesh->wrapTo(
                     neighbourVerticesIndices[i],
@@ -1233,7 +1217,7 @@ Keratin model.
                     + toNextNeighbour[1]*toNextNeighbour[1]);
                 for (int dim=0; dim < 2; dim++) {
                     // area force
-                    force = (parameters.at("K")/2.)*(
+                    force = (Kk/2.)*(
                         area[vertex.getIndex()] - A0)*( // cell area
                             crossToPreviousNeighbour[dim]
                                 - crossToNextNeighbour[dim]);
@@ -1255,59 +1239,6 @@ Keratin model.
                     pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
                         toNextNeighbour[dim]            // radius from cell corner to next neighbour
                             *(force);                   // force applied on cell corner
-                    // keratin force between cell centre and cell corner
-                    halfEdgeIndex = mesh->getHalfEdgeIndex(
-                        vertex.getIndex(),
-                        neighbourVerticesIndices[i]);
-                    if (dim == 0) { // tension is defined once per half-edge
-                        if (inMap(restLength, halfEdgeIndex)) {
-                            tension.emplace(halfEdgeIndex,
-                                2*std::max(0.,
-                                    keratin[vertex.getIndex()]  // cell keratin concentration
-                                        - parameters.at("kth"))*(
-                                            distRadiusToCorner  // length between vertices
-                                                - restLength[halfEdgeIndex]));
-                        }
-                        else {
-                            tension.emplace(halfEdgeIndex,
-                                0);
-                        }
-                    }
-                    force = -tension[halfEdgeIndex]                 // tension
-                        *radiusToCorner[dim]/distRadiusToCorner;    // normalised vector;
-                    (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    (*forces)[vertex.getIndex()][dim] -= force;             // force on cell centre
-                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
-                        radiusToCorner[dim]             // radius from cell centre to cell corner
-                            *(-force);                  // force applied on cell centre
-                    // keratin force between cell corner and next neighbour
-                    halfEdgeIndex = mesh->getHalfEdgeIndex(
-                        neighbourVerticesIndices[i],
-                        neighbourVerticesIndices[
-                            pmod(i + 1, numberNeighbours)]);
-                    if (dim == 0) { // tension is defined once per half-edge
-                        if (inMap(restLength, halfEdgeIndex)) {
-                            tension.emplace(halfEdgeIndex,
-                                std::max(0.,
-                                    keratin[vertex.getIndex()]  // cell keratin concentration
-                                        - parameters.at("kth"))*(
-                                            distToNextNeighbour // length between vertices
-                                                - restLength[halfEdgeIndex]));
-                        }
-                        else {
-                            tension.emplace(halfEdgeIndex,
-                                0);
-                        }
-                    }
-                    force = tension[halfEdgeIndex]                  // tension
-                        *toNextNeighbour[dim]/distToNextNeighbour;  // normalised vector
-                    (*forces)[neighbourVerticesIndices[                     // force on vertex i
-                        i]][dim] += force;
-                    (*forces)[neighbourVerticesIndices[                     // force on next neighbour
-                        pmod(i + 1, numberNeighbours)]][dim] -= force;
-                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
-                        toNextNeighbour[dim]            // radius from cell corner to next neighbour
-                            *(force);                   // force applied on cell centre
                 }
             }
 
@@ -1333,33 +1264,14 @@ Keratin model.
                 keratin[it->first] +=
                     dt_*(kon - koff)                                            // deterministic part
                     + amp*random->gauss();                                      // stochastic part
-                // activate keratin
-                if (!inVec(activeKeratin, it->first)
-                    && keratin[it->first] > parameters.at("kth")) {
-                    activeKeratin.push_back(it->first);                     // activate keratin in cell
-                    std::map<long int, HalfEdge> const halfEdges =
-                        mesh->getHalfEdges();
-                    std::vector<long int> halfEdgesToNeighbours =
-                        mesh->getNeighbourVertices(it->first)[1];
-                    for (long int halfEdgeIndex : halfEdgesToNeighbours) {  // loop over half-edges to neighbours
-                        long int pairHalfEdgeIndex =
-                            halfEdges.at(halfEdgeIndex).getPairIndex();
-                        long int nextHalfEdgeIndex =
-                            halfEdges.at(halfEdgeIndex).getNextIndex();
-                        restLength.emplace(halfEdgeIndex,                   // set rest length to current length
-                            mesh->getEdgeLength(halfEdgeIndex));
-                        restLength.emplace(pairHalfEdgeIndex,               // set rest length to current length
-                            mesh->getEdgeLength(pairHalfEdgeIndex));
-                        restLength.emplace(nextHalfEdgeIndex,               // set rest length to current length
-                            mesh->getEdgeLength(nextHalfEdgeIndex));
-                    }
-                }
             }
             // integrate target area
             double const dtr_ = dt/parameters.at("taur");
             for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
-                targetArea[it->first] +=
+                targetArea[it->first] +=    // relax target area
                     -dtr_*(targetArea[it->first] - area[it->first]);
+                targetArea[it->first] =     // minimum to target area
+                    std::max(parameters.at("A0"), targetArea[it->first]);
             }
         }
 

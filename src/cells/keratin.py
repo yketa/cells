@@ -5,7 +5,7 @@ This does not save data.
 
 from cells.init import init_vm, K, A0
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
-from cells.bind import getLinesHalfEdge, getPolygonsCell
+from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction
 from cells.run import run
 
 import matplotlib.pyplot as plt
@@ -46,52 +46,33 @@ def plot_keratin(vm, fig=None, ax=None, **kwargs):
         ax_size, fig_width, fig_height = (                  # resize
             _resize_fig(ax, ax_size, fig_width, fig_height))
 
-        cbar_tension = fig.colorbar(
-            mappable=scalarMap_tension, ax=ax,
-            shrink=0.75, pad=0.01)
-        cbar_tension.set_label(r"$t_i$",
-            rotation=270, labelpad=20)
-        ax_size, fig_width, fig_height = (                  # resize
-            _resize_fig(ax, ax_size, fig_width, fig_height))
-
     # cells
 
     cells = vm.getVertexIndicesByType("centre")
     polygons = PatchCollection(
-        list(map(                               # all cells
+        list(map(                                               # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))),
         facecolors="none")
-    polygons.set_color(list(map(                # colour according to keratin
+    polygons.set_color(list(map(                                # colour according to keratin
         lambda i: scalarMap_keratin.to_rgba(
             vm.vertexForces["keratin"].keratin[i]),
         cells)))
     ax.add_collection(polygons)
 
-    # bonds
+    # junctions
 
-    halfEdges = list(
-        set(list(vm.vertexForces["keratin"].tension.keys())).intersection(
-            set(list(vm.halfEdges))))
-    if True:    # remove inner cell half-edges (which go from or to a centre vertex)
-        halfEdges = list(set(halfEdges) - set(vm.getCentreHalfEdges()))
-    if len(halfEdges) > 0:
-        lines = LineCollection(
-            getLinesHalfEdge(vm, halfEdges),    # all half-edges with tension
-            linewidth=1.5)
-        lines.set_color(list(map(               # colour according to tension
-            lambda i: scalarMap_tension.to_rgba(
-                vm.vertexForces["keratin"].tension[i]),
-            halfEdges)))
-        ax.add_collection(lines)
+    lines = LineCollection(getLinesJunction(vm), colors="pink", # all junctions
+        linewidths=2.5/max(1, np.sqrt(len(vm.vertices))/12))    # scale junction width with linear system size
+    ax.add_collection(lines)
 
     # title
 
     param = vm.vertexForces["keratin"].parameters
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
-    title += r"$, \tau_r=%.2f, p_0=%.2f, \alpha=%.1e$" % (
-        param["taur"], param["p0"], param["alpha"])
+    title += r"$, \tau_r=%.2f, p_0=%.2f, \alpha=%.1e, \beta=%.1e$" % (
+        param["taur"], param["p0"], param["alpha"], param["beta"])
     title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
     title += "\n"
     title += r"$\tau=%.1e, \sigma=%.1e$" % (
@@ -121,9 +102,11 @@ if __name__ == "__main__":
     # p0 is defined by {p0}
     parser.add_argument("-alpha", type=float, default=1,
         help="keratin on-rate pressure-dependence parameter")
+    parser.add_argument("-beta", type=float, default=1,
+        help="keratin to area elasticity constant parameter")
     parser.add_argument("-kth", type=float, default=0,
         help="keratin concentration threshold")
-    parser.add_argument("-tau", type=float, default=10,
+    parser.add_argument("-tau", type=float, default=1e-1,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
     parser.add_argument("-ron", type=float, default=0,
@@ -138,8 +121,8 @@ if __name__ == "__main__":
     for _ in vm.vertexForces: vm.removeVertexForce(_)
     for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
     vm.addKeratinModel("keratin",
-        K, args.taur, args.Gamma, args.p0,
-        args.alpha, args.kth, args.tau, args.sigma, args.ron)
+        K, A0, args.taur, args.Gamma, args.p0,
+        args.alpha, args.beta, args.kth, args.tau, args.sigma, args.ron)
     vm.addEdgePullForce("pull",
         args.fpull)
 

@@ -464,7 +464,7 @@ pybind11::tuple KeratinModel::pybind11_getstate() const {
         // unique identifying string for the force object
         "KeratinModel",
         // state
-        parameters, keratin, activeKeratin, targetArea, restLength);
+        parameters, keratin, targetArea);
 }
 
 // load state
@@ -473,23 +473,21 @@ VertexModel::addVertexForce<KeratinModel,
     pybind11::tuple const&>(
     std::string const& name, pybind11::tuple const& t) {
     // check
-    checkSize(t, 6);
+    checkSize(t, 4);
     assert(t[0].cast<std::string>() == "KeratinModel");
     // initialise force
     ParametersType const parameters =
         t[1].cast<ParametersType>();
     addVertexForce<KeratinModel,
+        double const&, double const&, double const&,
         double const&, double const&,
-        double const&, double const&,
-        double const&, double const&,
-        double const&, double const&,
-        double const&>(
+        double const&, double const&, double const&,
+        double const&, double const&, double const&>(
         name,
-        parameters.at("K"), parameters.at("taur"),
+        parameters.at("K"), parameters.at("A0"), parameters.at("taur"),
         parameters.at("Gamma"), parameters.at("p0"),
-        parameters.at("alpha"), parameters.at("kth"),
-        parameters.at("tau"), parameters.at("sigma"),
-        parameters.at("ron"));
+        parameters.at("alpha"), parameters.at("beta"), parameters.at("kth"),
+        parameters.at("tau"), parameters.at("sigma"), parameters.at("ron"));
     // set internal degrees of freedom state
     std::shared_ptr<KeratinModel> k =
         std::static_pointer_cast<KeratinModel>(
@@ -497,15 +495,9 @@ VertexModel::addVertexForce<KeratinModel,
     std::map<long int, double> const keratin =
         t[2].cast<std::map<long int, double>>();
     k->setKeratin(keratin);
-    std::vector<long int> const activeKeratin =
-        t[3].cast<std::vector<long int>>();
-    k->setActiveKeratin(activeKeratin);
     std::map<long int, double> const targetArea =
-        t[4].cast<std::map<long int, double>>();
+        t[3].cast<std::map<long int, double>>();
     k->setTargetArea(targetArea);
-    std::map<long int, double> const restLength =
-        t[5].cast<std::map<long int, double>>();
-    k->setRestLength(restLength);
 }
 
 /*

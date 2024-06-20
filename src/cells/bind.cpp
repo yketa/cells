@@ -276,15 +276,9 @@ PYBIND11_MODULE(bind, m) {
         .def_property("keratin",
             &KeratinModel::getKeratin,
             &KeratinModel::setKeratin)
-        .def_property("activeKeratin",
-            &KeratinModel::getActiveKeratin,
-            &KeratinModel::setActiveKeratin)
         .def_property("targetArea",
             &KeratinModel::getTargetArea,
             &KeratinModel::setTargetArea)
-        .def_property("restLength",
-            &KeratinModel::getRestLength,
-            &KeratinModel::setRestLength)
         .def_property_readonly("pressure",
             &KeratinModel::getPressure)
         .def_property_readonly("area",
@@ -863,11 +857,10 @@ PYBIND11_MODULE(bind, m) {
         // KeratinModel
         .def("addKeratinModel",
             &VertexModel::addVertexForce<KeratinModel,
+                double const&, double const&, double const&,
                 double const&, double const&,
-                double const&, double const&,
-                double const&, double const&,
-                double const&, double const&,
-                double const&>,
+                double const&, double const&, double const&,
+                double const&, double const&, double const&>,
             "Add keratin model.\n"
             "\n"
             "Parameters\n"
@@ -876,6 +869,8 @@ PYBIND11_MODULE(bind, m) {
             "    Unique name for the force.\n"
             "K : float\n"
             "    Area elasticity.\n"
+            "A0 : float\n"
+            "    Minimum target area.\n"
             "taur : float\n"
             "    Target area relaxation time scale.\n"
             "Gamma : float\n"
@@ -884,6 +879,8 @@ PYBIND11_MODULE(bind, m) {
             "    Target shape index.\n"
             "alpha : float\n"
             "    Keratin on-rate pressure-dependence parameter.\n"
+            "beta : float\n"
+            "    Keratin to area elasticity constant parameter.\n"
             "kth : float\n"
             "    Keratin concentration threshold.\n"
             "tau : float\n"
@@ -895,10 +892,12 @@ PYBIND11_MODULE(bind, m) {
             "    (=1/tauon).\n",
             pybind11::arg("name"),
             pybind11::arg("K"),
+            pybind11::arg("A0"),
             pybind11::arg("taur"),
             pybind11::arg("Gamma"),
             pybind11::arg("p0"),
             pybind11::arg("alpha"),
+            pybind11::arg("beta"),
             pybind11::arg("kth"),
             pybind11::arg("tau"),
             pybind11::arg("sigma"),
