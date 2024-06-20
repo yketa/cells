@@ -32,9 +32,7 @@ def plot_keratin(vm, fig=None, ax=None, **kwargs):
     set_call = (fig is None or ax is None)
     fig, ax = plot(vm, fig=fig, ax=ax, only_set=True)   # initialise figure and axis
 
-#     print(vm.vertexForces["keratin"].pressure)
-
-    # colorbars
+    # colourbars
 
     if set_call:
 
@@ -92,16 +90,14 @@ def plot_keratin(vm, fig=None, ax=None, **kwargs):
     param = vm.vertexForces["keratin"].parameters
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
-    title += r"$, \tau_r=%.2f, p_0=%.2f, l_0=%.2f, \alpha=%.1e$" % (
-        param["taur"], param["p0"], param["l0"], param["alpha"])
+    title += r"$, \tau_r=%.2f, p_0=%.2f, \alpha=%.1e$" % (
+        param["taur"], param["p0"], param["alpha"])
     title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
     title += "\n"
     title += r"$\tau=%.1e, \sigma=%.1e$" % (
         param["tau"], param["sigma"])
     title += r"$, \tau_{\mathrm{on}}=$" + (
         r"$\infty$" if param["ron"] == 0 else r"$%.1e$" % (1./param["ron"]))
-    title += r"$, k_0=%.1e, T_0=%.1e$" % (
-        param["k0"], param["pr0"])
     if "pull" in vm.vertexForces:
         title += r"$, F_{\mathrm{pull}}=%.1e$" % (
             vm.vertexForces["pull"].parameters["Fpull"])
@@ -123,21 +119,15 @@ if __name__ == "__main__":
     # taur is defined by {taur}
     # Gamma is defined by {Gamma}
     # p0 is defined by {p0}
-    parser.add_argument("-l0", type=float, default=1,
-        help="bond rest length")
-    parser.add_argument("-alpha", type=float, default=0.2,
-        help="bond elasticity per keratin concentration above threshold")
+    parser.add_argument("-alpha", type=float, default=1,
+        help="keratin on-rate pressure-dependence parameter")
     parser.add_argument("-kth", type=float, default=0,
-        help="bond keratin concentration threshold")
+        help="keratin concentration threshold")
     parser.add_argument("-tau", type=float, default=10,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
     parser.add_argument("-ron", type=float, default=0,
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
-    parser.add_argument("-k0", type=float, default=0.5,
-        help="keratin concentration off-rate inverse pressure constant")
-    parser.add_argument("-pr0", type=float, default=-0.3,
-        help="keratin concentration off-rate inflection pressure")
     parser.add_argument("-fpull", type=float, default=1,
         help="outer vertices pulling force")
 
@@ -148,8 +138,8 @@ if __name__ == "__main__":
     for _ in vm.vertexForces: vm.removeVertexForce(_)
     for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
     vm.addKeratinModel("keratin",
-        K, args.taur, args.Gamma, args.p0, args.l0, args.alpha, args.kth,
-        args.tau, args.sigma, args.ron, args.k0, args.pr0)
+        K, args.taur, args.Gamma, args.p0,
+        args.alpha, args.kth, args.tau, args.sigma, args.ron)
     vm.addEdgePullForce("pull",
         args.fpull)
 

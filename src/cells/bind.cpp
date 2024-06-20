@@ -276,9 +276,15 @@ PYBIND11_MODULE(bind, m) {
         .def_property("keratin",
             &KeratinModel::getKeratin,
             &KeratinModel::setKeratin)
+        .def_property("activeKeratin",
+            &KeratinModel::getActiveKeratin,
+            &KeratinModel::setActiveKeratin)
         .def_property("targetArea",
             &KeratinModel::getTargetArea,
             &KeratinModel::setTargetArea)
+        .def_property("restLength",
+            &KeratinModel::getRestLength,
+            &KeratinModel::setRestLength)
         .def_property_readonly("pressure",
             &KeratinModel::getPressure)
         .def_property_readonly("area",
@@ -859,9 +865,9 @@ PYBIND11_MODULE(bind, m) {
             &VertexModel::addVertexForce<KeratinModel,
                 double const&, double const&,
                 double const&, double const&,
-                double const&, double const&, double const&,
                 double const&, double const&,
-                double const&, double const&, double const&>,
+                double const&, double const&,
+                double const&>,
             "Add keratin model.\n"
             "\n"
             "Parameters\n"
@@ -876,36 +882,27 @@ PYBIND11_MODULE(bind, m) {
             "    Perimeter elasticity.\n"
             "p0 : float\n"
             "    Target shape index.\n"
-            "l0 : float\n"
-            "    Bond rest length.\n"
             "alpha : float\n"
-            "    Bond elasticity per keratin concentration above threshold.\n"
+            "    Keratin on-rate pressure-dependence parameter.\n"
             "kth : float\n"
-            "    Bond keratin concentration threshold.\n"
+            "    Keratin concentration threshold.\n"
             "tau : float\n"
             "    Keratin concentration evolution time scale.\n"
             "sigma : float\n"
             "    Keratin concentration noise standard deviation.\n"
             "ron : float\n"
             "    Keratin concentration on-rate evolution time rate\n"
-            "    (=1/tauon).\n"
-            "k0 : float\n"
-            "    Keratin concentration off-rate inverse pressure constant.\n"
-            "pr0 : float\n"
-            "    Keratin concentration off-rate inflection pressure.\n",
+            "    (=1/tauon).\n",
             pybind11::arg("name"),
             pybind11::arg("K"),
             pybind11::arg("taur"),
             pybind11::arg("Gamma"),
             pybind11::arg("p0"),
-            pybind11::arg("l0"),
             pybind11::arg("alpha"),
             pybind11::arg("kth"),
             pybind11::arg("tau"),
             pybind11::arg("sigma"),
-            pybind11::arg("ron"),
-            pybind11::arg("k0"),
-            pybind11::arg("pr0"))
+            pybind11::arg("ron"))
         // set integrator [BaseIntegrator (integrators.hpp, integrators.hpp, integrators.cpp)]
         .def("setUnitOverdampedIntegrator",
             &VertexModel::setIntegrator<UnitOverdamped>,

@@ -1110,11 +1110,10 @@ Keratin model.
         Mesh* const mesh;                       // mesh object
         Random* random;                         // random number generator
 
-        double* const time;                     // integrated time
-        double const time0;                     // time at which force was initialised
-
         std::map<long int, double> keratin;     // cell keratin concentration
+        std::vector<long int> activeKeratin;    // cell indices where keratin has crossed threshold
         std::map<long int, double> targetArea;  // target area
+        std::map<long int, double> restLength;  // keratin bonds rest lengths
 
         // degrees of freedom computed in KeratinModel::addAllForces
         std::map<long int, double> pressure;    // cell pressure
@@ -1126,20 +1125,19 @@ Keratin model.
         KeratinModel(
             double const& K_, double const& taur_,
             double const& Gamma_, double const& p0_,
-            double const& l0_, double const& alpha_, double const& kth_,
+            double const& alpha_, double const& kth_,
             double const& tau_, double const& sigma_,
-            double const& ron_, double const& k0_, double const& pr0_,
+            double const& ron_,
             Mesh* const mesh_, Random* random_,
-            double* const time_, double const& time0_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"K", K_}, {"taur", taur_},
                 {"Gamma", Gamma_}, {"p0", p0_},
-                {"l0", l0_}, {"alpha", alpha_}, {"kth", kth_},
+                {"alpha", alpha_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_},
-                {"ron", ron_}, {"k0", k0_}, {"pr0", pr0_}},
+                {"ron", ron_}},
                 forces_, vertices_),
-            mesh(mesh_), random(random_), time(time_), time0(time0_) {
+            mesh(mesh_), random(random_) {
 
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
@@ -1153,18 +1151,25 @@ Keratin model.
             }
         }
 
-        double const& getTime0() const
-            { return time0; }
-
         std::map<long int, double> const& getKeratin() const
             { return keratin; }
         void setKeratin(std::map<long int, double> const& keratin_)
             { keratin = keratin_; }
 
+        std::vector<long int> const& getActiveKeratin() const
+            { return activeKeratin; }
+        void setActiveKeratin(std::vector<long int> const& activeKeratin_)
+            { activeKeratin = activeKeratin_; }
+
         std::map<long int, double> const& getTargetArea() const
             { return targetArea; }
         void setTargetArea(std::map<long int, double> const& targetArea_)
             { targetArea = targetArea_; }
+
+        std::map<long int, double> const& getRestLength() const
+            { return restLength; }
+        void setRestLength(std::map<long int, double> const& restLength_)
+            { restLength = restLength_; }
 
         std::map<long int, double> const& getPressure() const
             { return pressure; }
@@ -1255,12 +1260,18 @@ Keratin model.
                         vertex.getIndex(),
                         neighbourVerticesIndices[i]);
                     if (dim == 0) { // tension is defined once per half-edge
-                        tension.emplace(halfEdgeIndex,
-                            2*parameters.at("alpha")*std::max(0.,
-                                keratin[vertex.getIndex()]  // cell keratin concentration
-                                    - parameters.at("kth"))*(
-                                        distRadiusToCorner  // length between vertices
-                                            - parameters.at("l0")));
+                        if (inMap(restLength, halfEdgeIndex)) {
+                            tension.emplace(halfEdgeIndex,
+                                2*std::max(0.,
+                                    keratin[vertex.getIndex()]  // cell keratin concentration
+                                        - parameters.at("kth"))*(
+                                            distRadiusToCorner  // length between vertices
+                                                - restLength[halfEdgeIndex]));
+                        }
+                        else {
+                            tension.emplace(halfEdgeIndex,
+                                0);
+                        }
                     }
                     force = -tension[halfEdgeIndex]                 // tension
                         *radiusToCorner[dim]/distRadiusToCorner;    // normalised vector;
@@ -1275,12 +1286,18 @@ Keratin model.
                         neighbourVerticesIndices[
                             pmod(i + 1, numberNeighbours)]);
                     if (dim == 0) { // tension is defined once per half-edge
-                        tension.emplace(halfEdgeIndex,
-                            parameters.at("alpha")*std::max(0.,
-                                keratin[vertex.getIndex()]  // cell keratin concentration
-                                    - parameters.at("kth"))*(
-                                        distToNextNeighbour // length between vertices
-                                            - parameters.at("l0")));
+                        if (inMap(restLength, halfEdgeIndex)) {
+                            tension.emplace(halfEdgeIndex,
+                                std::max(0.,
+                                    keratin[vertex.getIndex()]  // cell keratin concentration
+                                        - parameters.at("kth"))*(
+                                            distToNextNeighbour // length between vertices
+                                                - restLength[halfEdgeIndex]));
+                        }
+                        else {
+                            tension.emplace(halfEdgeIndex,
+                                0);
+                        }
                     }
                     force = tension[halfEdgeIndex]                  // tension
                         *toNextNeighbour[dim]/distToNextNeighbour;  // normalised vector
@@ -1308,12 +1325,35 @@ Keratin model.
             double const dt_ = dt/parameters.at("tau");
             double const amp = parameters.at("sigma")*sqrt(2.*dt_);
             for (auto it=keratin.begin(); it != keratin.end(); ++it) {
-                double const kon = 1 + (*time - time0)*parameters.at("ron");    // time-dependent on rate
-                double const koff = 1 + exp(parameters.at("k0")*(               // keratin-dependent off rate
-                    pressure[it->first] - parameters.at("pr0")));               // addAllForces sets pressure
+                // keratin concentration
+                double const kon =                                              // on-rate...
+                    parameters.at("alpha")*std::max(0., -pressure[it->first])   // ... increases with pressure (set by addAllForces)...
+                    + parameters.at("ron");                                     // ... and time
+                double const koff = keratin[it->first];                         // keratin-dependent off-rate
                 keratin[it->first] +=
-                    dt_*(kon - koff*keratin[it->first]) // deterministic part
-                    + amp*random->gauss();              // stochastic part
+                    dt_*(kon - koff)                                            // deterministic part
+                    + amp*random->gauss();                                      // stochastic part
+                // activate keratin
+                if (!inVec(activeKeratin, it->first)
+                    && keratin[it->first] > parameters.at("kth")) {
+                    activeKeratin.push_back(it->first);                     // activate keratin in cell
+                    std::map<long int, HalfEdge> const halfEdges =
+                        mesh->getHalfEdges();
+                    std::vector<long int> halfEdgesToNeighbours =
+                        mesh->getNeighbourVertices(it->first)[1];
+                    for (long int halfEdgeIndex : halfEdgesToNeighbours) {  // loop over half-edges to neighbours
+                        long int pairHalfEdgeIndex =
+                            halfEdges.at(halfEdgeIndex).getPairIndex();
+                        long int nextHalfEdgeIndex =
+                            halfEdges.at(halfEdgeIndex).getNextIndex();
+                        restLength.emplace(halfEdgeIndex,                   // set rest length to current length
+                            mesh->getEdgeLength(halfEdgeIndex));
+                        restLength.emplace(pairHalfEdgeIndex,               // set rest length to current length
+                            mesh->getEdgeLength(pairHalfEdgeIndex));
+                        restLength.emplace(nextHalfEdgeIndex,               // set rest length to current length
+                            mesh->getEdgeLength(nextHalfEdgeIndex));
+                    }
+                }
             }
             // integrate target area
             double const dtr_ = dt/parameters.at("taur");
