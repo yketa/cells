@@ -1118,6 +1118,12 @@ Keratin model.
         std::map<long int, double> area;        // cell area
         std::map<long int, double> tension;     // bonds keratin tension
 
+        double keffect(long int const& index) const {
+            // keratin effect on area elastic constant and target area relaxation time
+            return parameters.at("beta")*std::max(0.,
+                keratin.at(index) - parameters.at("kth"));
+        }
+
     public:
 
         KeratinModel(
@@ -1171,10 +1177,9 @@ Keratin model.
             // reset cell pressure
             pressure[vertex.getIndex()] = 0;
 
-            // cell area elasticity, area, and perimeter
-            double const Kk = parameters.at("K")
-                + parameters.at("beta")*std::max(0.,
-                    keratin[vertex.getIndex()] - parameters.at("kth")); // keratin-dependent area elasticity
+            // cell area elastic constant, target area relaxation time, area, and perimeter
+            double const Kk =               // keratin-dependent area elastic constant
+                parameters.at("K")*(1 + keffect(vertex.getIndex()));
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
             double const A0 = targetArea[vertex.getIndex()];
@@ -1266,10 +1271,12 @@ Keratin model.
                     + amp*random->gauss();                                      // stochastic part
             }
             // integrate target area
-            double const dtr_ = dt/parameters.at("taur");
             for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
+                double const tauk =         // keratin-dependent target area relaxation time
+                    parameters.at("taur")*(1 + keffect(it->first));
+                double const dtk_ = dt/tauk;
                 targetArea[it->first] +=    // relax target area
-                    -dtr_*(targetArea[it->first] - area[it->first]);
+                    -dtk_*(targetArea[it->first] - area[it->first]);
                 targetArea[it->first] =     // minimum to target area
                     std::max(parameters.at("A0"), targetArea[it->first]);
             }

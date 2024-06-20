@@ -880,7 +880,7 @@ PYBIND11_MODULE(bind, m) {
             "alpha : float\n"
             "    Keratin on-rate pressure-dependence parameter.\n"
             "beta : float\n"
-            "    Keratin to area elasticity constant parameter.\n"
+            "    Keratin to area elasticity and relaxation parameter.\n"
             "kth : float\n"
             "    Keratin concentration threshold.\n"
             "tau : float\n"
