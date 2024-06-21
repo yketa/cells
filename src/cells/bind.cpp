@@ -1078,6 +1078,47 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
+    m.def("getMaxLengthCells",
+        [](VertexModel const& vm) {
+
+            std::vector<long int> const centres =
+                vm.getVertexIndicesByType("centre");
+            std::map<long int, Vertex> const vertices =
+                vm.getVertices();
+
+            std::map<long int, double> maxLength;
+            for (long int index : centres) {
+                std::vector<long int> const neighbours =
+                    vm.getNeighbourVertices(index)[0];
+                long int const nNeighbours = neighbours.size();
+                double max = 0;
+                for (long int mu=0; mu < nNeighbours; mu++) {
+                    for (long int nu=mu + 1; nu < nNeighbours; nu++) {
+                        std::vector<double> const diff =
+                            vm.wrapTo(neighbours.at(mu), neighbours.at(nu));
+                        max = std::max(max,
+                            sqrt(diff[0]*diff[0] + diff[1]*diff[1]));
+                    }
+                }
+                maxLength.emplace(index, max);
+            }
+
+            return maxLength;
+        },
+        "Return maximum length between two cell corners in each cell.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "vm : cells.bind.VertexModel\n"
+        "    Vertex model object.\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "maxLength : {int: float}\n"
+        "    Dictionary which associates cell centre vertex indices to the\n"
+        "    maximum length between two cell corners in this cell.",
+        pybind11::arg("vm"));
+
     m.def("getPercentageKeptNeighbours",
         [](VertexModel const& vm0, VertexModel const& vm1, double const& a) {
 
