@@ -906,6 +906,15 @@ PYBIND11_MODULE(bind, m) {
         .def("setUnitOverdampedIntegrator",
             &VertexModel::setIntegrator<UnitOverdamped>,
             "Unit vertex-substrate drag coefficient overdamped integrator.")
+        .def("setOverdampedIntegrator",
+            &VertexModel::setIntegrator<Overdamped, double const&>,
+            "Custom vertex-substrate drag coefficient overdamped integrator.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "xi : float\n"
+            "    Vertex drag coefficient.",
+            pybind11::arg("xi"))
         .def("setPairFrictionIntegrator",
             &VertexModel::setIntegrator<PairFriction, double const&>,
             "Cell corner pair friction and unit vertex-substrate drag\n"

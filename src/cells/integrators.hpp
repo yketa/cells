@@ -35,6 +35,34 @@ Unit vertex-substrate drag coefficient overdamped integrator.
 
 };
 
+class Overdamped : public BaseIntegrator<ForcesType, VelocitiesType> {
+/*
+Custom vertex-substrate drag coefficient overdamped integrator.
+*/
+
+    public:
+
+        Overdamped(
+            double const& xi_,
+            ForcesType* const forces_, VelocitiesType* velocities_) :
+            BaseIntegrator<ForcesType, VelocitiesType>(
+                {{"xi", xi_}},
+                forces_, velocities_) {}
+
+        void integrate(double const& dt) override {
+            *velocities = *forces;
+            double const xi = parameters.at("xi");
+            for (auto it=velocities->begin(); it != velocities->end(); ++it) {
+                for (int dim=0; dim < 2; dim++) {
+                    (it->second)[dim] /= xi;
+                }
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
 class PairFriction : public BaseIntegrator<ForcesType, VelocitiesType> {
 /*
 Cell corner pair friction and unit vertex-substrate drag coefficient overdamped

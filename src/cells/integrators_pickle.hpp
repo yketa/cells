@@ -39,6 +39,32 @@ VertexModel::setIntegrator<UnitOverdamped, pybind11::tuple const&>(
 }
 
 /*
+ *  Overdamped
+ *
+ */
+
+// save state
+pybind11::tuple Overdamped::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the integrator object
+        "Overdamped",
+        // state
+        parameters);
+}
+
+// load state
+template<> void
+VertexModel::setIntegrator<Overdamped, pybind11::tuple const&>(
+    pybind11::tuple const& t) {
+    // check
+    checkSize(t, 2);
+    assert(t[0].cast<std::string>() == "Overdamped");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    setIntegrator<Overdamped, double const&>(parameters.at("xi"));
+}
+
+/*
  *  PairFriction
  *
  */
@@ -77,6 +103,9 @@ void pybind11_setstate_integrator(VertexModel& vm, pybind11::tuple const& t) {
     // --- MANUAL ASSOCIATION TO INTEGRATORS ---
     if (integratorName == "UnitOverdamped") {
         setIntegrator.template operator()<UnitOverdamped>();
+    }
+    else if (integratorName == "Overdamped") {
+        setIntegrator.template operator()<Overdamped>();
     }
     else if (integratorName == "PairFriction") {
         setIntegrator.template operator()<PairFriction>();

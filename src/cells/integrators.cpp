@@ -20,6 +20,19 @@ template<> void VertexModel::setIntegrator<
 
 template<> void VertexModel::setIntegrator<
     // derived integrator class
+    Overdamped,
+    // argument types
+    double const&>(
+    // user-defined arguments
+    double const& xi) {
+    // set integrator
+    integrator = std::make_shared<Overdamped>(
+        xi,                     // user-defined parameters
+        &forces, &velocities);  // VertexModel attributes
+}
+
+template<> void VertexModel::setIntegrator<
+    // derived integrator class
     PairFriction,
     // argument types
     double const&>(
