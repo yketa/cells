@@ -140,7 +140,7 @@ ${__VELOCITIES:+from cells.plot import plot_velocities}
 ${__NEIGHBOURS:+from cells.plot import plot_neighbours}
 ${__HEXATIC:+from cells.plot import plot_hexatic}
 
-import os
+import os, sys, traceback
 import numpy as np
 ${__TIGHT_LAYOUT:+from matplotlib.pyplot import tight_layout}
 ${__FONT:+from matplotlib import rcParams; rcParams[\"font.size\"] = $__FONT}
@@ -166,8 +166,16 @@ for frame in frames:
         ${__HEXATIC:+, override=plot_hexatic})
     # save
     ${__TIGHT_LAYOUT:+tight_layout()}
-    r.fig.savefig(os.path.join("$__DIR", "%05d.png" % frames.index(frame))
-        ${__DPI:+, dpi=$__DPI})
+    while True:
+        try:
+            r.fig.savefig(
+                os.path.join("$__DIR", "%05d.png" % frames.index(frame))
+                ${__DPI:+, dpi=$__DPI})
+            break
+        except SyntaxError:
+            # dirty fix to "SyntaxError: not a PNG file" when using concurrent matplotlib instances
+            print(traceback.format_exc(), file=sys.stderr)
+            pass
 
     _progressbar((frames.index(frame) + 1)/len(frames))
 
