@@ -1264,7 +1264,7 @@ Keratin model.
                 // keratin concentration
                 double const kon =                                              // on-rate...
                     parameters.at("alpha")*std::max(0., -pressure[it->first])   // ... increases with pressure (set by addAllForces)...
-                    + parameters.at("ron");                                     // ... and time
+                    + parameters.at("tau")*parameters.at("ron");                // ... and time
                 double const koff = keratin[it->first];                         // keratin-dependent off-rate
                 keratin[it->first] +=
                     dt_*(kon - koff)                                            // deterministic part
