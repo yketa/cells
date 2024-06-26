@@ -39,7 +39,7 @@ def _exit_handler(*_args, **_kwargs):
     # exit
     if hasattr(__main__, "__file__"): os._exit(0)           # not a python console: exit
 
-def run(args, vm, plot_function=None):
+def run(args, vm, plot_function=None, **kwargs):
     """
     Infinite loop to run and plot vertex model simulation.
 
@@ -55,6 +55,8 @@ def run(args, vm, plot_function=None):
               plot_function = cells.plot.plot_velocities if args.velocities,
                               cells.plot.plot_neighbours if args.neighbours,
                               cells.plot.plot            otherwise.
+
+    Additional keywords arguments are passed to plot_function.
     """
 
     vm0 = deepcopy(vm)  # initial vertex model object
@@ -68,8 +70,8 @@ def run(args, vm, plot_function=None):
             plot_function = plot_neighbours
         else:
             plot_function = plot
-    def _plot(*pargs, **kwargs):
-        return plot_function(*pargs, **kwargs,
+    def _plot(*_args, **_kwargs):
+        return plot_function(*_args, **{**kwargs, **_kwargs},
             rainbow=vm0 if args.rainbow else None)
 
     # frames directory
