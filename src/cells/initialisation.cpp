@@ -237,24 +237,25 @@ void VertexModel::initOpenRegularTriangularLattice(
 }
 
 void VertexModel::initOpenRegularHexagonalLattice(
-    long int const& nCells, double const& hexagonArea) {
+    long int const& nCells, double const& hexagonArea,
+    double const& boxLength) {
 
     long int const nnCells = sqrt(nCells);
     assert(nnCells*nnCells == nCells);
     double const junctionLength =
         std::sqrt((2*hexagonArea)/(3*tan(std::numbers::pi/3.)));
 
-    clear();                                    // clear vertices and half-edges
-    systemSize[0] = 3*nnCells*junctionLength;   // length of the periodic box in the x-direction
-    systemSize[1] = 3*nnCells*junctionLength;   // length of the periodic box in the y-direction
+    clear();                                            // clear vertices and half-edges
+    systemSize[0] = boxLength*nnCells*junctionLength;   // length of the periodic box in the x-direction
+    systemSize[1] = boxLength*nnCells*junctionLength;   // length of the periodic box in the y-direction
 
     // first loop over cells to create vertices and self-propelled vertices
-    double const x0 =   // x-position of first cell centre
-        (1.5*nnCells - (sqrt(3.)/2.)*(nnCells - 1 + (nnCells > 1)*0.5))
-            *junctionLength;
-    double const y0 =   // y-position of first cell centre
-        (nnCells - (nnCells + 1)/4. + 1.)
-            *junctionLength;
+    double const x0 =
+        (systemSize[0]
+            - (nnCells - (nnCells > 1)/2.)*sqrt(3.)*junctionLength)/2.;
+    double const y0 =
+        (systemSize[1]
+            - (nnCells - 1.)*3.*junctionLength/2.)/2.;
     auto vertexIndex = [&nnCells]
         (long int const& col, long int const& line, long int const& k)
             { return 7*(col + line*nnCells) + k; };

@@ -177,7 +177,7 @@ class VertexModel : public Mesh {
         */
 
         void initRegularTriangularLattice(
-                long int const& size=6, double const& junctionLength=1);
+            long int const& size=6, double const& hexagonArea=1);
         /*
         Initialise a regular triangular lattice.
 
@@ -186,12 +186,12 @@ class VertexModel : public Mesh {
         size :
             Number of vertices in both horizontal and vertical directions.
             NOTE: Must be a multiple of 6.
-        junctionLength :
-            Length of nearest neighbour junctions.
+        hexagonArea :
+            Area of regular hexagons.
         */
 
         void initOpenRegularTriangularLattice(
-                long int const& size=6, double const& junctionLength=1);
+            long int const& size=6, double const& hexagonArea=1);
         /*
         Initialise a regular triangular lattice with a cell replaced with a
         hole. (TESTING)
@@ -201,12 +201,13 @@ class VertexModel : public Mesh {
         size :
             Number of vertices in both horizontal and vertical directions.
             NOTE: Must be a multiple of 6.
-        junctionLength :
-            Length of nearest neighbour junctions.
+        hexagonArea :
+            Area of regular hexagons.
         */
 
         void initOpenRegularHexagonalLattice(
-                long int const& nCells=1, double const& junctionLength=1);
+            long int const& nCells=1, double const& hexagonArea=1,
+            double const& boxLength=3);
         /*
         Initialise a regular square lattice with open outer bondary.
 
@@ -215,8 +216,11 @@ class VertexModel : public Mesh {
         nCells :
             Number of cells.
             NOTE: Must be the square of an integer.
-        junctionLength :
-            Length of nearest neighbour junctions.
+        hexagonArea :
+            Area of regular hexagons.
+        boxLength :
+            Length of the box in units of sqrt(`nCells')*junctionLength where
+            junctionLength is the length of a side of a regular hexagon.
         */
 
 };

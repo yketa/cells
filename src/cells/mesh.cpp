@@ -458,6 +458,25 @@ TopoChangeEdgeInfoType Mesh::createEdge(
     return std::make_tuple(newVertexIndex, createdHalfEdgeIndices);
 }
 
+void Mesh::scale(double const& scalingFactor) {
+
+    auto scaleVector = [&scalingFactor](std::vector<double>& vector)
+        { for (int dim=0; dim < 2; dim++) vector[dim] *= scalingFactor; };
+
+    // scale box
+    scaleVector(systemSize);
+
+    // scale vertices
+    for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+        std::vector<double> position = (it->second).getPosition();
+        scaleVector(position);
+        (it->second).setPosition(position);
+        std::vector<double> uposition = (it->second).getUPosition();
+        scaleVector(uposition);
+        (it->second).setUPosition(uposition);
+    }
+}
+
 void Mesh::checkMesh() const {
 
     std::vector<long int> vertexIndices(0);     // vector of vertex indices

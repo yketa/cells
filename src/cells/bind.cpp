@@ -487,6 +487,15 @@ PYBIND11_MODULE(bind, m) {
         .def("clear",
             &VertexModel::clear,
             "Clear all data.")
+        .def("scale",
+            &VertexModel::scale,
+            "Rescale all lengths.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "scalingFactor : float\n"
+            "    Factor by which to multiply all lengths.",
+            pybind11::arg("scalingFactor"))
         .def("checkMesh",
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh,\n"
@@ -965,9 +974,14 @@ PYBIND11_MODULE(bind, m) {
             "nCells : int\n"
             "    Number of cells. (default: 1)\n"
             "hexagonArea : float\n"
-            "    Area of regular hexagons. (default: 1)",
+            "    Area of regular hexagons. (default: 1)\n"
+            "boxLength : float\n"
+            "    Length of the box in units of sqrt(`nCells')*junctionLength\n"
+            "    where junctionLength is the length of a side of a regular\n"
+            "    hexagon. (default: 3)",
             pybind11::arg("nCells")=1,
-            pybind11::arg("hexagonArea")=1)
+            pybind11::arg("hexagonArea")=1,
+            pybind11::arg("boxLength")=3)
         // pickle
         .def(pybind11::pickle(
             &pybind11_getstate<VertexModel>,

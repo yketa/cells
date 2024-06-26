@@ -474,6 +474,11 @@ Two-dimensional ensembles of vertices and edges.
             Indices of half-edges created by this operation.
         */
 
+        void scale(double const& scalingFactor);
+        /*
+        Rescale all lengths by `scalingFactor'.
+        */
+
         void checkMesh() const;
         /*
         Check that the vertices and half-edges define a planar mesh, with
