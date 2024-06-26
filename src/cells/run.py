@@ -76,6 +76,8 @@ def run(args, vm, plot_function=None):
     global _frames_dir
     if args.movie:
         _frames_dir = mkdtemp()
+        print("Saving frames to temporary directory \"%s\"." % _frames_dir,
+            file=sys.stderr)
     else:
         try: del _frames_dir
         except NameError: pass

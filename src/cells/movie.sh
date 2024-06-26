@@ -154,6 +154,7 @@ frames = r.frames[r.frames >= r.t0[0]]
 if (np.diff(frames, n=2) != 0).any(): frames = r.t0         # logarithmically spaced saved frames
 frames = list(frames[frames <= r.frames[r.skip.size - 1]])  # restrict to existing saved frames
 
+print("Saving frames to temporary directory \"%s\"." % "$__DIR")
 _progressbar(0)
 for frame in frames:
 
