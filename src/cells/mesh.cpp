@@ -177,6 +177,28 @@ double Mesh::getVertexToNeighboursPerimeter(
     return perimeter;
 }
 
+void Mesh::moveToNeigboursBarycentre(
+    long int const& vertexIndex) {
+
+    // compute centre of mass
+    std::vector<double> posCM = {0, 0};             // position of centre of mass (= barycentre)
+    std::vector<long int> const neighbourIndices =  // indices of neighbouring vertices
+        getNeighbourVertices(vertexIndex)[0];
+    long int N = neighbourIndices.size();           // number of vertices
+    for (long int neighbourIndex : neighbourIndices) {
+        std::vector<double> const pos =
+            (vertices.at(neighbourIndex)).getPosition();
+        for (int dim=0; dim < 2; dim++)
+            { posCM[dim] += pos.at(dim)/N; }
+    }
+
+    // set position
+    vertices[vertexIndex].setPosition(  // wrap position
+        wrap(posCM));
+    vertices[vertexIndex].setUPosition( // set unwrapped position back to wrapped position
+        vertices.at(vertexIndex).getPosition());
+}
+
 TopoChangeEdgeInfoType Mesh::deleteEdge(
     long int const& halfEdgeIndex) {
 

@@ -417,6 +417,17 @@ Two-dimensional ensembles of vertices and edges.
             Perimeter encapsulated by neighbours.
         */
 
+        void moveToNeigboursBarycentre(
+            long int const& vertexIndex);
+        /*
+        Move vertex to centre of mass (= barycentre) of its neighbours.
+
+        Parameters
+        ----------
+        vertexIndex :
+            Index of vertex.
+        */
+
         TopoChangeEdgeInfoType deleteEdge(
             long int const& halfEdgeIndex);
         /*
