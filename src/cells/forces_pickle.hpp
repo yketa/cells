@@ -102,30 +102,30 @@ VertexModel::addVertexForce<VolumeForce, pybind11::tuple const&>(
 }
 
 /*
- *  EdgePullForce
+ *  PressureForce
  *
  */
 
 // save state
-pybind11::tuple EdgePullForce::pybind11_getstate() const {
+pybind11::tuple PressureForce::pybind11_getstate() const {
     return pybind11::make_tuple(
         // unique identifying string for the force object
-        "EdgePullForce",
+        "PressureForce",
         // state
         parameters);
 }
 
 // load state
 template<> void
-VertexModel::addVertexForce<EdgePullForce, pybind11::tuple const&>(
+VertexModel::addVertexForce<PressureForce, pybind11::tuple const&>(
     std::string const& name, pybind11::tuple const& t) {
     // check
     checkSize(t, 2);
-    assert(t[0].cast<std::string>() == "EdgePullForce");
+    assert(t[0].cast<std::string>() == "PressureForce");
     // initialise force
     ParametersType const parameters = t[1].cast<ParametersType>();
-    addVertexForce<EdgePullForce, double const&>(
-        name, parameters.at("Fpull"));
+    addVertexForce<PressureForce, double const&, bool const&>(
+        name, parameters.at("F"), parameters.at("fixedPerimeterForce"));
 }
 
 /*
@@ -526,8 +526,8 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         else if (forceName == "VolumeForce") {
             addVertexForce.template operator()<VolumeForce>();
         }
-        else if (forceName == "EdgePullForce") {
-            addVertexForce.template operator()<EdgePullForce>();
+        else if (forceName == "PressureForce") {
+            addVertexForce.template operator()<PressureForce>();
         }
         else if (forceName == "BoundaryTension") {
             addVertexForce.template operator()<BoundaryTension>();

@@ -696,19 +696,23 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("kV"),
             pybind11::arg("h0"),
             pybind11::arg("A0"))
-        .def("addEdgePullForce",
-            &VertexModel::addVertexForce<EdgePullForce,
-                double const&>,
-            "Add outer pulling force.\n"
+        .def("addPressureForce",
+            &VertexModel::addVertexForce<PressureForce,
+                double const&, bool const&>,
+            "Add pressure force.\n"
             "\n"
             "Parameters\n"
             "----------\n"
             "name : str\n"
             "    Unique name for the force.\n"
-            "Fpull : float\n"
-            "    Pulling forces.",
+            "F : float\n"
+            "    Force scale.\n"
+            "fixedPerimeterForce : bool\n"
+            "    Force scale F is the product of the stress tensor trace and\n"
+            "    the boundary perimeter. (default: False)",
             pybind11::arg("name"),
-            pybind11::arg("Fpull"))
+            pybind11::arg("F"),
+            pybind11::arg("fixedPerimeterForce")=false)
         .def("addBoundaryTension",
             &VertexModel::addVertexForce<BoundaryTension,
                 double const&>,

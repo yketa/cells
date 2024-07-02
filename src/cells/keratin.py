@@ -4,7 +4,8 @@ This does not save data.
 """
 
 from cells.init import init_vm, K, A0
-from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas
+from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas,\
+    _cbar_labelpad
 from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction
 from cells.run import run
 
@@ -38,7 +39,7 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
             mappable=scalarMap_keratin, ax=ax,
             shrink=0.75, pad=0.01)
         cbar_keratin.set_label(r"$[\mathrm{ker}]_i $",
-            rotation=270, labelpad=20)
+            rotation=270, labelpad=_cbar_labelpad)
         cbar_keratin.ax.fill_between(                           # show keratin threshold...
             cbar_keratin.ax.get_xlim(), 0, param["kth"], color="white")
         cbar_keratin.ax.axhline(y=param["kth"], color="red")    # ... on the colourbar
@@ -82,10 +83,7 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
         r"$\infty$" if param["ron"] == 0 else r"$%.1e$" % (1./param["ron"]))
     if "pull" in vm.vertexForces:
         title += r"$, F_{\mathrm{pull}}=%.1e$" % (
-            vm.vertexForces["pull"].parameters["Fpull"])
-    if "boundary_tension" in vm.vertexForces:
-        title += r"$, \gamma=%.1e$" % (
-            vm.vertexForces["boundary_tension"].parameters["gamma"])
+            vm.vertexForces["pull"].parameters["F"])
 
     ax.set_title(title)
 
@@ -116,7 +114,7 @@ if __name__ == "__main__":
     parser.add_argument("-ron", type=float, default=0,
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
     parser.add_argument("-fpull", type=float, default=1,
-        help="outer vertices pulling force")
+        help="outer vertices pulling force scale")
 
     args, vm = init_vm(parser=parser)
     time0 = vm.time
@@ -128,10 +126,8 @@ if __name__ == "__main__":
     vm.addKeratinModel("keratin",
         K, A0, args.taur, args.Gamma, args.p0,
         args.alpha, args.beta, args.kth, args.tau, args.sigma, args.ron)
-    vm.addEdgePullForce("pull",
-        args.fpull)
-    vm.addBoundaryTension("boundary_tension",
-        args.gamma)
+    vm.addPressureForce("pull",
+        args.fpull, True)
 
     # RUN
 

@@ -227,9 +227,13 @@ Cell volume restoring force.
 
 };
 
-class EdgePullForce : public VertexForce<ForcesType> {
+class PressureForce : public VertexForce<ForcesType> {
 /*
-Pulling on Vertices at the ounter border with a constant radial tension.
+Force acting on boundary vertices in the direction of the line going from the
+barycentre of these boundary vertices to each vertex. Its amplitude is either
+fixed by user or is determined such that it keeps constant the product of the
+trace of the stress tensor and of the perimeter of the boundary. This product
+then defines a typical perimeter force scale F which is fixed by user.
 */
     protected:
 
@@ -237,53 +241,56 @@ Pulling on Vertices at the ounter border with a constant radial tension.
 
     public:
 
-        EdgePullForce(
-            double const& Fpull_,
+        PressureForce(
+            double const& F_, bool const& fixedPerimeterForce_,
             Mesh* const mesh_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("", // type is "" therefore addForce is called for every vertex
                                         // (meaning that VertexForce::addAllForces filters nothing)
                                         // we select the special boundary vertices in addForce
-                {{"Fpull", Fpull_}},
+                {{"F", F_}, {"fixedPerimeterForce", fixedPerimeterForce_}},
                 forces_, vertices_),
             mesh(mesh_) {}
 
         void addForce(Vertex const& vertex) override {
 
             if (vertex.getBoundary()) { // force is computed for neighbours of boundary vertices
-//                 std::cout << "Found boundary vertex " << vertex.getIndex() << std::endl;
 
                 // compute centre of mass of vertices
-                std::vector<double> posCM = {0, 0};             // position of centre of mass
-                long int N = 0;                                 // number of vertices
-                for (auto it=vertices->begin(); it != vertices->end(); ++it) {
-                    if ((it->second).getType() == "vertex") {   // we consider only "vertex" vertices
-                        std::vector<double> const pos =
-                            (it->second).getPosition();
-                        for (int dim=0; dim < 2; dim++) {
-                            posCM[dim] += pos.at(dim);
+                mesh->moveToNeigboursBarycentre(vertex.getIndex()); // move to barycentre to compute area later
+                std::vector<double> const posCM =                   // position of centre of mass (= barycentre)
+                    (vertices->at(vertex.getIndex())).getPosition();
+
+                // compute force scale
+                double const force =                    // force acting on each boundary vertex
+                    [this, &vertex]() {
+                        if (parameters.at("fixedPerimeterForce")) {
+                            double const perimeter =    // perimeter of boundary
+                                (this->mesh)->getVertexToNeighboursPerimeter(
+                                    vertex.getIndex());
+                            double const area =         // area of boundary
+                                std::abs(               // use absolute value because neighbours may be in reverse order
+                                    (this->mesh)->getVertexToNeighboursArea(
+                                        vertex.getIndex()));
+                            return (this->parameters).at("F")
+                                *area/(perimeter*perimeter);
                         }
-                        N++;
-                    }
-                }
-                for (int dim=0; dim < 2; dim++) { posCM[dim] /= N; }
+                        else {
+                            return (this->parameters).at("F");
+                        }
+                    }();
 
-                // compute force
-                std::vector <long int> bindices =
+                // set force
+                std::vector<long int> const neighbourIndices =          // boundary vertices are neighbours of the boundary vertex
                     mesh->getNeighbourVertices(vertex.getIndex())[0];
-                for (long int idx: bindices) {
-//                     std::cout << "Adding boundary force to " << idx << std::endl;
-
-                    std::vector<double> const dir = mesh->wrapDiff( // vector going...
-                        posCM,                                      // ... from centre of mass...
-                        (vertices->at(idx)).getPosition(),          // ... to the edge vertex...
-                        true);                                      // ... and normalised
-//                     std::cout << dir[0] << " " << dir[1] << std::endl;
-                    for (int dim=0; dim < 2; dim++) {
-                        (*forces)[idx][dim] += parameters.at("Fpull")*dir[dim];
-                    }
+                for (long int neighbourIndex : neighbourIndices) {
+                    std::vector<double> const dir = mesh->wrapDiff(     // vector going...
+                        posCM,                                          // ... from centre of mass...
+                        (vertices->at(neighbourIndex)).getPosition(),   // ... to the edge vertex...
+                        true);                                          // ... and normalised
+                    for (int dim=0; dim < 2; dim++)
+                        { (*forces)[neighbourIndex][dim] += force*dir[dim]; }
                 }
-
             }
         }
 

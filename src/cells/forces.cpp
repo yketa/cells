@@ -50,15 +50,16 @@ template<> void VertexModel::addVertexForce<
 
 template<> void VertexModel::addVertexForce<
     // derived force class
-    EdgePullForce,
+    PressureForce,
     // argument types
-    double const&>(
+    double const&, bool const&>(
     // user-defined arguments
-    std::string const& name, double const& Fpull) {
+    std::string const& name,
+    double const& F, bool const& fixedPerimeterForce) {
     // set force
-    vertexForces.add<EdgePullForce>(
+    vertexForces.add<PressureForce>(
         name,                       // (unique) user-defined name for forcess
-        Fpull,                      // user-defined parameters
+        F, fixedPerimeterForce,     // user-defined parameters
         this, &forces, &vertices);  // VertexModel attributes
 }
 
