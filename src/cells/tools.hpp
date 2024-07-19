@@ -60,6 +60,8 @@ double cross2(std::vector<double> const& a, std::vector<double> const& b);  // c
 
 std::vector<double> cross2z(std::vector<double> const& a);                  // cross product of 2D (x, y[, 0]) vector with (0, 0, 1) projected in the xy-plane
 
+double hexagonEdgeLength(double const& hexagonArea);                        // edge length of a regular hexagon defined by its area
+
 /*
  *  CLASSES
  *
