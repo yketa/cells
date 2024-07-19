@@ -2,8 +2,8 @@
 Define objects functions to plot vertex model object.
 """
 
-from cells.bind import VertexModel, angle2, getPercentageKeptNeighbours
-from cells.bind import getLinesHalfEdge, getLinesJunction, getPolygonsCell
+from cells.bind import VertexModel, angle2, getPercentageKeptNeighbours,\
+    getLinesHalfEdge, getLinesJunction, getPolygonsCell
 
 import numpy as np
 
@@ -107,8 +107,14 @@ def plot(vm, fig=None, ax=None, update=True,
     # initialise figure
 
     def _set_lim(ax_, vm_):
-        ax_.set_xlim([0, vm_.systemSize[0]])
-        ax_.set_ylim([0, vm_.systemSize[1]])
+        if True:
+            ax_.set_xlim([0, vm_.systemSize[0]])
+            ax_.set_ylim([0, vm_.systemSize[1]])
+        elif:
+            # zoom
+            n = 4
+            ax_.set_xlim([vm_.systemSize[0]/n, (n - 1)*vm_.systemSize[0]/n])
+            ax_.set_ylim([vm_.systemSize[0]/n, (n - 1)*vm_.systemSize[0]/n])
         ax_.set_aspect("equal")
 
     if fig is None or ax is None:
@@ -195,15 +201,20 @@ def plot(vm, fig=None, ax=None, update=True,
         if ("t0" in locals() or "sT0" in locals()):
             junctions = vm.getHalfEdgeIndicesByType("junction")
             if "t0" in locals():
-                tensions = np.concatenate(list(map(
-                    lambda i: [vm.halfEdgeForces["out"].tension[i]]*2,
-                    junctions)))
+                tensions = (
+                    lambda tension:
+                        np.concatenate(list(map(
+                            lambda i: [tension[i]]*2,
+                            junctions))))(
+                    vm.halfEdgeForces["out"].tension)
             elif "sT0" in locals():
                 for model in ["model%i" % i for i in range(5)]:
                     try:
-                        tensions = np.concatenate(list(map(
-                            lambda i: [vm.halfEdgeForces[model].tension[i]]*2,
-                            junctions)))
+                        tensions = (
+                            lambda tension: np.concatenate(list(map(
+                                lambda i: [tension[i]]*2,
+                                junctions))))(
+                            vm.halfEdgeForces[model].tension)
                     except:
                         continue
             tensions_std = tensions.std()
@@ -225,11 +236,13 @@ def plot(vm, fig=None, ax=None, update=True,
     if not(clear):
         if rainbow_plot:
             if True:
-                positions0 = np.array(list(map(
-                    lambda i: rainbow.vertices[i].position[0],
-                    cells)))
-                scalarMap_rainbow = ScalarMappable(
-                    Normalize(positions0.min(), positions0.max(), plt.cm.hsv))
+                positions0 = (
+                    lambda vertices: np.array(list(map(
+                        lambda i: vertices[i].position[0],
+                        cells))))(
+                    rainbow.vertices)
+                scalarMap_rainbow = ScalarMappable(Normalize(
+                        positions0.min(), positions0.max(), cmap_orientation))
                 polygons.set_facecolor(list(map(    # colour according to previous position
                     lambda position0: scalarMap_rainbow.to_rgba(position0),
                     positions0)))
@@ -241,9 +254,11 @@ def plot(vm, fig=None, ax=None, update=True,
                     lambda i: scalarMap_rainbow.to_rgba(1 - pct[i]),
                     cells)))
         elif "h0" in locals():
-            heights = np.array(list(map(
-                lambda i: vm.vertexForces["volume"].height[i],
-                cells)))
+            heights = (
+                lambda height: np.array(list(map(
+                    lambda i: height[i],
+                    cells))))(
+                vm.vertexForces["volume"].height)
             heights_mean, heights_std = heights.mean(), heights.std()
             if heights_std != 0:
                 polygons.set_facecolor(list(map(    # colour according to height
@@ -262,9 +277,10 @@ def plot(vm, fig=None, ax=None, update=True,
 
     # vertex indices
     if vertex_indices:
-        list(map(
-            lambda i: ax.text(*vm.vertices[i].position, i),
-            vm.vertices))
+        (lambda vertices: list(map(
+            lambda i: ax.text(*vertices[i].position, i),
+            vm.vertices)))(
+        vm.vertices)
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
