@@ -110,7 +110,7 @@ def plot(vm, fig=None, ax=None, update=True,
         if True:
             ax_.set_xlim([0, vm_.systemSize[0]])
             ax_.set_ylim([0, vm_.systemSize[1]])
-        elif:
+        else:
             # zoom
             n = 4
             ax_.set_xlim([vm_.systemSize[0]/n, (n - 1)*vm_.systemSize[0]/n])
@@ -653,6 +653,11 @@ cmap_orientation = (                                                        # co
     or plt.cm.hsv)
 norm_orientation = Normalize(-np.pi, np.pi)                                 # interval of value represented by colourmap
 scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
+
+# half-orientation colourbar
+norm_half_orientation = Normalize(0, np.pi)     # interval of value represented by colourmap
+scalarMap_half_orientation = ScalarMappable(    # conversion from scalar value to colour
+    norm_half_orientation, cmap_orientation)
 
 # neighbours colourbar
 n_neigh = (lambda n: range(6 - n, 6 + n + 2))(3)                            # interval of connectivity
