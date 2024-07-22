@@ -63,6 +63,7 @@ def plot(vm, fig=None, ax=None, update=True,
     """
 
     rainbow_plot = (type(rainbow) == VertexModel)   # is it a rainbow plot?
+    rainbow_means_relaxation = True                 # is rainbow plot a relaxation plot?
     if only_set: clear = True
     if rainbow_plot and clear:
         raise ValueError("`rainbow' and `clear' options are exclusionary.")
@@ -126,7 +127,7 @@ def plot(vm, fig=None, ax=None, update=True,
         try: fig.canvas.window().setFixedSize(fig.canvas.window().size())   # set window size
         except AttributeError: pass
 
-        # all force-related colorbars
+        # all force-related colourbars
         if not(rainbow_plot) and not(clear):
 
             ax_size, fig_width, fig_height = _measure_fig(ax)
@@ -175,6 +176,24 @@ def plot(vm, fig=None, ax=None, update=True,
                     # resize
                     ax_size, fig_width, fig_height = (
                         _resize_fig(ax, ax_size, fig_width, fig_height))
+
+        # relaxation-related colourbar
+        elif rainbow_plot and rainbow_means_relaxation:
+
+            ax_size, fig_width, fig_height = _measure_fig(ax)
+
+            cbar_relaxation = fig.colorbar(
+                mappable=scalarMap_relaxation, ax=ax,
+                shrink=0.75, pad=0.01)
+            cbar_relaxation.set_label(
+                r"\% lost neighbours",
+                rotation=270, labelpad=_cbar_labelpad)
+            cbar_relaxation.set_ticks([0/3, 1/3, 2/3, 3/3])
+            cbar_relaxation.set_ticklabels(
+                [r"$0$", r"$\frac{1}{3}$", r"$\frac{2}{3}$", r"$1$"])
+            # resize
+            ax_size, fig_width, fig_height = (
+                _resize_fig(ax, ax_size, fig_width, fig_height))
 
         # set figure limits
         _set_lim(ax, vm)
@@ -236,7 +255,7 @@ def plot(vm, fig=None, ax=None, update=True,
     cells = vm.getVertexIndicesByType("centre")
     if not(clear):
         if rainbow_plot:
-            if True:
+            if not(rainbow_means_relaxation):
                 positions0 = (
                     lambda vertices: np.array(list(map(
                         lambda i: vertices[i].position[0],
@@ -249,10 +268,8 @@ def plot(vm, fig=None, ax=None, update=True,
                     positions0)))
             else:
                 pct = getPercentageKeptNeighbours(rainbow, vm)
-                scalarMap_rainbow = ScalarMappable(
-                    Normalize(0, 1, plt.cm.cool))
                 polygons.set_facecolor(list(map(    # colour according to percentage of lost neighbours
-                    lambda i: scalarMap_rainbow.to_rgba(1 - pct[i]),
+                    lambda i: scalarMap_relaxation.to_rgba(1 - pct[i]),
                     cells)))
         elif "h0" in locals():
             heights = (
@@ -640,7 +657,7 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
 
 # COLOURBARS
 
-# resize figure with colorbars
+# resize figure with colourbars
 # (https://github.com/matplotlib/matplotlib/issues/15010#issuecomment-524438047)
 def _measure_fig(ax):
     ax_size = ax.get_position().size.copy()
@@ -770,4 +787,18 @@ cmap_neigh = ListedColormap([                                               # co
     for x in n_neigh])
 norm_neigh = BoundaryNorm(n_neigh, len(n_neigh))                            # interval of value represented by colourmap
 scalarMap_neigh = ScalarMappable(cmap=cmap_neigh, norm=norm_neigh)          # conversion from scalar value to colour
+
+# relaxation colourbar
+cmap_relaxation = ListedColormap([                                          # colourmap
+    ScalarMappable(
+        norm=Normalize(vmin=0, vmax=1),
+            cmap=(LinearSegmentedColormap.from_list("polysexual", (         # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Polysexuality_Pride_Flag.svg
+                (0/2, (0.110, 0.573, 0.965)),
+                (1/2, (0.027, 0.835, 0.412)),
+                (2/2, (0.965, 0.110, 0.725))))
+            or plt.cm.cool),
+        ).to_rgba(x)
+    for x in (0/2, 1/2, 2/2)])
+norm_relaxation = Normalize(0, 1)                                           # interval of value represented by colourmap
+scalarMap_relaxation = ScalarMappable(norm_relaxation, cmap_relaxation)     # conversion from scalar value to colour
 
