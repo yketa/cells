@@ -1129,7 +1129,7 @@ PYBIND11_MODULE(bind, m) {
                 double max = 0;
                 for (long int mu=0; mu < nNeighbours; mu++) {
                     for (long int nu=mu + 1; nu < nNeighbours; nu++) {
-                        std::vector<double> const diff =
+                        std::vector<double> const diff =    // considers periodic boundary conditions
                             vm.wrapTo(neighbours.at(mu), neighbours.at(nu));
                         max = std::max(max,
                             sqrt(diff[0]*diff[0] + diff[1]*diff[1]));
@@ -1140,7 +1140,8 @@ PYBIND11_MODULE(bind, m) {
 
             return maxLength;
         },
-        "Return maximum length between two cell corners in each cell.\n"
+        "Return maximum length between two cell corners in each cell,\n"
+        "considering periodic boundary conditions.\n"
         "\n"
         "Parameters\n"
         "----------\n"
@@ -1152,6 +1153,53 @@ PYBIND11_MODULE(bind, m) {
         "maxLength : {int: float}\n"
         "    Dictionary which associates cell centre vertex indices to the\n"
         "    maximum length between two cell corners in this cell.",
+        pybind11::arg("vm"));
+
+    m.def("getMaxLengthBoundaries",
+        [](VertexModel const& vm) {
+
+            std::map<long int, double> maxLength;
+            std::map<long int, Vertex> const vertices = vm.getVertices();
+            for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+                if (!(it->second).getBoundary()) continue;
+                std::vector<long int> const neighbours =
+                    vm.getNeighbourVertices(it->first)[0];
+                long int const nNeighbours = neighbours.size();
+                double max = 0;
+                for (long int mu=0; mu < nNeighbours; mu++) {
+                    for (long int nu=mu + 1; nu < nNeighbours; nu++) {
+                        std::vector<double> const diff = {  // ignores periodic boundary conditions
+                            vertices.at(neighbours.at(nu))
+                                .getPosition()[0]
+                                - vertices.at(neighbours.at(mu))
+                                    .getPosition()[0],
+                            vertices.at(neighbours.at(nu))
+                                .getPosition()[1]
+                                - vertices.at(neighbours.at(mu))
+                                    .getPosition()[1]};
+                        max = std::max(max,
+                            sqrt(diff[0]*diff[0] + diff[1]*diff[1]));
+                    }
+                }
+                maxLength.emplace(it->first, max);
+            }
+
+            return maxLength;
+        },
+        "Return maximum length between two cell corners around each boundary\n"
+        "vertex, ignoring periodic boundary conditions.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "vm : cells.bind.VertexModel\n"
+        "    Vertex model object.\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "maxLength : {int: float}\n"
+        "    Dictionary which associates boundary vertex indices to the\n"
+        "    maximum length between two cell corners around this boundary\n"
+        "    vertex.",
         pybind11::arg("vm"));
 
     m.def("getPercentageKeptNeighbours",
