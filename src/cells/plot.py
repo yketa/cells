@@ -2,8 +2,9 @@
 Define objects functions to plot vertex model object.
 """
 
+from cells import init
 from cells.bind import VertexModel, angle2, getPercentageKeptNeighbours,\
-    getLinesHalfEdge, getLinesJunction, getPolygonsCell
+    getLinesHalfEdge, getLinesJunction, getPolygonsCell, hexagonEdgeLength
 
 import numpy as np
 
@@ -279,7 +280,7 @@ def plot(vm, fig=None, ax=None, update=True,
     if vertex_indices:
         (lambda vertices: list(map(
             lambda i: ax.text(*vertices[i].position, i),
-            vm.vertices)))(
+            vertices)))(
         vm.vertices)
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
@@ -325,7 +326,7 @@ def plot_neighbours(vm, fig=None, ax=None, update=True,
     update : bool
         Update figure canvas. (default: True)
 
-    Additional keywords arguments are passed to cells.plot.plot.
+    Additional keyword arguments are passed to cells.plot.plot.
 
     Returns
     -------
@@ -396,7 +397,7 @@ def plot_hexatic(vm, fig=None, ax=None, update=True, transparency=True,
         Set transparency to match norm of hexatic bond orientional order
         parameter. (default: True)
 
-    Additional keywords arguments are passed to cells.plot.plot.
+    Additional keyword arguments are passed to cells.plot.plot.
 
     Returns
     -------
@@ -451,6 +452,103 @@ def plot_hexatic(vm, fig=None, ax=None, update=True, transparency=True,
 
     return fig, ax
 
+def plot_translational(vm, fig=None, ax=None, update=True, **kwargs):
+    """
+    Plot vertex model with orientation of translational order parameter per
+    cell.
+
+    This involves a pair of reciprocal vectors of the lattice, whose
+    orientation is determined by the argument of the average hexatic order
+    parameter and whose norm is 4\\pi/a where a is the distance between two
+    centroids in a perfect hexagonal lattice, such that for points within a
+    periodic hexagonal lattice the dot product of the reciprocal vectors with
+    their position is an integer multiple of 2\\pi.
+
+    Parameters
+    ----------
+    vm : cells.bind.VertexModel
+        State of the system to plot.
+    fig : matplotlib.figure.Figure or None
+        Figure on which to plot. (default: None)
+        NOTE: if fig == None then a new figure and axes subplot is created.
+    ax : matplotlib.axes._subplots.AxesSubplot or None
+        Axes subplot on which to plot. (default: None)
+        NOTE: if ax == None then a new figure and axes subplot is created.
+    update : bool
+        Update figure canvas. (default: True)
+
+    Additional keyword arguments are passed to cells.plot.plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure.
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Axes subplot.
+    """
+
+    assert(not("clear" in kwargs) or not(kwargs["clear"]))  # not compatible with clear plot
+
+    set_call = (fig is None or ax is None)
+    fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
+
+    # compute reciprocal vector
+    a = np.sqrt(3)*hexagonEdgeLength(init.A0)   # centres distance in initial periodic hexagonal lattice
+    cells = vm.getVertexIndicesByType("centre")
+    vectorsToNeighbours = vm.getVectorsToNeighbouringCells()
+    psi = np.mean(list(map(                     # average hexatic order parameter
+        lambda i: np.mean(list(map(
+            lambda v: np.exp(1j*6*angle2(*v)),
+            vectorsToNeighbours[i]))),
+        cells)))
+    theta = angle2(psi.real, psi.imag)          # orientation of average hexatic order parameter
+    q0 = (2*np.pi/((1/2)*a))*np.array(          # reciprocal vector of lattice oriented by hexatic order parameter (note there is a pi/3 rotation in the initial matrix)
+        [np.sin(theta + np.pi/3), -np.cos(theta + np.pi/3)])
+    q1 = np.array([                             # other reciprocal vector
+        -(1/2)*q0[0] + (np.sqrt(3)/2)*q0[1],    # rotation by -2\pi/3
+        -(np.sqrt(3)/2)*q0[0] - (1/2)*q0[1]])
+
+    # compute translational order parameter
+    pos = vm.getPositions(wrapped=True)
+    thetar = np.array(list(map(
+        lambda i: (
+            lambda psi: angle2(psi.real, psi.imag)%(2*np.pi))(
+            (np.exp(1j*np.dot(q0, pos[i])) + np.exp(1j*np.dot(q1, pos[i])))/2),
+        cells)))
+
+    # colourbars
+    if set_call:
+        # measure
+        ax_size, fig_width, fig_height = _measure_fig(ax)
+        # colourbar
+        cbar_psir = fig.colorbar(
+            mappable=scalarMap_orientation, ax=ax,
+            shrink=0.75, pad=0.01)
+        cbar_psir.set_label(
+            r"$\mathrm{arg}"
+            r"\left(\frac{1}{2}\left["
+            r"e^{\mathrm{i}\boldsymbol{q}_0\cdot\boldsymbol{r}_i}"
+            r"+ e^{\mathrm{i}\boldsymbol{q}_1\cdot\boldsymbol{r}_i}"
+            r"\right]\right)$",
+            rotation=270, labelpad=_cbar_labelpad)
+        cbar_psir.set_ticks(
+            [-np.pi, -2*np.pi/3, -np.pi/3, 0,
+                np.pi/3, 2*np.pi/3, np.pi])
+        cbar_psir.set_ticklabels(
+            [r"$-\pi$", r"$-\frac{2\pi}{3}$", r"$\frac{\pi}{3}$", r"$0$",
+                r"$\frac{\pi}{3}$", r"$\frac{2\pi}{3}$", r"$\pi$"])
+        # resize
+        ax_size, fig_width, fig_height = (
+            _resize_fig(ax, ax_size, fig_width, fig_height))
+
+    # set colours
+    ax.collections[1].set_facecolor(scalarMap_orientation.to_rgba(thetar))
+
+    # update canvas
+    if update: _update_canvas(fig)
+
+    return fig, ax
+
 def plot_velocities(vm, fig=None, ax=None, update=True,
     av_norm=0.2, hide_centres=True, hide_vertices=False, override=None,
     **kwargs):
@@ -480,7 +578,7 @@ def plot_velocities(vm, fig=None, ax=None, update=True,
         NOTE: This is expected to return a figure and an axes subplot, and
               to support keyword argument `update'. (see cells.plot.plot)
 
-    Additional keywords arguments are passed to the plotting function.
+    Additional keyword arguments are passed to the plotting function.
 
     Returns
     -------
@@ -653,11 +751,6 @@ cmap_orientation = (                                                        # co
     or plt.cm.hsv)
 norm_orientation = Normalize(-np.pi, np.pi)                                 # interval of value represented by colourmap
 scalarMap_orientation = ScalarMappable(norm_orientation, cmap_orientation)  # conversion from scalar value to colour
-
-# half-orientation colourbar
-norm_half_orientation = Normalize(0, np.pi)     # interval of value represented by colourmap
-scalarMap_half_orientation = ScalarMappable(    # conversion from scalar value to colour
-    norm_half_orientation, cmap_orientation)
 
 # neighbours colourbar
 n_neigh = (lambda n: range(6 - n, 6 + n + 2))(3)                            # interval of connectivity

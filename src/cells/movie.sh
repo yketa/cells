@@ -33,6 +33,7 @@ OPTIONS
     -v  Display velocities on vertices.
     -n  Highlight number of neighbours per cell.
     -H  Highlight hexatic bond orientational order parameter per cell.
+    -T  Highlight translational order parameter per cell.
     -t  Automatically fit frame to figure using matplotlib.pyplot.tight_layout.
         NOTE:    Size of figures may be unconsistent from frame to frame.
     -W  Read input file with cells.read.ReadWYC rather than cells.read.Read.
@@ -67,9 +68,9 @@ OPTIONS
 # OPTIONS
 
 unset __FLAGS __RAINBOW __CLEAR __VELOCITIES __NEIGHBOURS __HEXATIC \
-    __TIGHT_LAYOUT __WYC __DPI __FONT __FORCE_CHECK __DIR __YES __PYTHON \
-    __FFMPEG __H265
-while getopts "hrcvnHtWD:S:fd:yp:F:C" OPTION; do
+    __TRANSLATIONAL __TIGHT_LAYOUT __WYC __DPI __FONT __FORCE_CHECK __DIR \
+    __YES __PYTHON __FFMPEG __H265
+while getopts "hrcvnHTtWD:S:fd:yp:F:C" OPTION; do
     case $OPTION in
         h)  # help
             usage; exit 1;;
@@ -88,6 +89,9 @@ while getopts "hrcvnHtWD:S:fd:yp:F:C" OPTION; do
         H)  # hexatic plot
             __HEXATIC=true;
             __FLAGS=${__FLAGS}H;;
+        T)  # translational plot
+            __TRANSLATIONAL=true;
+            __FLAGS=${__FLAGS}T;;
         t)  # tight layout
             __TIGHT_LAYOUT=true;;
         W)  # use ReadWYC
@@ -139,6 +143,7 @@ from cells.read import _progressbar
 ${__VELOCITIES:+from cells.plot import plot_velocities}
 ${__NEIGHBOURS:+from cells.plot import plot_neighbours}
 ${__HEXATIC:+from cells.plot import plot_hexatic}
+${__TRANSLATIONAL:+from cells.plot import plot_translational}
 
 import os, sys, traceback
 import numpy as np
@@ -164,7 +169,8 @@ for frame in frames:
         ${__CLEAR:+, clear=True}
         ${__VELOCITIES:+, override=plot_velocities}
         ${__NEIGHBOURS:+, override=plot_neighbours}
-        ${__HEXATIC:+, override=plot_hexatic})
+        ${__HEXATIC:+, override=plot_hexatic}
+        ${__TRANSLATIONAL:+, override=plot_translational})
     # save
     ${__TIGHT_LAYOUT:+tight_layout()}
     while True:

@@ -56,7 +56,7 @@ def run(args, vm, plot_function=None, **kwargs):
                               cells.plot.plot_neighbours if args.neighbours,
                               cells.plot.plot            otherwise.
 
-    Additional keywords arguments are passed to plot_function.
+    Additional keyword arguments are passed to plot_function.
     """
 
     vm0 = deepcopy(vm)  # initial vertex model object

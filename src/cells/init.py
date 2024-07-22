@@ -2,9 +2,9 @@
 Define functions to initialise a vertex model.
 """
 
-from cells.bind import VertexModel
-from cells.read import Read
 from cells import __path__
+from cells import read
+from cells.bind import VertexModel
 
 import pickle
 
@@ -22,7 +22,7 @@ script = os.path.basename(sys.argv[0])                  # name of invoking scrip
 out_fname = "out.p"                                     # default saving file name
 movie_sh_fname = os.path.join(__path__[-1], "movie.sh") # movie making shell script file name
 
-def init_vm(user_args=None, parser=None):
+def init_vm(user_args=None, parser=None, **kwargs):
     """
     Initilise VertexModel object with command line arguments.
 
@@ -33,6 +33,9 @@ def init_vm(user_args=None, parser=None):
         (default: None) (see argparse.ArgumentParser().parse_args)
     parser : argparse.ArgumentParser or None
         Argument parser. (default: None)
+
+    Additional keyword arguments are passed to the grid initialisation
+    function.
 
     Returns
     -------
@@ -53,9 +56,11 @@ def init_vm(user_args=None, parser=None):
         vm = VertexModel(args.seed)
 
         if args.periodic:
-            vm.initRegularTriangularLattice(size=args.N, hexagonArea=A0)
+            vm.initRegularTriangularLattice(size=args.N, hexagonArea=A0,
+                **kwargs)
         else:
-            vm.initOpenRegularHexagonalLattice(nCells=args.N, hexagonArea=A0)
+            vm.initOpenRegularHexagonalLattice(nCells=args.N, hexagonArea=A0,
+                **kwargs)
 #             vm.initOpenRegularTriangularLattice(size=args.N, hexagonArea=A0)
 
     else:
@@ -64,7 +69,7 @@ def init_vm(user_args=None, parser=None):
 
         try:                    # simulation file
 
-            r = Read(args.input)
+            r = read.Read(args.input)
             vm = r[r.frames[-1] if args.frame < 0 else args.frame]
             del r
 

@@ -3,8 +3,8 @@ Define objects and functions to read data file and plot vertex model object.
 When executed this checks the consistency of a simulation file.
 """
 
+from cells import plot
 from cells.bind import VertexModel
-from cells.plot import WindowClosedException, plot
 
 import os
 import sys
@@ -134,12 +134,12 @@ class Read:
             NOTE: This is expected to return a figure and an axes subplot, and
                   to support keyword argument `rainbow'. (see cells.plot.plot)
 
-        Additional keywords arguments are passed to the plotting function.
+        Additional keyword arguments are passed to the plotting function.
         """
 
         self.fig, self.ax = (
             # plotting function
-            override if not(override is None) else plot)(
+            override if not(override is None) else plot.plot)(
             # plotting argument
             self[frame], fig=self.fig, ax=self.ax,
             rainbow=rainbow if rainbow is None else self[rainbow],
@@ -157,7 +157,7 @@ class Read:
         loop : bool
             Loop frames. (default: True)
 
-        Additional keywords arguments are passed to self.plot.
+        Additional keyword arguments are passed to self.plot.
         """
 
         if frames is None:
@@ -173,7 +173,7 @@ class Read:
             _progressbar(frames.index(frame)/len(frames))
             try:
                 self.plot(frame, **kwargs)
-            except WindowClosedException:       # when window is closed
+            except plot.WindowClosedException:  # when window is closed
                 plt.close(self.fig)             # close figure
                 self.fig, self.ax = None, None  # and reset figure and axis
                 _progressbar(1)

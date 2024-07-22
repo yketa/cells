@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("-fpull", type=float, default=2,
         help="outer vertices pulling force scale")
 
-    args, vm = init_vm(parser=parser)
+    args, vm = init_vm(parser=parser, boxLength=5)
     time0 = vm.time
 
     # KERATIN
