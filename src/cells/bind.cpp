@@ -39,9 +39,14 @@ PYBIND11_MODULE(bind, m) {
                 + std::numbers::pi, 2*std::numbers::pi)
                 - std::numbers::pi;
         }),
-        "Angle of vector (x, y) with respect to horizontax axis in [-pi, pi].",
+        "Angle of vector (x, y) with respect to horizontal axis in [-pi, pi].",
         pybind11::arg("x"),
         pybind11::arg("y"));
+
+    m.def("hexagonEdgeLength",
+        pybind11::vectorize(hexagonEdgeLength),
+        "Edge length of a regular hexagon defined by its area.",
+        pybind11::arg("hexagonArea"));
 
     /*
      *  [plot.hpp]
@@ -871,7 +876,7 @@ PYBIND11_MODULE(bind, m) {
         .def("addKeratinModel",
             &VertexModel::addVertexForce<KeratinModel,
                 double const&, double const&, double const&,
-                double const&, double const&,
+                double const&, double const&, double const&,
                 double const&, double const&, double const&,
                 double const&, double const&, double const&>,
             "Add keratin model.\n"
@@ -890,6 +895,8 @@ PYBIND11_MODULE(bind, m) {
             "    Perimeter elasticity.\n"
             "p0 : float\n"
             "    Target shape index.\n"
+            "T : float\n"
+            "    Junction tension.\n"
             "alpha : float\n"
             "    Keratin on-rate pressure-dependence parameter.\n"
             "beta : float\n"
@@ -909,6 +916,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("taur"),
             pybind11::arg("Gamma"),
             pybind11::arg("p0"),
+            pybind11::arg("T"),
             pybind11::arg("alpha"),
             pybind11::arg("beta"),
             pybind11::arg("kth"),

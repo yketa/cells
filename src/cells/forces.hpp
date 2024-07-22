@@ -1135,14 +1135,14 @@ Keratin model.
 
         KeratinModel(
             double const& K_, double const& A0, double const& taur_,
-            double const& Gamma_, double const& p0_,
+            double const& Gamma_, double const& p0_, double const& T_,
             double const& alpha_, double const& beta_, double const& kth_,
             double const& tau_, double const& sigma_, double const& ron_,
             Mesh* const mesh_, Random* random_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"K", K_}, {"A0", A0}, {"taur", taur_},
-                {"Gamma", Gamma_}, {"p0", p0_},
+                {"Gamma", Gamma_}, {"p0", p0_}, {"T", T_},
                 {"alpha", alpha_}, {"beta", beta_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
@@ -1192,7 +1192,8 @@ Keratin model.
             double const A0 = targetArea[vertex.getIndex()];
             double const perimeter =
                 mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
-            double const P0 = parameters.at("p0")*sqrt(A0);
+            double const P0 = parameters.at("p0")*sqrt(A0)
+                - parameters.at("T")/(2*parameters.at("Gamma"));    // residual tension
 
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];

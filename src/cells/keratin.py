@@ -54,13 +54,15 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))),
         facecolors="none")
-    polygons.set_color(list(map(                                # colour according to keratin
-        lambda i:
-            (lambda ki:
-                scalarMap_keratin.to_rgba(
-                    ki, alpha=1 if ki > param["kth"] else 0))(
-            vm.vertexForces["keratin"].keratin[i]),
-        cells)))
+    polygons.set_color(                                         # colour according to keratin
+        (lambda keratin: list(map(
+            lambda i:
+                (lambda ki:
+                    scalarMap_keratin.to_rgba(
+                        ki, alpha=1 if ki > param["kth"] else 0))(
+                keratin[i]),
+            cells)))(
+        vm.vertexForces["keratin"].keratin))
     ax.add_collection(polygons)
 
     # junctions
@@ -73,10 +75,13 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time - time0, vm.nT1, len(cells)))
-    title += r"$, \tau_r=%.2f, p_0=%.2f, \alpha=%.1e, \beta=%.1e$" % (
-        param["taur"], param["p0"], param["alpha"], param["beta"])
+    title += r"$, \tau_r=%.2f, p_0=%.2f, T=%.2f, \tilde{p}_0=%.2f$" % (
+        param["taur"], param["p0"], param["T"],
+        param["p0"] - param["T"]/(2*param["Gamma"]*np.sqrt(param["A0"])))
     title += "\n"
-    title += r"$[\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
+    title += r"$\alpha=%.1e, \beta=%.1e$" % (
+        param["alpha"], param["beta"])
+    title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
     title += r"$, \tau=%.1e, \sigma=%.1e$" % (
         param["tau"], param["sigma"])
     title += r"$, \tau_{\mathrm{on}}=$" + (
@@ -102,18 +107,20 @@ if __name__ == "__main__":
     # taur is defined by {taur}
     # Gamma is defined by {Gamma}
     # p0 is defined by {p0}
+    parser.add_argument("-T", type=float, default=0.1,
+        help="junction tension")
     parser.add_argument("-alpha", type=float, default=1,
         help="keratin on-rate pressure-dependence parameter")
     parser.add_argument("-beta", type=float, default=1,
         help="keratin to area elasticity constant parameter")
-    parser.add_argument("-kth", type=float, default=0,
+    parser.add_argument("-kth", type=float, default=0.1,
         help="keratin concentration threshold")
     parser.add_argument("-tau", type=float, default=1e-1,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
     parser.add_argument("-ron", type=float, default=0,
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
-    parser.add_argument("-fpull", type=float, default=1,
+    parser.add_argument("-fpull", type=float, default=2,
         help="outer vertices pulling force scale")
 
     args, vm = init_vm(parser=parser)
@@ -124,8 +131,10 @@ if __name__ == "__main__":
     for _ in vm.vertexForces: vm.removeVertexForce(_)
     for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
     vm.addKeratinModel("keratin",
-        K, A0, args.taur, args.Gamma, args.p0,
-        args.alpha, args.beta, args.kth, args.tau, args.sigma, args.ron)
+        K, A0, args.taur,
+        args.Gamma, args.p0, args.T,
+        args.alpha, args.beta, args.kth,
+        args.tau, args.sigma, args.ron)
     vm.addPressureForce("pull",
         args.fpull, True)
 
