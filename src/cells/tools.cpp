@@ -1,6 +1,7 @@
 #include "tools.hpp"
 
 #include <cmath>
+#include <numbers>
 #include <vector>
 
 double cross2(std::vector<double> const& a, std::vector<double> const& b)
