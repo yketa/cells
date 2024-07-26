@@ -22,7 +22,11 @@ then -- after successful completion -- package information should be given by `p
 
 Package `cells` can be uninstalled by running `python -m pip uninstall cells --break-system-packages`.
 
-Replacing `install` with `install --editable` will enable [editable mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html), in this case the libraries must be manually compiled (see section "Compiling manually [...]").
+Package can be installed in [editable mode](https://setuptools.pypa.io/en/latest/userguide/development_mode.html)
+```sh
+python -m pip install --editable . --verbose --break-system-packages
+```
+which necessitates however that the libraries be manually compiled (see section "Compiling manually [...]").
 
 ### Compiling manually and adding to `$PYTHONPATH`
 
