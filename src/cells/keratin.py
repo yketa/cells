@@ -3,7 +3,7 @@ Routine to run and plot in real time a simulation of the keratin vertex model.
 This does not save data.
 """
 
-from cells.init import init_vm, K, A0
+from cells.init import init_vm, K, A0, get_areas
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas,\
     _cbar_labelpad
 from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction
@@ -16,6 +16,8 @@ from matplotlib.collections import PatchCollection, LineCollection
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
+import copy
+import pickle
 
 # keratin colourbar
 cmap_keratin = plt.cm.Greens                                    # colourmap
@@ -102,8 +104,12 @@ if __name__ == "__main__":
     # INITIALISATION
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
-    # K is set by default in cells.init
-    # A0 is set by default in cells.init
+    parser.add_argument("-xi", type=float, default=1,
+        help="vertex drag coefficient")
+    parser.add_argument("-K", type=float, default=K,
+        help="area elasticity")
+    parser.add_argument("-A0", type=float, default=A0,
+        help="minimum target area")
     # taur is defined by {taur}
     # Gamma is defined by {Gamma}
     # p0 is defined by {p0}
@@ -126,19 +132,54 @@ if __name__ == "__main__":
     args, vm = init_vm(parser=parser, boxLength=5)
     time0 = vm.time
 
-    # KERATIN
+    # FORCES
 
+    # remove forces
     for _ in vm.vertexForces: vm.removeVertexForce(_)
     for _ in vm.halfEdgeForces: vm.removeHalfEdgeForce(_)
-    vm.addKeratinModel("keratin",
-        K, A0, args.taur,
-        args.Gamma, args.p0, args.T,
-        args.alpha, args.beta, args.kth,
-        args.tau, args.sigma, args.ron)
+
+    # rescale distances such that mean force is low (dichotomic search)
+    vm0 = copy.deepcopy(vm)
+    scalemin, scalemax = 0, 100
+    while scalemax - scalemin > 1e-6:
+
+        vm = copy.deepcopy(vm0)
+
+        # --- set forces
+        vm.setOverdampedIntegrator(
+            args.xi)
+        vm.addKeratinModel("keratin",
+            args.K, args.A0, args.tau,
+            args.Gamma, args.p0, args.T,
+            args.alpha, args.beta, args.kth,
+            args.tau, args.sigma, args.ron)
+
+        # --- compute forces
+        scale = (scalemin + scalemax)/2
+        vm.scale(scale*np.sqrt(args.A0/get_areas(vm).mean()))   # scale distances
+        vm.nintegrate(1, 0)                                     # integrate with dt=0 to get forces
+        meanForce = 0
+        vertices = vm.getVertexIndicesByType("vertex")
+        positions = (
+            lambda p: np.array(list(map(
+                lambda i: p[i],
+                vertices))))(
+            vm.getPositions())
+        posCM = positions.mean(axis=0)
+        forces = vm.forces
+        for i, index in enumerate(vertices):
+            meanForce += np.dot(positions[i] - posCM, forces[index]
+                )/len(vertices)
+        if np.abs(meanForce) < 1e-2*args.fpull: break           # initial radial force is small enough
+        if meanForce > 0: scalemin = scale
+        if meanForce < 0: scalemax = scale
+
+    # pullin force
     vm.addPressureForce("pull",
         args.fpull, True)
 
     # RUN
 
+    with open("keratin.init_vm.p", "wb") as dump: pickle.dump(vm, dump)
     run(args, vm, plot_function=plot_keratin, time0=time0)
 
