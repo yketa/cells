@@ -168,7 +168,7 @@ def parse_args(user_args=None, parser=None):
     parser.add_argument("-perimeter",
         action=BooleanOptionalAction,
         help="add perimeter force")
-    parser.add_argument("-Gamma", type=float, default=1,
+    parser.add_argument("-Gamma", type=float, default=K*A0,
         help="junction/perimeter elasticity constant")
     parser.add_argument("-p0", type=float, default=3.81,
         help="dimensionless target perimeter of cell")
@@ -294,4 +294,42 @@ def parse_args(user_args=None, parser=None):
     assert(not(args.abp and args.out))  # competing active forces
 
     return args
+
+def get_perimeters(vm):
+    """
+    Return all cell perimeters.
+
+    Parameters
+    ----------
+    vm : VertexModel
+        Instance of vertex model.
+
+    Returns
+    -------
+    perimeters : (*,) float Numpy array
+        Perimeters of all cells in instance of vertex model.
+    """
+
+    return np.array(list(map(
+        lambda i: vm.getVertexToNeighboursPerimeter(i),
+        vm.getVertexIndicesByType("centre"))))
+
+def get_areas(vm):
+    """
+    Return all cell areas.
+
+    Parameters
+    ----------
+    vm : VertexModel
+        Instance of vertex model.
+
+    Returns
+    -------
+    areas : (*,) float Numpy array
+        Areas of all cells in instance of vertex model.
+    """
+
+    return np.array(list(map(
+        lambda i: vm.getVertexToNeighboursArea(i),
+        vm.getVertexIndicesByType("centre"))))
 
