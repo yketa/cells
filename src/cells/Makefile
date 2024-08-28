@@ -47,10 +47,10 @@ clean:
 
 assert.o: assert.cpp assert.hpp
 
-bind.o: bind.cpp forces.hpp base_forces.hpp base.hpp mesh.hpp random.hpp \
- tools.hpp forces_pickle.hpp base_pickle.hpp class_factory.hpp system.hpp \
- integrators.hpp assert.hpp base_integrators.hpp integrators_pickle.hpp \
- plot.hpp system_pickle.hpp
+bind.o: bind.cpp analysis.hpp system.hpp class_factory.hpp forces.hpp \
+ base_forces.hpp base.hpp mesh.hpp random.hpp tools.hpp integrators.hpp \
+ assert.hpp base_integrators.hpp forces_pickle.hpp base_pickle.hpp \
+ integrators_pickle.hpp plot.hpp system_pickle.hpp
 
 forces.o: forces.cpp forces.hpp base_forces.hpp base.hpp mesh.hpp \
  random.hpp tools.hpp system.hpp class_factory.hpp integrators.hpp \

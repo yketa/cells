@@ -7,6 +7,7 @@ from cells.bind import VertexModel, angle2, getPercentageKeptNeighbours,\
     getLinesHalfEdge, getLinesJunction, getPolygonsCell, hexagonEdgeLength
 
 import numpy as np
+from operator import itemgetter
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, ListedColormap, BoundaryNorm,\
@@ -431,12 +432,7 @@ def plot_hexatic(vm, fig=None, ax=None, update=True, transparency=True,
 
     # compute hexatic bond orientational order parameter
     cells = vm.getVertexIndicesByType("centre")
-    vectorsToNeighbours = vm.getVectorsToNeighbouringCells()
-    psi6 = np.array(list(map(
-        lambda i: np.mean(list(map(
-            lambda v: np.exp(1j*6*angle2(*v)),
-            vectorsToNeighbours[i]))),
-        cells)))
+    psi6 = np.array(itemgetter(*cells)(vm.getPAticOrderParameters(p=6)))
 
     # colourbars
     if set_call:
