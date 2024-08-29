@@ -78,8 +78,12 @@ def plot(vm, fig=None, ax=None, update=True,
             p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
         else:
             P0 = vm.vertexForces["perimeter"].parameters["P0"]
-    if "volume" in vm.vertexForces:
-        h0 = vm.vertexForces["volume"].parameters["h0"]
+    if "volume" in vm.vertexForces or "linear_volume" in vm.vertexForces:
+        if "volume" in vm.vertexForces:
+            volume_force = vm.vertexForces["volume"]
+        else:
+            volume_force = vm.vertexForces["linear_volume"]
+        h0 = volume_force.parameters["H0"]/volume_force.parameters["A0"]
     if "boundary_tension" in vm.vertexForces:
         gamma = vm.vertexForces["boundary_tension"].parameters["gamma"]
     if "abp" in vm.vertexForces:
@@ -272,13 +276,16 @@ def plot(vm, fig=None, ax=None, update=True,
                 polygons.set_facecolor(list(map(    # colour according to percentage of lost neighbours
                     lambda i: scalarMap_relaxation.to_rgba(1 - pct[i]),
                     cells)))
-        elif "h0" in locals():
+        elif "volume_force" in locals():
             heights = (
                 lambda height: np.array(list(map(
                     lambda i: height[i],
                     cells))))(
-                vm.vertexForces["volume"].height)
+                volume_force.height)
             heights_mean, heights_std = heights.mean(), heights.std()
+            areas = np.array(list(map(lambda i: vm.getVertexToNeighboursArea(i), cells)))
+            volumes = areas*heights
+            print(volumes.min(), volumes.mean(), volumes.max())
             if heights_std != 0:
                 polygons.set_facecolor(list(map(    # colour according to height
                     lambda s_height: scalarMap_area.to_rgba(s_height),

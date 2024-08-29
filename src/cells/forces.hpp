@@ -138,11 +138,11 @@ Cell volume restoring force.
     public:
 
         VolumeForce(
-            double const& kV_, double const& h0_, double const& A0_,
+            double const& kV_, double const& H0_, double const& A0_,
             Mesh* const mesh_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
-                {{"kV", kV_}, {"h0", h0_}, {"A0", A0_}},
+                {{"kV", kV_}, {"H0", H0_}, {"A0", A0_}},
                 forces_, vertices_),
             mesh(mesh_)
             { integrate(0); }
@@ -176,13 +176,13 @@ Cell volume restoring force.
                 for (int dim=0; dim < 2; dim++) {
                     (*forces)[neighbourVerticesIndices[i]][dim] +=
                         (parameters.at("kV")/2.)*height[vertex.getIndex()]*(
-                            volume - parameters.at("h0")*parameters.at("A0"))*(
+                            volume - parameters.at("H0")*parameters.at("A0"))*(
                             crossToPreviousNeighbour[dim]
                                 - crossToNextNeighbour[dim]);
                 }
             }
             heightVelocity[vertex.getIndex()] += -parameters.at("kV")*
-                (volume - parameters.at("h0")*parameters.at("A0"))*volume;
+                (volume - parameters.at("H0")*parameters.at("A0"))*volume;
         }
 
         void integrate(double const& dt) override {
@@ -211,15 +211,167 @@ Cell volume restoring force.
                 }
             }
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
-                if (!inMap(heightVelocity, it->first)                 // new vertex index
+                if (!inMap(heightVelocity, it->first)                   // new vertex index
                     && (it->second).getType() == type) {
-                    height[it->first] = parameters.at("h0");
+                    height[it->first] = parameters.at("H0");
                     heightVelocity[it->first] = 0;
                 }
             }
             // integrate heights
             for (auto it=height.begin(); it != height.end(); ++it) {
                 it->second += dt*heightVelocity[it->first];
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
+class LinearVolumeForce : public VertexForce<ForcesType> {
+/*
+Cell volume restoring force which is linear in edge length.
+*/
+
+    protected:
+
+        Mesh* const mesh;                           // mesh object
+        std::map<long int, double> height;          // height of each cell
+
+        std::map<long int, double> heightVelocity;  // height velocity of each cell
+
+    public:
+
+        LinearVolumeForce(
+            double const& kA_, double const& A0_,
+            double const& kP_, double const& P0_,
+            double const& taur_, double const H0_, double const& taua_,
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("centre",
+                {{"kA", kA_}, {"A0", A0_},
+                {"kP", kP_}, {"P0", P0_},
+                {"taur", taur_}, {"H0", H0_}, {"taua", taua_}},
+                forces_, vertices_),
+            mesh(mesh_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getHeight() const
+            { return height; }
+        void setHeight(std::map<long int, double> const& height_)
+            { height = height_; }
+
+        std::map<long int, double> const& getHeightVelocity() const
+            { return heightVelocity; }
+
+        void addForce(Vertex const& vertex) override {
+            // cell dimensions
+            double const perimeter =
+                mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
+            double const area =
+                mesh->getVertexToNeighboursArea(vertex.getIndex());
+            double const volume =
+                height[vertex.getIndex()]*area;
+            // neighbours
+            HalfEdgesType const& halfEdges = mesh->getHalfEdges();
+            std::vector<std::vector<long int>> const neighbours =
+                mesh->getNeighbourVertices(vertex.getIndex());
+            int const numberNeighbours = neighbours.at(0).size();
+            // forces on vertices
+            for (int i=0; i < numberNeighbours; i++) {
+                assert(vertices->at(neighbours.at(0).at(i)).getType()
+                    != "centre");
+                std::vector<double> const toPreviousVertex = mesh->wrapTo(
+                    neighbours.at(0).at(i),
+                    neighbours.at(0).at(pmod(i - 1, numberNeighbours)),
+                    true);
+                std::vector<double> const toNextVertex = mesh->wrapTo(
+                    neighbours.at(0).at(i),
+                    neighbours.at(0).at(pmod(i + 1, numberNeighbours)),
+                    true);
+                std::vector<double> const toInterior =
+                    cross2z(mesh->wrapTo(
+                        neighbours.at(0).at(pmod(i + 1, numberNeighbours)),
+                        neighbours.at(0).at(pmod(i - 1, numberNeighbours)),
+                        true));
+                for (int dim=0; dim < 2; dim++) {
+                    // perimeter force
+                    (*forces)[neighbours.at(0).at(i)][dim] +=   // perimeter conservation
+                        parameters.at("kP")
+                            *(perimeter - parameters.at("P0"))
+                            *(toPreviousVertex[dim] + toNextVertex[dim]);
+                    // volume force
+                    (*forces)[neighbours.at(0).at(i)][dim] +=   // area conservation
+                        parameters.at("kA")*parameters.at("A0")
+                            *(sqrt(area) - sqrt(parameters.at("A0")))
+                            *toInterior[dim];
+                }
+            }
+            // forces on heights
+            heightVelocity[vertex.getIndex()] +=                // volume conservation
+                -(1./parameters.at("taur"))*pow(parameters.at("A0"), -1./4.)
+                    *(sqrt(volume)
+                        - sqrt(parameters.at("H0")*parameters.at("A0")));
+            for (long int halfEdgeIndex : neighbours.at(1)) {
+                // neighbour cell index
+                long int const neighbourVertexIndex =
+                    halfEdges.at(
+                        halfEdges.at(
+                            halfEdges.at(
+                                halfEdges.at(halfEdgeIndex).getNextIndex()
+                            ).getPairIndex()
+                        ).getNextIndex()
+                    ).getToIndex();
+                if (vertices->at(neighbourVertexIndex).getBoundary())   // ignore boundary vertices
+                    { continue; }
+                assert(                                                 // the vertex should be a cell centre
+                    vertices->at(neighbourVertexIndex).getType()
+                        == "centre");
+                // force
+                heightVelocity[vertex.getIndex()] +=            // penalise height differences
+                    (1./parameters.at("taua"))
+                        *(height[neighbourVertexIndex]
+                            - height[vertex.getIndex()]);
+            }
+        }
+
+        void integrate(double const& dt) override {
+            // index correspondence between vertices, heights, and height velocities
+            for (auto it=height.begin(); it != height.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = height.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = height.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=heightVelocity.begin();
+                it != heightVelocity.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = heightVelocity.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = heightVelocity.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if (!inMap(heightVelocity, it->first)                   // new vertex index
+                    && (it->second).getType() == type) {
+                    height[it->first] =
+                        parameters.at("H0")*parameters.at("A0")
+                            /mesh->getVertexToNeighboursArea(it->first);
+                    heightVelocity[it->first] = 0;
+                }
+            }
+            // integrate heights
+            for (auto it=height.begin(); it != height.end(); ++it) {
+                it->second += dt*heightVelocity[it->first];
+                it->second = std::max(it->second, 0.);
             }
         }
 
@@ -1187,13 +1339,15 @@ Keratin model.
             // cell area elastic constant, target area relaxation time, area, and perimeter
             double const Kk =               // keratin-dependent area elastic constant
                 parameters.at("K")*(1 + keffect(vertex.getIndex()));
+            double const Gammak =           // keratin-dependent perimeter elastic constant
+                parameters.at("Gamma")*(1 + keffect(vertex.getIndex()));
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
             double const A0 = targetArea[vertex.getIndex()];
             double const perimeter =
                 mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
             double const P0 = parameters.at("p0")*sqrt(A0)
-                - parameters.at("T")/(2*parameters.at("Gamma"));    // residual tension
+                - parameters.at("T")/(2*Gammak);    // residual tension
 
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
@@ -1239,12 +1393,12 @@ Keratin model.
                         radiusToCorner[dim]             // radius towards vertex
                             *(-force);                  // force applied on cell centre
                     // perimeter force
-                    force = parameters.at("Gamma")*(
+                    force = Gammak*(
                         perimeter - P0)*(               // cell perimeter
                             toPreviousNeighbour[dim]        // force from previous neighbour
                                 /distToPreviousNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    force = parameters.at("Gamma")*(
+                    force = Gammak*(
                         perimeter - P0)*(               // cell perimeter
                             toNextNeighbour[dim]            // force from next neighbour
                                 /distToNextNeighbour);

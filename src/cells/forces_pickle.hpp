@@ -91,12 +91,52 @@ VertexModel::addVertexForce<VolumeForce, pybind11::tuple const&>(
     // initialise force
     ParametersType const parameters = t[1].cast<ParametersType>();
     addVertexForce<VolumeForce, double const&, double const&, double const&>(
-        name, parameters.at("kV"), parameters.at("h0"), parameters.at("A0"));
+        name, parameters.at("kV"), parameters.at("H0"), parameters.at("A0"));
     // set internal degrees of freedom state
     std::map<long int, double> const height =
         t[2].cast<std::map<long int, double>>();
     std::shared_ptr<VolumeForce> vf =
         std::static_pointer_cast<VolumeForce>(
+            vertexForces[name]);
+    vf->setHeight(height);
+}
+
+/*
+ *  LinearVolumeForce
+ *
+ */
+
+// save state
+pybind11::tuple LinearVolumeForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "LinearVolumeForce",
+        // state
+        parameters, height);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<LinearVolumeForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 3);
+    assert(t[0].cast<std::string>() == "LinearVolumeForce");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addVertexForce<LinearVolumeForce,
+        double const&, double const&,
+        double const&, double const&,
+        double const&, double const&, double const&>(
+        name,
+        parameters.at("kA"), parameters.at("A0"),
+        parameters.at("kP"), parameters.at("P0"),
+        parameters.at("taur"), parameters.at("H0"), parameters.at("taua"));
+    // set internal degrees of freedom state
+    std::map<long int, double> const height =
+        t[2].cast<std::map<long int, double>>();
+    std::shared_ptr<LinearVolumeForce> vf =
+        std::static_pointer_cast<LinearVolumeForce>(
             vertexForces[name]);
     vf->setHeight(height);
 }
@@ -525,6 +565,9 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         }
         else if (forceName == "VolumeForce") {
             addVertexForce.template operator()<VolumeForce>();
+        }
+        else if (forceName == "LinearVolumeForce") {
+            addVertexForce.template operator()<LinearVolumeForce>();
         }
         else if (forceName == "PressureForce") {
             addVertexForce.template operator()<PressureForce>();

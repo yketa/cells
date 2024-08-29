@@ -89,7 +89,11 @@ def init_vm(user_args=None, parser=None, **kwargs):
             K, A0)
     if args.volume:
         vm.addVolumeForce("volume",
-            K, args.h0, A0)
+            K, args.h0*np.sqrt(A0), A0)
+    if args.linear_volume:
+        vm.addLinearVolumeForce("linear_volume",
+            K, A0, args.Gamma, args.p0*np.sqrt(A0),
+            args.taur, args.h0*np.sqrt(A0), args.taua)
     if args.gamma != 0:
         vm.addBoundaryTension("boundary_tension",
             args.gamma)
@@ -181,7 +185,13 @@ def parse_args(user_args=None, parser=None):
         action=BooleanOptionalAction,
         help="add volume force")
     parser.add_argument("-h0", type=float, default=1,
-        help="dimensionless target height of cell")
+        help="dimensionless target area-to-volume ratio of cell")
+    # linear volume force
+    parser.add_argument("-linear_volume",
+        action=BooleanOptionalAction,
+        help="add linear volume force")
+    parser.add_argument("-taua", type=float, default=1,
+        help="alignment time")
     # boundary line tension
     parser.add_argument("-gamma", type=float, default=0,
         help="line tension on open boundary")
@@ -239,9 +249,9 @@ def parse_args(user_args=None, parser=None):
     # INTEGRATION
     parser.add_argument("-dt", type=float, default=1e-2,
         help="intergation time step")
-    parser.add_argument("-delta", type=float, default=0.1,
+    parser.add_argument("-delta", type=float, default=0.02,
         help="length below which to perform T1")
-    parser.add_argument("-epsilon", type=float, default=0.1,
+    parser.add_argument("-epsilon", type=float, default=0.002,
         help="create junction with length epsilon above threshold after T1")
     if not(script == "vm.py"):
         parser.add_argument("-iterations", type=int, default=100,

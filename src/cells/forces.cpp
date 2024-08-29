@@ -40,12 +40,31 @@ template<> void VertexModel::addVertexForce<
     double const&, double const&, double const&>(
     // user-defined arguments
     std::string const& name,
-    double const& kV, double const& h0, double const& A0) {
+    double const& kV, double const& H0, double const& A0) {
     // set force
     vertexForces.add<VolumeForce>(
         name,                       // (unique) user-defined name for forcess
-        kV, h0, A0,                 // user-defined parameters
+        kV, H0, A0,                 // user-defined parameters
         this, &forces, &vertices);  // VertexModel attributes
+}
+
+template<> void VertexModel::addVertexForce<
+    // derived force class
+    LinearVolumeForce,
+    // argument types
+    double const&, double const&,
+    double const&, double const&,
+    double const&, double const&, double const&>(
+    // user-defined arguments
+    std::string const& name,
+    double const& kA, double const& A0,
+    double const& kP, double const& P0,
+    double const& taur, double const& H0, double const& taua) {
+    // set force
+    vertexForces.add<LinearVolumeForce>(
+        name,                           // (unique) user-defined name for forcess
+        kA, A0, kP, P0, taur, H0, taua, // user-defined parameters
+        this, &forces, &vertices);      // VertexModel attributes
 }
 
 template<> void VertexModel::addVertexForce<

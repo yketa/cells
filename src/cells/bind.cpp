@@ -168,6 +168,18 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("heightVelocity",
             &VolumeForce::getHeightVelocity);
 
+    pybind11::class_<LinearVolumeForce,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<LinearVolumeForce>>(
+        m, "LinearVolumeForce",
+        "Python wrapper around C++ volume restoring force which is linear in\n"
+        "edge length computation object.")
+        .def_property("height",
+            &LinearVolumeForce::getHeight,
+            &LinearVolumeForce::setHeight)
+        .def_property_readonly("heightVelocity",
+            &LinearVolumeForce::getHeightVelocity);
+
     pybind11::class_<ActiveBrownianForce,
         VertexForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<ActiveBrownianForce>>(
@@ -694,14 +706,47 @@ PYBIND11_MODULE(bind, m) {
             "    Unique name for the force.\n"
             "kV : float\n"
             "    Volume elasticity.\n"
-            "h0 : float\n"
+            "H0 : float\n"
             "    Target height.\n"
             "A0 : float\n"
             "    Target area.",
             pybind11::arg("name"),
             pybind11::arg("kV"),
-            pybind11::arg("h0"),
+            pybind11::arg("H0"),
             pybind11::arg("A0"))
+        .def("addLinearVolumeForce",
+            &VertexModel::addVertexForce<LinearVolumeForce,
+                double const&, double const&,
+                double const&, double const&,
+                double const&, double const&, double const&>,
+            "Add cell volume restoring force which is linear in edge length.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "kA : float\n"
+            "    Area elasticity.\n"
+            "A0 : float\n"
+            "    Target area."
+            "kP : float\n"
+            "    Perimeter elasticity.\n"
+            "P0 : float\n"
+            "    Target perimeter."
+            "taur : float\n"
+            "    Volume relaxation time.\n"
+            "H0 : float\n"
+            "    Target area-to-volume ratio."
+            "taua : float\n"
+            "    Height differences relaxation time.\n",
+            pybind11::arg("name"),
+            pybind11::arg("kA"),
+            pybind11::arg("A0"),
+            pybind11::arg("kP"),
+            pybind11::arg("P0"),
+            pybind11::arg("taur"),
+            pybind11::arg("H0"),
+            pybind11::arg("taua"))
         .def("addPressureForce",
             &VertexModel::addVertexForce<PressureForce,
                 double const&, bool const&>,
