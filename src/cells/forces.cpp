@@ -74,11 +74,11 @@ template<> void VertexModel::addVertexForce<
     double const&, bool const&>(
     // user-defined arguments
     std::string const& name,
-    double const& F, bool const& fixedPerimeterForce) {
+    double const& F, bool const& fixedForce) {
     // set force
     vertexForces.add<PressureForce>(
         name,                       // (unique) user-defined name for forcess
-        F, fixedPerimeterForce,     // user-defined parameters
+        F, fixedForce,              // user-defined parameters
         this, &forces, &vertices);  // VertexModel attributes
 }
 

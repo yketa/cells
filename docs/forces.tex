@@ -64,6 +64,43 @@ where underbraced vectors are represented in Fig.~\ref{fig:fmu}. It is noteworth
 \label{fig:fmu}
 \end{figure}
 
+\section{Pressure force}
+
+We define a stress tensor $\underline{\boldsymbol{\sigma}}$ such that, in 2D, the force per unit length exerted on a line orthogonal to $\hat{\boldsymbol{n}}$ is
+\begin{equation}
+f_{\hat{\boldsymbol{n}},\beta} = \sum_{\alpha} \sigma_{\alpha\beta} \hat{n}_{\alpha}.
+\end{equation}
+We consider the case where
+\begin{equation}
+\sigma_{\alpha\beta} = p \, \delta_{\alpha\beta},
+\end{equation}
+such that $p$ defines the \textit{two-dimensional} pressure, whose dimension is a force per unit length.
+
+Given a closed loop of vertices $\mu$ (e.g. a cell as in Fig.~\ref{fig:fmu}), the edge $\mu(\mu + 1)$ feels a pressure force
+\begin{equation}
+\boldsymbol{F}_{\mu(\mu + 1)} = p \, \boldsymbol{\ell}_{\mu \to \mu + 1} \times \hat{\boldsymbol{e}}_z,
+\end{equation}
+where we have ordered vertex indices in anticlockwise order. Consequently, the sum of the forces cancels and the sum of their norms depends only on the pressure and the perimeter of the enclosed region
+\begin{subequations}
+\begin{align}
+\sum_{\mu} \boldsymbol{F}_{\mu(\mu + 1)} = p \left(\sum_{\mu} \boldsymbol{\ell}_{\mu \to \mu + 1}\right) \times \hat{\boldsymbol{e}}_z = 0,\\
+\label{eq:fpscale}
+F = \sum_{\mu} |\boldsymbol{F}_{\mu(\mu + 1)}| = p \sum_{\mu} |\boldsymbol{l}_{\mu \to \mu + 1}| = p \, P.
+\end{align}
+\end{subequations}
+We define pressure forces on \textit{vertices} such that each is proportional to the sum of the pressure forces applied on the edges on each side
+\begin{equation}
+\boldsymbol{F}_{\mu} = C \, p \, \left(\boldsymbol{\ell}_{\mu - 1 \to \mu} + \boldsymbol{\ell}_{\mu \to \mu + 1}\right) \times \hat{\boldsymbol{e}}_z,
+\end{equation}
+and the sum of their norms is equal to the sum of the forces exerted on the edges, therefore
+\begin{equation}
+C = P/\sum_{\mu} \left|\boldsymbol{\ell}_{\mu - 1 \to \mu} + \boldsymbol{\ell}_{\mu \to \mu + 1}\right|.
+\end{equation}
+We eliminate the perimeter with \eqref{eq:fpscale} to finally write
+\begin{equation}
+\boldsymbol{F}_{\mu} = \frac{F}{\sum_{\mu} \left|\boldsymbol{\ell}_{\mu - 1 \to \mu} + \boldsymbol{\ell}_{\mu \to \mu + 1}\right|} \left(\boldsymbol{\ell}_{\mu - 1 \to \mu} + \boldsymbol{\ell}_{\mu \to \mu + 1}\right) \times \hat{\boldsymbol{e}}_z.
+\end{equation}
+
 \bibliography{ref}
 
 \end{document}

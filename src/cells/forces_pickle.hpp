@@ -165,7 +165,7 @@ VertexModel::addVertexForce<PressureForce, pybind11::tuple const&>(
     // initialise force
     ParametersType const parameters = t[1].cast<ParametersType>();
     addVertexForce<PressureForce, double const&, bool const&>(
-        name, parameters.at("F"), parameters.at("fixedPerimeterForce"));
+        name, parameters.at("F"), parameters.at("fixedForce"));
 }
 
 /*

@@ -758,12 +758,14 @@ PYBIND11_MODULE(bind, m) {
             "    Unique name for the force.\n"
             "F : float\n"
             "    Force scale.\n"
-            "fixedPerimeterForce : bool\n"
-            "    Force scale F is the product of the stress tensor trace and\n"
-            "    the boundary perimeter. (default: False)",
+            "fixedForce : bool\n"
+            "    Force norm is constant and equal to F for all vertices\n"
+            "    rather than derives from a pressure term. (default: True)\n"
+            "    NOTE: if not(fixedForce) then F sets the product of the\n"
+            "          pressure and the boundary perimeter.",
             pybind11::arg("name"),
             pybind11::arg("F"),
-            pybind11::arg("fixedPerimeterForce")=false)
+            pybind11::arg("fixedForce")=true)
         .def("addBoundaryTension",
             &VertexModel::addVertexForce<BoundaryTension,
                 double const&>,

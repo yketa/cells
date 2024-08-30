@@ -381,11 +381,11 @@ Cell volume restoring force which is linear in edge length.
 
 class PressureForce : public VertexForce<ForcesType> {
 /*
-Force acting on boundary vertices in the direction of the line going from the
-barycentre of these boundary vertices to each vertex. Its amplitude is either
-fixed by user or is determined such that it keeps constant the product of the
-trace of the stress tensor and of the perimeter of the boundary. This product
-then defines a typical perimeter force scale F which is fixed by user.
+Force acting on boundary vertices outward from their barycentre. Forces on each
+boundary vertex are either in the direction of the line going from the
+barycentre to the vertex with a norm equal to the force scale (fixedForce=true)
+or are derived from a constant inner pressure equal to the force scale divided
+by the perimeter of the boundary (fixedForce=false).
 */
     protected:
 
@@ -394,13 +394,13 @@ then defines a typical perimeter force scale F which is fixed by user.
     public:
 
         PressureForce(
-            double const& F_, bool const& fixedPerimeterForce_,
+            double const& F_, bool const& fixedForce_,
             Mesh* const mesh_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("", // type is "" therefore addForce is called for every vertex
                                         // (meaning that VertexForce::addAllForces filters nothing)
                                         // we select the special boundary vertices in addForce
-                {{"F", F_}, {"fixedPerimeterForce", fixedPerimeterForce_}},
+                {{"F", F_}, {"fixedForce", fixedForce_}},
                 forces_, vertices_),
             mesh(mesh_) {}
 
@@ -409,39 +409,90 @@ then defines a typical perimeter force scale F which is fixed by user.
             if (vertex.getBoundary()) { // force is computed for neighbours of boundary vertices
 
                 // compute centre of mass of vertices
-                mesh->moveToNeigboursBarycentre(vertex.getIndex()); // move to barycentre to compute area later
+                mesh->moveToNeigboursBarycentre(vertex.getIndex()); // move to barycentre to compute radial vectors
                 std::vector<double> const posCM =                   // position of centre of mass (= barycentre)
                     (vertices->at(vertex.getIndex())).getPosition();
 
+                // compute neighbours
+                std::vector<long int> const neighbours =    // boundary vertices are neighbours of the boundary vertex
+                    mesh->getNeighbourVertices(vertex.getIndex())[0];
+                int const numberNeighbours = neighbours.size();
+                std::map<long int, std::vector<double>> crossFromPrevious;
+                std::map<long int, std::vector<double>> crossToNext;
+                if (!parameters.at("fixedForce")) {
+                    for (int i=0; i < numberNeighbours; i++) {
+                        assert(vertices->at(neighbours[i]).getType()
+                            != "centre");
+                        assert(
+                            cross2(
+                                // CAREFUL: neighbours of boundary are in reverse order
+                                mesh->wrapTo(
+                                    vertex.getIndex(),
+                                    neighbours[pmod(i + 1, numberNeighbours)]),
+                                mesh->wrapTo(
+                                    vertex.getIndex(),
+                                    neighbours[i]))
+                            > 0);
+                        crossFromPrevious.emplace(neighbours[i],
+                            cross2z(
+                                // CAREFUL: neighbours of boundary are in reverse order
+                                mesh->wrapTo(
+                                    neighbours[pmod(i + 1, numberNeighbours)],
+                                    neighbours[i],
+                                    false)));
+                        crossToNext.emplace(neighbours[i],
+                            cross2z(
+                                // CAREFUL: neighbours of boundary are in reverse order
+                                mesh->wrapTo(
+                                    neighbours[i],
+                                    neighbours[pmod(i - 1, numberNeighbours)],
+                                    false)));
+                    }
+                }
+
                 // compute force scale
-                double const force =                    // force acting on each boundary vertex
-                    [this, &vertex]() {
-                        if (parameters.at("fixedPerimeterForce")) {
-                            double const perimeter =    // perimeter of boundary
-                                (this->mesh)->getVertexToNeighboursPerimeter(
-                                    vertex.getIndex());
-                            double const area =         // area of boundary
-                                std::abs(               // use absolute value because neighbours may be in reverse order
-                                    (this->mesh)->getVertexToNeighboursArea(
-                                        vertex.getIndex()));
-                            return (this->parameters).at("F")
-                                *area/(perimeter*perimeter);
+                double const scale =                                        // scale used for force
+                    [this, &crossFromPrevious, &crossToNext]() {
+                        if (parameters.at("fixedForce")) {
+                            return (this->parameters).at("F");              // dimension of a force
                         }
                         else {
-                            return (this->parameters).at("F");
+                            double sumLength = 0;
+                            for (auto it=crossFromPrevious.begin();
+                                it != crossFromPrevious.end(); ++it) {
+                                sumLength += sqrt(
+                                    pow(
+                                        crossFromPrevious[it->first][0]
+                                            + crossToNext[it->first][0],
+                                        2)
+                                    + pow(
+                                        crossFromPrevious[it->first][1]
+                                            + crossToNext[it->first][1],
+                                        2));
+                            }
+                            return (this->parameters).at("F")/sumLength;    // dimension of a force per length
                         }
                     }();
 
                 // set force
-                std::vector<long int> const neighbourIndices =          // boundary vertices are neighbours of the boundary vertex
-                    mesh->getNeighbourVertices(vertex.getIndex())[0];
-                for (long int neighbourIndex : neighbourIndices) {
-                    std::vector<double> const dir = mesh->wrapDiff(     // vector going...
-                        posCM,                                          // ... from centre of mass...
-                        (vertices->at(neighbourIndex)).getPosition(),   // ... to the edge vertex...
-                        true);                                          // ... and normalised
-                    for (int dim=0; dim < 2; dim++)
-                        { (*forces)[neighbourIndex][dim] += force*dir[dim]; }
+                for (long int neighbourIndex : neighbours) {
+                    if (parameters.at("fixedForce")) {
+                        std::vector<double> const dir = mesh->wrapDiff(     // vector going...
+                            posCM,                                          // ... from centre of mass...
+                            (vertices->at(neighbourIndex)).getPosition(),    // ... to the edge vertex...
+                            true);                                          // ... and normalised
+                        for (int dim=0; dim < 2; dim++) {
+                            (*forces)[neighbourIndex][dim] += scale
+                                *dir[dim];
+                        }
+                    }
+                    else {
+                        for (int dim=0; dim < 2; dim++) {
+                            (*forces)[neighbourIndex][dim] += scale
+                                *(crossFromPrevious[neighbourIndex][dim]
+                                    + crossToNext[neighbourIndex][dim]);
+                        }
+                    }
                 }
             }
         }
