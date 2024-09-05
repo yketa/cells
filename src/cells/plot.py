@@ -285,7 +285,6 @@ def plot(vm, fig=None, ax=None, update=True,
             heights_mean, heights_std = heights.mean(), heights.std()
             areas = np.array(list(map(lambda i: vm.getVertexToNeighboursArea(i), cells)))
             volumes = areas*heights
-            print(volumes.min(), volumes.mean(), volumes.max())
             if heights_std != 0:
                 polygons.set_facecolor(list(map(    # colour according to height
                     lambda s_height: scalarMap_area.to_rgba(s_height),
@@ -512,29 +511,19 @@ def plot_translational(vm, fig=None, ax=None, update=True, **kwargs):
     set_call = (fig is None or ax is None)
     fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
 
+    cells = vm.getVertexIndicesByType("centre") # indices of cell centres
+
     # compute reciprocal vector
-    a = np.sqrt(3)*hexagonEdgeLength(init.A0)   # centres distance in initial periodic hexagonal lattice
-    cells = vm.getVertexIndicesByType("centre")
-    vectorsToNeighbours = vm.getVectorsToNeighbouringCells()
-    psi = np.mean(list(map(                     # average hexatic order parameter
-        lambda i: np.mean(list(map(
-            lambda v: np.exp(1j*6*angle2(*v)),
-            vectorsToNeighbours[i]))),
-        cells)))
-    theta = angle2(psi.real, psi.imag)          # orientation of average hexatic order parameter
-    q0 = (2*np.pi/((1/2)*a))*np.array(          # reciprocal vector of lattice oriented by hexatic order parameter (note there is a pi/3 rotation in the initial matrix)
-        [np.sin(theta + np.pi/3), -np.cos(theta + np.pi/3)])
-    q1 = np.array([                             # other reciprocal vector
-        -(1/2)*q0[0] + (np.sqrt(3)/2)*q0[1],    # rotation by -2\pi/3
-        -(np.sqrt(3)/2)*q0[0] - (1/2)*q0[1]])
+    a = np.sqrt(3)*hexagonEdgeLength(init.A0)                                   # centres distance in initial periodic hexagonal lattice
+    psi6 = np.mean(itemgetter(*cells)(vm.getPAticOrderParameters(p=6)))         # average hexatic order parameter
+    theta = (angle2(psi6.real, psi6.imag)%(2*np.pi))/6                          # orientation of average hexatic order parameter
+    q0 = (2*np.pi/(np.sqrt(3)*a/2))*np.array([[-np.sin(theta), np.cos(theta)]]) # reciprocal vector of lattice oriented by hexatic order parameter
 
     # compute translational order parameter
-    pos = vm.getPositions(wrapped=True)
-    thetar = np.array(list(map(
-        lambda i: (
-            lambda psi: angle2(psi.real, psi.imag)%(2*np.pi))(
-            (np.exp(1j*np.dot(q0, pos[i])) + np.exp(1j*np.dot(q1, pos[i])))/2),
-        cells)))
+    pos = np.array(itemgetter(*cells)(vm.getPositions(wrapped=False)))      # unwrapped position
+    pos = (pos - np.reshape(pos[0], (1, 2)))%vm.systemSize                  # wrapped position with respect to 0
+    psiq0 = np.exp(1j*(q0*pos).sum(axis=-1))                                # translational order parameter
+    thetar = np.array(list(map(lambda p: angle2(p.real, p.imag), psiq0)))   # argument of translational order parameter
 
     # colourbars
     if set_call:
@@ -545,11 +534,8 @@ def plot_translational(vm, fig=None, ax=None, update=True, **kwargs):
             mappable=scalarMap_orientation, ax=ax,
             shrink=0.75, pad=0.01)
         cbar_psir.set_label(
-            r"$\mathrm{arg}"
-            r"\left(\frac{1}{2}\left["
-            r"e^{\mathrm{i}\boldsymbol{q}_0\cdot\boldsymbol{r}_i}"
-            r"+ e^{\mathrm{i}\boldsymbol{q}_1\cdot\boldsymbol{r}_i}"
-            r"\right]\right)$",
+            r"$\mathrm{arg}$"
+            r"$(e^{\mathrm{i}\boldsymbol{q}_0\cdot\boldsymbol{r}_i})$",
             rotation=270, labelpad=_cbar_labelpad)
         cbar_psir.set_ticks(
             [-np.pi, -2*np.pi/3, -np.pi/3, 0,
