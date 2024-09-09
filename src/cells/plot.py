@@ -520,9 +520,8 @@ def plot_translational(vm, fig=None, ax=None, update=True, **kwargs):
     q0 = (2*np.pi/(np.sqrt(3)*a/2))*np.array([[-np.sin(theta), np.cos(theta)]]) # reciprocal vector of lattice oriented by hexatic order parameter
 
     # compute translational order parameter
-    pos = np.array(itemgetter(*cells)(vm.getPositions(wrapped=False)))      # unwrapped position
-    pos = (pos - np.reshape(pos[0], (1, 2)))%vm.systemSize                  # wrapped position with respect to 0
-    psiq0 = np.exp(1j*(q0*pos).sum(axis=-1))                                # translational order parameter
+    pos = np.array(itemgetter(*cells)(vm.getPositions(wrapped=True)))       # unwrapped position
+    psiq0 = np.exp(1j*(q0*(pos - pos[:1])).sum(axis=-1))                    # translational order parameter
     thetar = np.array(list(map(lambda p: angle2(p.real, p.imag), psiq0)))   # argument of translational order parameter
 
     # colourbars
