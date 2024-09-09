@@ -164,7 +164,7 @@ def parse_args(user_args=None, parser=None):
     # input file
     parser.add_argument("-input", "-input-name", "-i", type=str, default=None,
         help="input file name (! discards grid args and seed if != None)")
-    parser.add_argument("-frame", "-input-frame", "-if", type=int, default=0,
+    parser.add_argument("-frame", "-input-frame", "-if", type=int, default=-1,
         help="input frame (< 0 gets last frame) (! used when -input != None)")
 
     # FORCES
@@ -276,7 +276,7 @@ def parse_args(user_args=None, parser=None):
         parser.add_argument("-save", "-s",
             action=BooleanOptionalAction,
             help="pickle last system state to %s" % out_fname)
-    if script == "vm.py":
+    if script[-5:] == "vm.py":
         parser.add_argument("-init", type=int, default=0,
             help="number of initial iterations")
         parser.add_argument("-niter", type=int, default=1000,
