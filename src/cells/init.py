@@ -67,17 +67,19 @@ def init_vm(user_args=None, parser=None, **kwargs):
 
         # input file
 
-        try:                    # simulation file
+        try:                            # simulation file
 
             r = read.Read(args.input)
             vm = r[r.frames[-1] if args.frame < 0 else args.frame]
             del r
 
-        except AssertionError:  # pickle of VertexModel
+        except AssertionError:          # pickle of VertexModel
 
             with open(args.input, "rb") as dump:
                 vm = pickle.load(dump)
             assert(type(vm) == VertexModel)
+
+        vm = VertexModel(vm, args.seed) # change random seed
 
     # FORCES
 
@@ -163,7 +165,7 @@ def parse_args(user_args=None, parser=None):
         help="periodic boundary conditions")
     # input file
     parser.add_argument("-input", "-input-name", "-i", type=str, default=None,
-        help="input file name (! discards grid args and seed if != None)")
+        help="input file name (! discards grid args)")
     parser.add_argument("-frame", "-input-frame", "-if", type=int, default=-1,
         help="input frame (< 0 gets last frame) (! used when -input != None)")
 

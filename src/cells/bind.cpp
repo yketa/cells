@@ -354,6 +354,19 @@ PYBIND11_MODULE(bind, m) {
             "vm : VertexModel\n"
             "    Instance of VertexModel to copy.",
             pybind11::arg("vm"))
+        .def(pybind11::init
+            <VertexModel const&, long int const&>(),
+            "Copy constructor VertexModel with change of random number\n"
+            "generator seed.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vm : VertexModel\n"
+            "    Instance of VertexModel to copy.\n"
+            "seed : int\n"
+            "    Random number generator seed.",
+            pybind11::arg("vm"),
+            pybind11::arg("seed"))
         // attributes [Mesh (mesh.hpp)]
         .def_property_readonly("vertices",
             &VertexModel::getVertices)

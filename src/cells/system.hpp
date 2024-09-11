@@ -108,6 +108,18 @@ class VertexModel : public Mesh {
             // integration quantities
             seed(seed_), random(seed), time(time_), nT1(nT1_) {}
 
+        VertexModel(
+            VertexModel const& vertexModel_, long int const& seed_) :
+            // geometrical objects (Mesh)
+            Mesh(vertexModel_),
+            // velocities
+            velocities(vertexModel_.getVelocities()),
+            // default integrator
+            integrator(std::make_shared<UnitOverdamped>(&forces, &velocities)),
+            // integration quantities
+            seed(seed_), random(seed),
+            time(vertexModel_.getTime()), nT1(vertexModel_.getnT1()) {}
+
         // FORCE "SETTERS"
 
         template<class ForceType, typename... Args> void addHalfEdgeForce(
