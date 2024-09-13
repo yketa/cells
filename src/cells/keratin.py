@@ -5,7 +5,7 @@ This does not save data.
 
 from cells.init import init_vm, K, A0, get_areas
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas,\
-    _cbar_labelpad
+    _cbar_labelpad, norm_tension
 from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction
 from cells.run import run
 
@@ -18,6 +18,9 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 import copy
 import pickle
+
+# tension colourbar
+scalarMap_tension = ScalarMappable(norm_tension, plt.cm.bwr)    # conversion from scalar value to colour
 
 # keratin colourbar
 cmap_keratin = plt.cm.Greens                                    # colourmap
@@ -37,16 +40,41 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
         ax_size, fig_width, fig_height = _measure_fig(ax)       # measure
 
+        if "kmax" in kwargs:                                    # colourmap from user-defined max
+            global scalarMap_keratin
+            norm_keratin = Normalize(0, kwargs["kmax"])
+            scalarMap_keratin = ScalarMappable(norm_keratin, cmap_keratin)
+
+        # keratin colourbar
         cbar_keratin = fig.colorbar(
             mappable=scalarMap_keratin, ax=ax,
             shrink=0.75, pad=0.01)
         cbar_keratin.set_label(r"$[\mathrm{ker}]_i $",
             rotation=270, labelpad=_cbar_labelpad)
-        cbar_keratin.ax.fill_between(                           # show keratin threshold...
-            cbar_keratin.ax.get_xlim(), 0, param["kth"], color="white")
-        cbar_keratin.ax.axhline(y=param["kth"], color="red")    # ... on the colourbar
+#         cbar_keratin.ax.fill_between(                           # ignore colourbar values below threshold
+#             cbar_keratin.ax.get_xlim(), 0, param["kth"], color="white")
+        cbar_keratin.ax.axhline(y=param["kth"], color="red")    # display threshold on colourbar
         ax_size, fig_width, fig_height = (                      # resize
             _resize_fig(ax, ax_size, fig_width, fig_height))
+
+        # tension colourbar
+        cbar_tension = fig.colorbar(
+            mappable=scalarMap_tension, ax=ax,
+            shrink=0.75, pad=0.01)
+        cbar_tension.set_label(
+            r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
+            rotation=270, labelpad=_cbar_labelpad)
+        ax_size, fig_width, fig_height = (
+            _resize_fig(ax, ax_size, fig_width, fig_height))
+
+    # displayed quantities
+
+    keratin = vm.vertexForces["keratin"].keratin    # keratin concentration
+    tension = (                                     # scaled cell tension
+        lambda t: (
+            lambda m, s: {i: (t[i] - m)/s for i in t})(
+            np.mean(list(t.values())), np.std(list(t.values()))))(
+        vm.vertexForces["keratin"].tension)
 
     # cells
 
@@ -56,22 +84,26 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
             lambda vertices: plt.Polygon(vertices, closed=True),
             getPolygonsCell(vm))),
         facecolors="none")
-    polygons.set_color(                                         # colour according to keratin
-        (lambda keratin: list(map(
-            lambda i:
-                (lambda ki:
-                    scalarMap_keratin.to_rgba(
-                        ki, alpha=1 if ki > param["kth"] else 0))(
+    polygons.set_linewidth(                                     # outer line width
+        2.5/max(1, np.sqrt(len(vm.vertices))/12))
+    polygons.set_edgecolor(                                     # edge colour according to keratin
+        list(map(
+            lambda i: scalarMap_tension.to_rgba(tension[i]),
+            cells)))
+    polygons.set_facecolor(                                     # face colour according to keratin
+        list(map(
+            lambda i: (
+                lambda ki: scalarMap_keratin.to_rgba(ki))(
                 keratin[i]),
-            cells)))(
-        vm.vertexForces["keratin"].keratin))
+#                 keratin[i] if keratin[i] > param["kth"] else 0),
+            cells)))
     ax.add_collection(polygons)
 
-    # junctions
-
-    lines = LineCollection(getLinesJunction(vm), colors="pink", # all junctions
-        linewidths=2.5/max(1, np.sqrt(len(vm.vertices))/12))    # scale junction width with linear system size
-    ax.add_collection(lines)
+#     # junctions
+#
+#     lines = LineCollection(getLinesJunction(vm), colors="pink", # all junctions
+#         linewidths=2.5/max(1, np.sqrt(len(vm.vertices))/12))    # scale junction width with linear system size
+#     ax.add_collection(lines)
 
     # title
 

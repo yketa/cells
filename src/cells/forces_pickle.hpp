@@ -504,7 +504,7 @@ pybind11::tuple KeratinModel::pybind11_getstate() const {
         // unique identifying string for the force object
         "KeratinModel",
         // state
-        parameters, keratin, targetArea);
+        parameters, keratin, targetArea, tension);
 }
 
 // load state
@@ -513,7 +513,7 @@ VertexModel::addVertexForce<KeratinModel,
     pybind11::tuple const&>(
     std::string const& name, pybind11::tuple const& t) {
     // check
-    checkSize(t, 4);
+    checkSize(t, 5);
     assert(t[0].cast<std::string>() == "KeratinModel");
     // initialise force
     ParametersType const parameters =
@@ -538,6 +538,9 @@ VertexModel::addVertexForce<KeratinModel,
     std::map<long int, double> const targetArea =
         t[3].cast<std::map<long int, double>>();
     k->setTargetArea(targetArea);
+    std::map<long int, double> const tension =
+        t[4].cast<std::map<long int, double>>();
+    k->setTension(tension);
 }
 
 /*

@@ -1326,7 +1326,7 @@ Keratin model.
         // degrees of freedom computed in KeratinModel::addAllForces
         std::map<long int, double> pressure;    // cell pressure
         std::map<long int, double> area;        // cell area
-        std::map<long int, double> tension;     // bonds keratin tension
+        std::map<long int, double> tension;     // cells tension
 
         double keffect(long int const& index) const {
             // keratin effect on area elastic constant and target area relaxation time
@@ -1381,6 +1381,8 @@ Keratin model.
 
         std::map<long int, double> const& getTension() const
             { return tension; }
+        void setTension(std::map<long int, double> const& tension_)
+            { tension = tension_; }
 
         void addForce(Vertex const& vertex) override {
 
@@ -1388,9 +1390,9 @@ Keratin model.
             pressure[vertex.getIndex()] = 0;
 
             // cell area elastic constant, target area relaxation time, area, and perimeter
-            double const Kk =               // keratin-dependent area elastic constant
+            double const Kk =                       // keratin-dependent area elastic constant
                 parameters.at("K")*(1 + keffect(vertex.getIndex()));
-            double const Gammak =           // keratin-dependent perimeter elastic constant
+            double const Gammak =                   // keratin-dependent perimeter elastic constant
                 parameters.at("Gamma")*(1 + keffect(vertex.getIndex()));
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
@@ -1400,9 +1402,16 @@ Keratin model.
             double const P0 = parameters.at("p0")*sqrt(A0)
                 - parameters.at("T")/(2*Gammak);    // residual tension
 
-            std::vector<long int> neighbourVerticesIndices =
+            // cell tension
+            tension.emplace(vertex.getIndex(),
+                Gammak*(perimeter - P0));           // cell perimeter
+
+            // neighbours
+            std::vector<long int> const neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
-            long int const numberNeighbours = neighbourVerticesIndices.size();
+            long int const numberNeighbours =
+                neighbourVerticesIndices.size();
+
             std::vector<double> radiusToCorner;
             std::vector<double> toPreviousNeighbour, toNextNeighbour;
             std::vector<double> crossToPreviousNeighbour, crossToNextNeighbour;
@@ -1411,6 +1420,7 @@ Keratin model.
             for (int i=0; i < numberNeighbours; i++) {  // loop over neighbours
                 assert(vertices->at(neighbourVerticesIndices[i]).getType()
                     != "centre");
+
                 // from cell centre to cell corner
                 radiusToCorner = mesh->wrapTo(
                     vertex.getIndex(),
@@ -1444,15 +1454,13 @@ Keratin model.
                         radiusToCorner[dim]             // radius towards vertex
                             *(-force);                  // force applied on cell centre
                     // perimeter force
-                    force = Gammak*(
-                        perimeter - P0)*(               // cell perimeter
-                            toPreviousNeighbour[dim]        // force from previous neighbour
-                                /distToPreviousNeighbour);
+                    force = tension[vertex.getIndex()]*(
+                        toPreviousNeighbour[dim]    // force from previous neighbour
+                            /distToPreviousNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    force = Gammak*(
-                        perimeter - P0)*(               // cell perimeter
-                            toNextNeighbour[dim]            // force from next neighbour
-                                /distToNextNeighbour);
+                    force = tension[vertex.getIndex()]*(
+                        toNextNeighbour[dim]        // force from next neighbour
+                            /distToNextNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                     pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
                         toNextNeighbour[dim]            // radius from cell corner to next neighbour
