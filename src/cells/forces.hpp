@@ -384,8 +384,9 @@ class PressureForce : public VertexForce<ForcesType> {
 Force acting on boundary vertices outward from their barycentre. Forces on each
 boundary vertex are either in the direction of the line going from the
 barycentre to the vertex with a norm equal to the force scale (fixedForce=true)
-or are derived from a constant inner pressure equal to the force scale divided
-by the perimeter of the boundary (fixedForce=false).
+or are derived from a constant inner pressure equal to the force scale times
+the number of boundary vertices divided by the perimeter of the boundary
+(fixedForce=false).
 */
     protected:
 
@@ -452,7 +453,8 @@ by the perimeter of the boundary (fixedForce=false).
 
                 // compute force scale
                 double const scale =                                        // scale used for force
-                    [this, &crossFromPrevious, &crossToNext]() {
+                    [this, &crossFromPrevious, &crossToNext,
+                        &numberNeighbours]() {
                         if (parameters.at("fixedForce")) {
                             return (this->parameters).at("F");              // dimension of a force
                         }
@@ -470,7 +472,8 @@ by the perimeter of the boundary (fixedForce=false).
                                             + crossToNext[it->first][1],
                                         2));
                             }
-                            return (this->parameters).at("F")/sumLength;    // dimension of a force per length
+                            return numberNeighbours                         // ensures average norm if F
+                                *(this->parameters).at("F")/sumLength;      // dimension of a force per length
                         }
                     }();
 

@@ -79,7 +79,12 @@ def init_vm(user_args=None, parser=None, **kwargs):
                 vm = pickle.load(dump)
             assert(type(vm) == VertexModel)
 
-        vm = VertexModel(vm, args.seed) # change random seed
+        if args.clean:                  # remove forces and set default integrator
+            for name in vm.vertexForces: vm.removeVertexForce(name)
+            for name in vm.halfEdgeForces: vm.removeHalfEdgeForce(name)
+            vm.setUnitOverdampedIntegrator()
+
+        vm.setSeed(args.seed)           # change random seed
 
     # FORCES
 
@@ -168,6 +173,9 @@ def parse_args(user_args=None, parser=None):
         help="input file name (! discards grid args)")
     parser.add_argument("-frame", "-input-frame", "-if", type=int, default=-1,
         help="input frame (< 0 gets last frame) (! used when -input != None)")
+    parser.add_argument("-clean",
+        action=BooleanOptionalAction,
+        help="remove all forces and use default integrator on input file")
 
     # FORCES
     # perimeter force

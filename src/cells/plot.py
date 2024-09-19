@@ -4,7 +4,8 @@ Define objects functions to plot vertex model object.
 
 from cells import init
 from cells.bind import VertexModel, angle2, getPercentageKeptNeighbours,\
-    getLinesHalfEdge, getLinesJunction, getPolygonsCell, hexagonEdgeLength
+    getLinesHalfEdge, getLinesJunction, getPolygonsCell, hexagonEdgeLength,\
+    getAllWaveVectors2D, getAllFT2D
 
 import numpy as np
 from operator import itemgetter
@@ -511,16 +512,21 @@ def plot_translational(vm, fig=None, ax=None, update=True, **kwargs):
     set_call = (fig is None or ax is None)
     fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
 
-    cells = vm.getVertexIndicesByType("centre") # indices of cell centres
+    cells = vm.getVertexIndicesByType("centre")                         # indices of cell centres
+    N = len(cells)                                                      # number of cells
+    L = vm.systemSize                                                   # system size
+    pos = np.array(itemgetter(*cells)(vm.getPositions(wrapped=True)))   # wrapped position
 
-    # compute reciprocal vector
+    # compute reciprocal vector from structure factor
+    # https://doi.org/10.1103/PhysRevE.100.062606
     a = np.sqrt(3)*hexagonEdgeLength(init.A0)                                   # centres distance in initial periodic hexagonal lattice
-    psi6 = np.mean(itemgetter(*cells)(vm.getPAticOrderParameters(p=6)))         # average hexatic order parameter
-    theta = (angle2(psi6.real, psi6.imag)%(2*np.pi))/6                          # orientation of average hexatic order parameter
-    q0 = (2*np.pi/(np.sqrt(3)*a/2))*np.array([[-np.sin(theta), np.cos(theta)]]) # reciprocal vector of lattice oriented by hexatic order parameter
+    q0n = (2*np.pi/(np.sqrt(3)*a/2))                                            # estimated wave vector norm
+    qmin, qmax = q0n/2, q0n*2
+    q = getAllWaveVectors2D(L, qmin, qmax)
+    S = np.abs(getAllFT2D(pos, L, np.full((N,), fill_value=1), qmin, qmax))**2  # structure factor
+    q0 = np.array([q[S.argmax()]])                                              # reciprocal vector which maximises structure factor
 
     # compute translational order parameter
-    pos = np.array(itemgetter(*cells)(vm.getPositions(wrapped=True)))       # unwrapped position
     psiq0 = np.exp(1j*(q0*(pos - pos[:1])).sum(axis=-1))                    # translational order parameter
     thetar = np.array(list(map(lambda p: angle2(p.real, p.imag), psiq0)))   # argument of translational order parameter
 

@@ -354,19 +354,6 @@ PYBIND11_MODULE(bind, m) {
             "vm : VertexModel\n"
             "    Instance of VertexModel to copy.",
             pybind11::arg("vm"))
-        .def(pybind11::init
-            <VertexModel const&, long int const&>(),
-            "Copy constructor VertexModel with change of random number\n"
-            "generator seed.\n"
-            "\n"
-            "Parameters\n"
-            "----------\n"
-            "vm : VertexModel\n"
-            "    Instance of VertexModel to copy.\n"
-            "seed : int\n"
-            "    Random number generator seed.",
-            pybind11::arg("vm"),
-            pybind11::arg("seed"))
         // attributes [Mesh (mesh.hpp)]
         .def_property_readonly("vertices",
             &VertexModel::getVertices)
@@ -597,6 +584,15 @@ PYBIND11_MODULE(bind, m) {
             "halfEdgeIndices : list of int\n"
             "    Half-edge indices.\n")
         // methods [VertexModel (system.hpp)]
+        .def("setSeed",
+            &VertexModel::setSeed,
+            "Change seed and re-initialise random number generator.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "seed : int\n"
+            "    Random number generator seed.",
+            pybind11::arg("seed"))
         .def("nintegrate",
             [](VertexModel& self,
                 long int const& niter, double const& dt,
@@ -775,7 +771,8 @@ PYBIND11_MODULE(bind, m) {
             "    Force norm is constant and equal to F for all vertices\n"
             "    rather than derives from a pressure term. (default: True)\n"
             "    NOTE: if not(fixedForce) then F sets the product of the\n"
-            "          pressure and the boundary perimeter.",
+            "          pressure, the number of boundary vertices and the\n"
+            "          boundary perimeter.",
             pybind11::arg("name"),
             pybind11::arg("F"),
             pybind11::arg("fixedForce")=true)
@@ -1154,6 +1151,60 @@ PYBIND11_MODULE(bind, m) {
         pybind11::arg("vm0"),
         pybind11::arg("vm1"),
         pybind11::arg("a")=std::numeric_limits<double>::infinity());
+
+    m.def("getAllWaveVectors2D", &getAllWaveVectors2D,
+        "Return wave vectors associated to rectangular box.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "L : float or (1,)- or (2,) float array-like\n"
+        "    Size of the box.\n"
+        "qmin : float\n"
+        "    Minimum wave vector norm.\n"
+        "qmax : float\n"
+        "    Maximum wave vector norm.\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "wv : (*, 2) float numpy array\n"
+        "    Array of (2\\pi/L nx, 2\\pi/L ny) wave vectors corresponding to\n"
+        "    to the target interval [`qmin', `qmax'].\n"
+        "    NOTE: Only a single vector of each pair of opposite wave\n"
+        "          vectors is returned. Here it is chosen such that ny >= 0.",
+        pybind11::arg("L"),
+        pybind11::arg("qmin"),
+        pybind11::arg("qmax"));
+
+    m.def("getAllFT2D", &getAllFT2D,
+        "Return 2D Fourier transform of delta-peaked values.\n"
+        "\n"
+        ".. math::"
+        "V(k_l) = \\sum_i \\exp(-1i k_l \\cdot r_i) v_i\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "positions : (*, 2) float array-like\n"
+        "    Positions r_i of delta-peaked values.\n"
+        "L : float or (1,)- or (2,) float array-like\n"
+        "    Size of the box.\n"
+        "values : (*,) complex array-like\n"
+        "    Delta-peaked values v_i.\n"
+        "qmin : float\n"
+        "    Minimum wave vector norm.\n"
+        "qmax : float\n"
+        "    Maximum wave vector norm.\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "ft : (**,) complex numpy array\n"
+        "    Fourier transform of `values' for each wave vector in the\n"
+        "    target  norm interval [`qmin', `qmax'].\n"
+        "    NOTE: These are given by getWaveVectors2D.\n",
+        pybind11::arg("positions"),
+        pybind11::arg("L"),
+        pybind11::arg("values"),
+        pybind11::arg("qmin"),
+        pybind11::arg("qmax"));
 
 }
 

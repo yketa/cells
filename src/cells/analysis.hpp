@@ -4,12 +4,22 @@ Functions for vertex model analysis.
 
 #include <complex>
 #include <map>
+#include <numbers>
 #include <vector>
 
 using namespace std::complex_literals;  // using comlex numbers
 
+#include <Python.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+
 #include "system.hpp"
 #include "tools.hpp"
+
+/*
+ *  Vertex model
+ *
+ */
 
 std::map<long int, std::vector<double>>
 getCentreVelocities(VertexModel const& vm) {
@@ -290,5 +300,131 @@ Return percentage of kept cell neighbours between two states of a vertex model.
             (double) nKept[index0]/ (double) nNeigh[index0]);
     }
     return pct;
+}
+
+/*
+ *  General particles
+ *
+ */
+
+std::vector<double> _get2DL(pybind11::array_t<double> const& L) {
+/*
+Return (2,) box size dimensions from array `L' which may be a double or an
+array of double.
+*/
+
+    auto l = L.unchecked<>();
+    if (l.ndim() > 1) {                             // system size is 2D or higher-D: impossible
+        throw std::invalid_argument("L must be a 0- or 1-dimensional.");
+    }
+    else if (l.size() == 0) {                       // no system size: impossible
+        throw std::invalid_argument("System size cannot be empty.");
+    }
+    else if (l.size() == 1) {                       // system size is the same for both dimensions
+        if (l.ndim() == 0) {
+            return std::vector<double>({l(), l()});
+        }
+        else {  // l.ndim() == 1
+            return std::vector<double>({l(0), l(0)});
+        }
+    }
+    else {                                          // system size is different for the two dimensions
+        return std::vector<double>({l(0), l(1)});
+    }
+}
+
+pybind11::array_t<double> getAllWaveVectors2D(
+    pybind11::array_t<double> const& L,
+    double const& qmin, double const& qmax) {
+/*
+Return wave vectors associated to rectangular box of size `L' such that their
+norms belong to [`qmin', `qmax'].
+Only a single vector of each pair of opposite wave vectors is returned.
+*/
+
+    // check system size
+    std::vector<double> const systemSize = _get2DL(L);
+    double const qx = 2*std::numbers::pi/systemSize[0];
+    double const qy = 2*std::numbers::pi/systemSize[1];
+
+    // loop in wave vector space
+    std::vector<std::vector<double>> waveVectors(0);
+    long long int const xmin = 0;
+    long long int const xmax = floor(qmax/qx);
+    for (long long int x=xmin; x <= xmax; x++) {
+        long long int const ymin =
+            std::max(
+                0.,
+                ceil(sqrt(pow(qmin, 2) - pow(qx*x, 2))/qy));
+        long long int const ymax =
+            std::min(
+                floor(qmax/qy),
+                floor(sqrt(pow(qmax, 2) - pow(qx*x, 2))/qy));
+        for (long long int y=ymin; y <= ymax; y++) {
+            double const qq = sqrt(pow(qx*x, 2) + pow(qy*y, 2));
+            if (qq < qmin || qq > qmax) { continue; }   // wave vector norm not within interval
+            waveVectors.push_back({qx*x, qy*y});
+            if (x != 0 && y != 0) {
+                // if x == 0 then (qx x, qy y) and (-qx x, qy y) are identical
+                // if y == 0 then (qx x, qy y) and (-qx x, qy y) are opposite
+                waveVectors.push_back({-qx*x, qy*y});
+            }
+        }
+    }
+
+    // create and return array
+    if (waveVectors.size() == 0) { return pybind11::array_t<double>(); }
+    pybind11::array_t<double>
+        arr(std::vector<ptrdiff_t>{(long long int) waveVectors.size(), 2});
+    auto a = arr.mutable_unchecked<2>();
+    for (long long int l=0; l < (long long int) waveVectors.size(); l++) {
+        for (int dim=0; dim < 2; dim++) {
+            a(l, dim) = waveVectors[l][dim];
+        }
+    }
+    return arr;
+}
+
+pybind11::array_t<std::complex<double>> getAllFT2D(
+    pybind11::array_t<double> const& positions,
+    pybind11::array_t<double> const& L,
+    pybind11::array_t<std::complex<double>> const& values,
+    double const& qmin, double const& qmax) {
+/*
+Return 2D Fourier transform of `values' associated to 2D `positions' at 2D wave
+vectorswhose norms belong to [`qmin', `qmax'].
+*/
+
+    // wave vector norms
+    pybind11::array_t<double> qARR = getAllWaveVectors2D(L, qmin, qmax);
+    if (qARR.request().size == 0)
+        { return pybind11::array_t<std::complex<double>>(0); }
+    auto _q = qARR.unchecked<2>();      // direct access to wave vectors
+    long int const n = _q.shape(0);
+
+    // check positions and values arrays
+    auto r = positions.unchecked<2>();  // direct access to positions
+    assert(r.ndim() == 2);
+    assert(r.shape(1) == 2);
+    long int const N = r.shape(0);
+    auto v = values.unchecked<>();      // direct access to first values
+    if (v.shape(0) != N) {
+        throw std::invalid_argument("Positions and values must have = sizes.");
+    }
+    if (v.ndim() > 1) {
+        throw std::invalid_argument("Values must be 1-dimensional.");
+    }
+
+    // compute Fourier transform
+    pybind11::array_t<std::complex<double>> ft({n});
+    auto FT = ft.mutable_unchecked<1>();
+    for (long int l=0; l < n; l++) {        // loop over wave vectors
+        FT(l) = 0;                                                              // initialise
+        for (long int i=0; i < N; i++) {    // loop over particles
+            FT(l) += v(i)*std::exp(-1i*(_q(l, 0)*r(i, 0) + _q(l, 1)*r(i, 1)));  // Fourier term
+        }
+    }
+
+    return ft;
 }
 

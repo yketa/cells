@@ -32,8 +32,8 @@ class VertexModel : public Mesh {
         VelocitiesType velocities;                                              // velocities
         std::shared_ptr<BaseIntegrator<ForcesType, VelocitiesType>> integrator; // integrator
 
-        long int const seed;    // random number generator seed
-        Random random;      	// random number generator
+        long int seed;  // random number generator seed
+        Random random;  // random number generator
 
         double time = 0;    // internal time
         long int nT1 = 0;   // number of T1s
@@ -80,9 +80,15 @@ class VertexModel : public Mesh {
             getIntegrator() const
             { return integrator; }
 
-        long int const& getSeed() const { return seed; }
-        Random const& getRandom() const { return random; }
-        void setRandom(Random const& random_) { random = random_; }
+        long int const& getSeed() const
+            { return seed; }
+        void setSeed(long int const& seed_)
+            { seed = seed_; random = Random(seed); }
+
+        Random const& getRandom() const
+            { return random; }
+        void setRandom(Random const& random_)
+            { random = random_; }
 
         double const& getTime() const { return time; }
         long int const& getnT1() const { return nT1; }
@@ -107,18 +113,6 @@ class VertexModel : public Mesh {
             integrator(std::make_shared<UnitOverdamped>(&forces, &velocities)),
             // integration quantities
             seed(seed_), random(seed), time(time_), nT1(nT1_) {}
-
-        VertexModel(
-            VertexModel const& vertexModel_, long int const& seed_) :
-            // geometrical objects (Mesh)
-            Mesh(vertexModel_),
-            // velocities
-            velocities(vertexModel_.getVelocities()),
-            // default integrator
-            integrator(std::make_shared<UnitOverdamped>(&forces, &velocities)),
-            // integration quantities
-            seed(seed_), random(seed),
-            time(vertexModel_.getTime()), nT1(vertexModel_.getnT1()) {}
 
         // FORCE "SETTERS"
 
