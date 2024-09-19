@@ -1504,6 +1504,31 @@ Keratin model.
                 targetArea[it->first] =     // minimum to target area
                     std::max(parameters.at("A0"), targetArea[it->first]);
             }
+
+            // remove keratin on boundary
+            std::map<long int, HalfEdge> const halfEdges =
+                mesh->getHalfEdges();
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {      // loop on all vertices
+                if ((it->second).getBoundary()) {                               // boundary vertices
+                    std::vector<long int> const neighbourHalfEdgesIndices =
+                        mesh->getNeighbourVertices(it->first)[1];
+                    for (long int halfEdgeIndex : neighbourHalfEdgesIndices) {  // loop on half-edges towards edge vertices
+                        long int const vertexIndex =                            // edge cell index
+                            halfEdges.at(
+                                (halfEdges.at(
+                                    (halfEdges.at(
+                                        (halfEdges.at(
+                                            halfEdgeIndex))
+                                        .getNextIndex()))
+                                    .getPairIndex()))
+                                .getNextIndex())
+                            .getToIndex();
+                        assert(
+                            vertices->at(vertexIndex).getType() == "centre");
+                        keratin[vertexIndex] = 0;                               // set keratin cell index to 0
+                    }
+                }
+            }
         }
 
         pybind11::tuple pybind11_getstate() const override;
