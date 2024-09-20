@@ -153,6 +153,8 @@ if __name__ == "__main__":
         help="keratin to area elasticity constant parameter")
     parser.add_argument("-kth", type=float, default=0.1,
         help="keratin concentration threshold")
+    parser.add_argument("-keffmax", type=float, default=np.inf,
+        help="maximum keratin effect")
     parser.add_argument("-tau", type=float, default=1e-1,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
@@ -183,7 +185,8 @@ if __name__ == "__main__":
         vm.addKeratinModel("keratin",
             args.K, args.A0, args.tau,
             args.Gamma, args.p0, args.T,
-            args.alpha, args.beta, args.kth,
+            args.alpha, args.beta,
+            args.kth, agrs.keffmax,
             args.tau, args.sigma, args.ron)
 
         # --- compute forces

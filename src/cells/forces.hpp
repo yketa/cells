@@ -6,8 +6,9 @@ Forces definitions.
 #define FORCES_HPP
 
 #include <cmath>
-#include <numbers>
 #include <iostream>
+#include <limits>
+#include <numbers>
 
 #include "base_forces.hpp"
 #include "mesh.hpp"
@@ -1324,6 +1325,7 @@ Keratin model.
         Random* random;                         // random number generator
 
         std::map<long int, double> keratin;     // cell keratin concentration
+        double const kmax;                      // maximum keratin concentration
         std::map<long int, double> targetArea;  // target area
 
         // degrees of freedom computed in KeratinModel::addAllForces
@@ -1342,17 +1344,23 @@ Keratin model.
         KeratinModel(
             double const& K_, double const& A0, double const& taur_,
             double const& Gamma_, double const& p0_, double const& T_,
-            double const& alpha_, double const& beta_, double const& kth_,
+            double const& alpha_, double const& beta_,
+            double const& kth_, double const& keffmax_,
             double const& tau_, double const& sigma_, double const& ron_,
             Mesh* const mesh_, Random* random_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"K", K_}, {"A0", A0}, {"taur", taur_},
                 {"Gamma", Gamma_}, {"p0", p0_}, {"T", T_},
-                {"alpha", alpha_}, {"beta", beta_}, {"kth", kth_},
+                {"alpha", alpha_}, {"beta", beta_},
+                {"kth", kth_}, {"keffmax", keffmax_},
                 {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
-            mesh(mesh_), random(random_) {
+            mesh(mesh_), random(random_),
+            kmax(parameters.at("beta") > 0
+                ? parameters.at("kth")
+                    + parameters.at("keffmax")/parameters.at("beta")
+                : std::numeric_limits<double>::infinity()) {
 
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
@@ -1375,6 +1383,9 @@ Keratin model.
             { return targetArea; }
         void setTargetArea(std::map<long int, double> const& targetArea_)
             { targetArea = targetArea_; }
+
+        double const& getkmax() const
+            { return kmax; }
 
         std::map<long int, double> const& getPressure() const
             { return pressure; }
@@ -1493,6 +1504,7 @@ Keratin model.
                 keratin[it->first] +=
                     dt_*(kon - koff)                                            // deterministic part
                     + amp*random->gauss();                                      // stochastic part
+                keratin[it->first] = std::min(keratin[it->first], kmax);        // maximum keratin
             }
             // integrate target area
             for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
@@ -1503,31 +1515,6 @@ Keratin model.
                     -dtk_*(targetArea[it->first] - area[it->first]);
                 targetArea[it->first] =     // minimum to target area
                     std::max(parameters.at("A0"), targetArea[it->first]);
-            }
-
-            // remove keratin on boundary
-            std::map<long int, HalfEdge> const halfEdges =
-                mesh->getHalfEdges();
-            for (auto it=vertices->begin(); it != vertices->end(); ++it) {      // loop on all vertices
-                if ((it->second).getBoundary()) {                               // boundary vertices
-                    std::vector<long int> const neighbourHalfEdgesIndices =
-                        mesh->getNeighbourVertices(it->first)[1];
-                    for (long int halfEdgeIndex : neighbourHalfEdgesIndices) {  // loop on half-edges towards edge vertices
-                        long int const vertexIndex =                            // edge cell index
-                            halfEdges.at(
-                                (halfEdges.at(
-                                    (halfEdges.at(
-                                        (halfEdges.at(
-                                            halfEdgeIndex))
-                                        .getNextIndex()))
-                                    .getPairIndex()))
-                                .getNextIndex())
-                            .getToIndex();
-                        assert(
-                            vertices->at(vertexIndex).getType() == "centre");
-                        keratin[vertexIndex] = 0;                               // set keratin cell index to 0
-                    }
-                }
             }
         }
 
