@@ -116,6 +116,7 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
     title += r"$\alpha=%.1e, \beta=%.1e$" % (
         param["alpha"], param["beta"])
     title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
+    title += r"$, [\mathrm{ker}]_0=%.1e$" % param["k0"]
     title += r"$, \tau=%.1e, \sigma=%.1e$" % (
         param["tau"], param["sigma"])
     title += r"$, \tau_{\mathrm{on}}=$" + (
@@ -153,8 +154,8 @@ if __name__ == "__main__":
         help="keratin to area elasticity constant parameter")
     parser.add_argument("-kth", type=float, default=0.1,
         help="keratin concentration threshold")
-    parser.add_argument("-keffmax", type=float, default=np.inf,
-        help="maximum keratin effect")
+    parser.add_argument("-k0", type=float, default=np.inf,
+        help="keratin scale controlling non-linearity")
     parser.add_argument("-tau", type=float, default=1e-1,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
@@ -186,7 +187,7 @@ if __name__ == "__main__":
             args.K, args.A0, args.tau,
             args.Gamma, args.p0, args.T,
             args.alpha, args.beta,
-            args.kth, agrs.keffmax,
+            args.kth, args.k0,
             args.tau, args.sigma, args.ron)
 
         # --- compute forces

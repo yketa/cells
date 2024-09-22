@@ -294,8 +294,6 @@ PYBIND11_MODULE(bind, m) {
         .def_property("keratin",
             &KeratinModel::getKeratin,
             &KeratinModel::setKeratin)
-        .def_property_readonly("kmax",
-            &KeratinModel::getkmax)
         .def_property("targetArea",
             &KeratinModel::getTargetArea,
             &KeratinModel::setTargetArea)
@@ -964,8 +962,8 @@ PYBIND11_MODULE(bind, m) {
             "    Keratin to area elasticity and relaxation parameter.\n"
             "kth : float\n"
             "    Keratin concentration threshold.\n"
-            "keffmax : float\n"
-            "    Maximum keratin effect (i.e. beta*([ker] - kth)).\n"
+            "k0 : float\n"
+            "    Keratin scale controlling non-linearity.\n"
             "tau : float\n"
             "    Keratin concentration evolution time scale.\n"
             "sigma : float\n"
@@ -983,7 +981,7 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("alpha"),
             pybind11::arg("beta"),
             pybind11::arg("kth"),
-            pybind11::arg("keffmax"),
+            pybind11::arg("k0"),
             pybind11::arg("tau"),
             pybind11::arg("sigma"),
             pybind11::arg("ron"))

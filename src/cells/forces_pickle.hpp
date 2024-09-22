@@ -528,7 +528,7 @@ VertexModel::addVertexForce<KeratinModel,
         parameters.at("K"), parameters.at("A0"), parameters.at("taur"),
         parameters.at("Gamma"), parameters.at("p0"), parameters.at("T"),
         parameters.at("alpha"), parameters.at("beta"),
-        parameters.at("kth"), parameters.at("keffmax"),
+        parameters.at("kth"), parameters.at("k0"),
         parameters.at("tau"), parameters.at("sigma"), parameters.at("ron"));
     // set internal degrees of freedom state
     std::shared_ptr<KeratinModel> k =

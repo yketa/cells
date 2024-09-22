@@ -1325,7 +1325,6 @@ Keratin model.
         Random* random;                         // random number generator
 
         std::map<long int, double> keratin;     // cell keratin concentration
-        double const kmax;                      // maximum keratin concentration
         std::map<long int, double> targetArea;  // target area
 
         // degrees of freedom computed in KeratinModel::addAllForces
@@ -1345,7 +1344,7 @@ Keratin model.
             double const& K_, double const& A0, double const& taur_,
             double const& Gamma_, double const& p0_, double const& T_,
             double const& alpha_, double const& beta_,
-            double const& kth_, double const& keffmax_,
+            double const& kth_, double const& k0_,
             double const& tau_, double const& sigma_, double const& ron_,
             Mesh* const mesh_, Random* random_,
             ForcesType* forces_, VerticesType* const vertices_) :
@@ -1353,14 +1352,10 @@ Keratin model.
                 {{"K", K_}, {"A0", A0}, {"taur", taur_},
                 {"Gamma", Gamma_}, {"p0", p0_}, {"T", T_},
                 {"alpha", alpha_}, {"beta", beta_},
-                {"kth", kth_}, {"keffmax", keffmax_},
+                {"kth", kth_}, {"k0", k0_},
                 {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
-            mesh(mesh_), random(random_),
-            kmax(parameters.at("beta") > 0
-                ? parameters.at("kth")
-                    + parameters.at("keffmax")/parameters.at("beta")
-                : std::numeric_limits<double>::infinity()) {
+            mesh(mesh_), random(random_) {
 
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
@@ -1383,9 +1378,6 @@ Keratin model.
             { return targetArea; }
         void setTargetArea(std::map<long int, double> const& targetArea_)
             { targetArea = targetArea_; }
-
-        double const& getkmax() const
-            { return kmax; }
 
         std::map<long int, double> const& getPressure() const
             { return pressure; }
@@ -1500,11 +1492,11 @@ Keratin model.
                 double const kon =                                              // on-rate...
                     parameters.at("alpha")*std::max(0., -pressure[it->first])   // ... increases with pressure (set by addAllForces)...
                     + parameters.at("tau")*parameters.at("ron");                // ... and time
-                double const koff = keratin[it->first];                         // keratin-dependent off-rate
+                double const koff = keratin[it->first]                          // keratin-dependent off-rate
+                    *(1 +  pow(keratin[it->first]/parameters.at("k0"), 2));
                 keratin[it->first] +=
                     dt_*(kon - koff)                                            // deterministic part
                     + amp*random->gauss();                                      // stochastic part
-                keratin[it->first] = std::min(keratin[it->first], kmax);        // maximum keratin
             }
             // integrate target area
             for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
