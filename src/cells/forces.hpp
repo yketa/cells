@@ -1330,6 +1330,7 @@ Keratin model.
         // degrees of freedom computed in KeratinModel::addAllForces
         std::map<long int, double> pressure;    // cell pressure
         std::map<long int, double> area;        // cell area
+        std::map<long int, double> perimeter;   // cell perimeter
         std::map<long int, double> tension;     // cells tension
 
         double keffect(long int const& index) const {
@@ -1385,6 +1386,9 @@ Keratin model.
         std::map<long int, double> const& getArea() const
             { return area; }
 
+        std::map<long int, double> const& getPerimeter() const
+            { return perimeter; }
+
         std::map<long int, double> const& getTension() const
             { return tension; }
         void setTension(std::map<long int, double> const& tension_)
@@ -1392,25 +1396,22 @@ Keratin model.
 
         void addForce(Vertex const& vertex) override {
 
-            // reset cell pressure
-            pressure[vertex.getIndex()] = 0;
-
             // cell area elastic constant, target area relaxation time, area, and perimeter
-            double const Kk =                       // keratin-dependent area elastic constant
+            double const Kk =                                   // keratin-dependent area elastic constant
                 parameters.at("K")*(1 + keffect(vertex.getIndex()));
-            double const Gammak =                   // keratin-dependent perimeter elastic constant
+            double const Gammak =                               // keratin-dependent perimeter elastic constant
                 parameters.at("Gamma")*(1 + keffect(vertex.getIndex()));
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
             double const A0 = targetArea[vertex.getIndex()];
-            double const perimeter =
-                mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
+            perimeter.emplace(vertex.getIndex(),
+                mesh->getVertexToNeighboursPerimeter(vertex.getIndex()));
             double const P0 = parameters.at("p0")*sqrt(A0)
-                - parameters.at("T")/(2*Gammak);    // residual tension
+                - parameters.at("T")/(2*Gammak);                // residual tension
 
             // cell tension
             tension.emplace(vertex.getIndex(),
-                Gammak*(perimeter - P0));           // cell perimeter
+                Gammak*(perimeter[vertex.getIndex()] - P0));    // cell perimeter
 
             // neighbours
             std::vector<long int> const neighbourVerticesIndices =
@@ -1456,9 +1457,6 @@ Keratin model.
                             crossToPreviousNeighbour[dim]
                                 - crossToNextNeighbour[dim]);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
-                        radiusToCorner[dim]             // radius towards vertex
-                            *(-force);                  // force applied on cell centre
                     // perimeter force
                     force = tension[vertex.getIndex()]*(
                         toPreviousNeighbour[dim]    // force from previous neighbour
@@ -1468,17 +1466,18 @@ Keratin model.
                         toNextNeighbour[dim]        // force from next neighbour
                             /distToNextNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    pressure[vertex.getIndex()] -=      // pressure = -Tr(stress)
-                        toNextNeighbour[dim]            // radius from cell corner to next neighbour
-                            *(force);                   // force applied on cell corner
                 }
             }
 
-            pressure[vertex.getIndex()] /= area[vertex.getIndex()];
+            pressure[vertex.getIndex()] = -(1/area[vertex.getIndex()])*(
+                Kk*(area[vertex.getIndex()] - A0)
+                    *area[vertex.getIndex()]);
+//                 Gammak*(perimeter[vertex.getIndex()] - P0)
+//                     *perimeter[vertex.getIndex()]);
         }
 
         void addAllForces() override {
-            area.clear(); tension.clear();
+            area.clear(); perimeter.clear(); tension.clear();
             VertexForce<ForcesType>::addAllForces();
         }
 
@@ -1504,7 +1503,14 @@ Keratin model.
                     parameters.at("taur")*(1 + keffect(it->first));
                 double const dtk_ = dt/tauk;
                 targetArea[it->first] +=    // relax target area
-                    -dtk_*(targetArea[it->first] - area[it->first]);
+                    -dtk_*(targetArea[it->first] - area[it->first]);        // area relaxation
+//                     -dtk_*2*(targetArea[it->first]                          // perimeter relaxation
+//                         - perimeter[it->first]*sqrt(targetArea[it->first])
+//                             /parameters.at("p0"));
+//                 targetArea[it->first] += dtk_*(                             // pressure relaxation
+//                     (pressure[it->first] < 0)
+//                         ? (-(pressure[it->first]/parameters.at("K")))
+//                         : (-(targetArea[it->first] - area[it->first])));
                 targetArea[it->first] =     // minimum to target area
                     std::max(parameters.at("A0"), targetArea[it->first]);
             }

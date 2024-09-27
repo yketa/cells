@@ -301,6 +301,8 @@ PYBIND11_MODULE(bind, m) {
             &KeratinModel::getPressure)
         .def_property_readonly("area",
             &KeratinModel::getArea)
+        .def_property_readonly("perimeter",
+            &KeratinModel::getPerimeter)
         .def_property_readonly("tension",
             &KeratinModel::getTension);
 
