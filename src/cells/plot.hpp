@@ -5,6 +5,7 @@ Functions using VertexModel to speed up plotting.
 #ifndef PLOT_HPP
 #define PLOT_HPP
 
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -103,6 +104,48 @@ point (xi^j, yi^j) is the j-th corner of the i-th cell.
     }
 
     return polygons;
+}
+
+std::vector<std::vector<double>> getPrincipalAxesCell(
+    VertexModel const& vm) {
+/*
+Return vector [[x0, y0], ..., [xN-1, yN-1]] where [xi, yi] is the unit vector
+corresponding to the principal axis (eigenvector of the inertia tensor
+corresponding to the largest eigenvalue) of the i-th cell.
+*/
+
+    std::vector<std::vector<double>> principalAxes(0);
+
+    std::vector<long int> const cellIndices =
+        vm.getVertexIndicesByType("centre");
+    for (long int cellIndex : cellIndices) {    // loop over all cells
+
+        std::vector<std::vector<double>> I = {{0, 0}, {0, 0}};  // inertia tensor
+
+        std::vector<long int> const neighbourIndices =          // cell corners = neighbours of centre
+            vm.getNeighbourVertices(cellIndex)[0];
+        for (long int neighbourIndex : neighbourIndices) {      // loop over cell corners
+            std::vector<double> const r =                       // vector from centre to corner
+                vm.wrapTo(cellIndex, neighbourIndex, false);
+            for (int alpha=0; alpha < 2; alpha++) {
+                for (int beta=0; beta < 2; beta++) {
+                    I[alpha][beta] +=
+                        ((alpha == beta) ? (r[0]*r[0] + r[1]*r[1]) : 0)
+                        - r[alpha]*r[beta];
+                }
+            }
+        }
+
+        std::vector<double> const evec = {                              // (manual) eigenvector with largest eigenvalue
+            I[0][0] - I[1][1] - sqrt(
+                I[0][0]*I[0][0] + 4*I[0][1]*I[0][1]
+                - 2*I[0][0]*I[1][1] + I[1][1]*I[1][1]),
+            2*I[0][1]};
+        double const evecn = sqrt(evec[0]*evec[0] + evec[1]*evec[1]);   // eigenvector norm
+        principalAxes.push_back({evec[0]/evecn, evec[1]/evecn});        // unitary eigenvector
+    }
+
+    return principalAxes;
 }
 
 #endif
