@@ -5,8 +5,9 @@ This does not save data.
 
 from cells.init import init_vm, K, A0, get_areas
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas,\
-    _cbar_labelpad, norm_tension
-from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction
+    _cbar_labelpad, norm_tension, scalarMap_orientation
+from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction,\
+    getPrincipalAxesCell, angle2
 from cells.run import run
 
 import matplotlib.pyplot as plt
@@ -75,10 +76,10 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
             lambda m, s: {i: (t[i] - m)/s for i in t})(
             np.mean(list(t.values())), np.std(list(t.values()))))(
         vm.vertexForces["keratin"].tension)
+    cells = vm.getVertexIndicesByType("centre")
 
     # cells
 
-    cells = vm.getVertexIndicesByType("centre")
     polygons = PatchCollection(
         list(map(                                               # all cells
             lambda vertices: plt.Polygon(vertices, closed=True),
@@ -99,6 +100,26 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
             cells)))
     ax.add_collection(polygons)
 
+    # principal axes
+
+    principalAxes = np.array(getPrincipalAxesCell(vm))
+    axes = PatchCollection(
+        list(map(                                               # all cells
+            lambda i, axis: plt.Line2D(
+                *np.transpose(
+                    np.array([vm.vertices[i].position])
+                    + np.sqrt(vm.getVertexToNeighboursArea(i))*np.array([
+                        -axis/2, axis/2]))),
+            *(cells, principalAxes))))
+    axes.set_linewidth(                                         # line width
+        2.5/max(1, np.sqrt(len(vm.vertices))/12))
+    axes.set_color(                                             # colour according to axis orientation
+        list(map(
+            lambda axis: scalarMap_orientation.to_rgba(
+                2*(angle2(*axis)%np.pi) - np.pi),
+            principalAxes)))
+    ax.add_collection(axes)
+
 #     # junctions
 #
 #     lines = LineCollection(getLinesJunction(vm), colors="pink", # all junctions
@@ -109,14 +130,12 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time - time0, vm.nT1, len(cells)))
-    title += r"$, \tau_r=%.2f, p_0=%.2f, T=%.2f, \tilde{p}_0=%.2f$" % (
-        param["taur"], param["p0"], param["T"],
-        param["p0"] - param["T"]/(2*param["Gamma"]*np.sqrt(param["A0"])))
+    title += r"$, \tau_r=%.2f, p_0=%.2ff$" % (
+        param["taur"], param["p0"])
     title += "\n"
     title += r"$\alpha=%.1e, \beta=%.1e$" % (
         param["alpha"], param["beta"])
     title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
-    title += r"$, [\mathrm{ker}]_0=%.1e$" % param["k0"]
     title += r"$, \tau=%.1e, \sigma=%.1e$" % (
         param["tau"], param["sigma"])
     title += r"$, \tau_{\mathrm{on}}=$" + (
@@ -146,16 +165,12 @@ if __name__ == "__main__":
     # taur is defined by {taur}
     # Gamma is defined by {Gamma}
     # p0 is defined by {p0}
-    parser.add_argument("-T", type=float, default=0.1,
-        help="junction tension")
     parser.add_argument("-alpha", type=float, default=1,
-        help="keratin on-rate pressure-dependence parameter")
+        help="keratin pressure scale")
     parser.add_argument("-beta", type=float, default=1,
         help="keratin to area elasticity constant parameter")
     parser.add_argument("-kth", type=float, default=0.1,
         help="keratin concentration threshold")
-    parser.add_argument("-k0", type=float, default=np.inf,
-        help="keratin scale controlling non-linearity")
     parser.add_argument("-tau", type=float, default=1e-1,
         help="keratin concentration evolution time scale")
     # sigma is defined by {sigma}
@@ -185,9 +200,8 @@ if __name__ == "__main__":
             args.xi)
         vm.addKeratinModel("keratin",
             args.K, args.A0, args.tau,
-            args.Gamma, args.p0, args.T,
-            args.alpha, args.beta,
-            args.kth, args.k0,
+            args.Gamma, args.p0,
+            args.alpha, args.beta, args.kth,
             args.tau, args.sigma, args.ron)
 
         # --- compute forces
@@ -212,7 +226,7 @@ if __name__ == "__main__":
 
     # pullin force
     vm.addPressureForce("pull",
-        args.fpull, True)
+        args.fpull, False)
 
     # RUN
 

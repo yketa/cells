@@ -57,6 +57,7 @@ PYBIND11_MODULE(bind, m) {
     m.def("getLinesHalfEdge", &getLinesHalfEdge);
     m.def("getLinesJunction", &getLinesJunction);
     m.def("getPolygonsCell", &getPolygonsCell);
+    m.def("getPrincipalAxesCell", &getPrincipalAxesCell);
 
     /*
      *  [mesh.hpp]
@@ -301,8 +302,6 @@ PYBIND11_MODULE(bind, m) {
             &KeratinModel::getPressure)
         .def_property_readonly("area",
             &KeratinModel::getArea)
-        .def_property_readonly("perimeter",
-            &KeratinModel::getPerimeter)
         .def_property_readonly("tension",
             &KeratinModel::getTension);
 
@@ -936,9 +935,8 @@ PYBIND11_MODULE(bind, m) {
         .def("addKeratinModel",
             &VertexModel::addVertexForce<KeratinModel,
                 double const&, double const&, double const&,
+                double const&, double const&,
                 double const&, double const&, double const&,
-                double const&, double const&,
-                double const&, double const&,
                 double const&, double const&, double const&>,
             "Add keratin model.\n"
             "\n"
@@ -956,16 +954,12 @@ PYBIND11_MODULE(bind, m) {
             "    Perimeter elasticity.\n"
             "p0 : float\n"
             "    Target shape index.\n"
-            "T : float\n"
-            "    Junction tension.\n"
             "alpha : float\n"
-            "    Keratin on-rate pressure-dependence parameter.\n"
+            "    Keratin pressure scale.\n"
             "beta : float\n"
             "    Keratin to area elasticity and relaxation parameter.\n"
             "kth : float\n"
             "    Keratin concentration threshold.\n"
-            "k0 : float\n"
-            "    Keratin scale controlling non-linearity.\n"
             "tau : float\n"
             "    Keratin concentration evolution time scale.\n"
             "sigma : float\n"
@@ -979,11 +973,9 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("taur"),
             pybind11::arg("Gamma"),
             pybind11::arg("p0"),
-            pybind11::arg("T"),
             pybind11::arg("alpha"),
             pybind11::arg("beta"),
             pybind11::arg("kth"),
-            pybind11::arg("k0"),
             pybind11::arg("tau"),
             pybind11::arg("sigma"),
             pybind11::arg("ron"))

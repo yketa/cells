@@ -1328,32 +1328,30 @@ Keratin model.
         std::map<long int, double> targetArea;  // target area
 
         // degrees of freedom computed in KeratinModel::addAllForces
-        std::map<long int, double> pressure;    // cell pressure
         std::map<long int, double> area;        // cell area
-        std::map<long int, double> perimeter;   // cell perimeter
-        std::map<long int, double> tension;     // cells tension
+        std::map<long int, double> pressure;    // cell pressure
+        std::map<long int, double> tension;     // cell tension
 
         double keffect(long int const& index) const {
             // keratin effect on area elastic constant and target area relaxation time
-            return parameters.at("beta")*std::max(0.,
-                keratin.at(index) - parameters.at("kth"));
+            return 1 +
+                parameters.at("beta")*std::max(0.,
+                    keratin.at(index) - parameters.at("kth"));
         }
 
     public:
 
         KeratinModel(
             double const& K_, double const& A0, double const& taur_,
-            double const& Gamma_, double const& p0_, double const& T_,
-            double const& alpha_, double const& beta_,
-            double const& kth_, double const& k0_,
+            double const& Gamma_, double const& p0_,
+            double const& alpha_, double const& beta_, double const& kth_,
             double const& tau_, double const& sigma_, double const& ron_,
             Mesh* const mesh_, Random* random_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
                 {{"K", K_}, {"A0", A0}, {"taur", taur_},
-                {"Gamma", Gamma_}, {"p0", p0_}, {"T", T_},
-                {"alpha", alpha_}, {"beta", beta_},
-                {"kth", kth_}, {"k0", k0_},
+                {"Gamma", Gamma_}, {"p0", p0_},
+                {"alpha", alpha_}, {"beta", beta_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
             mesh(mesh_), random(random_) {
@@ -1361,11 +1359,13 @@ Keratin model.
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
                     keratin.emplace(it->first,              // zero keratin initial value
-                        0);
-                    area.emplace(it->first,                 // initial area
-                        mesh->getVertexToNeighboursArea(it->first));
+                        std::max(
+                            0.,
+                            parameters.at("kth")*(1 + random->gauss())));
                     targetArea.emplace(it->first,           // initial area as initial target area
-                        std::max(parameters.at("A0"), area[it->first]));
+                        std::max(
+                            parameters.at("A0"),
+                            mesh->getVertexToNeighboursArea(it->first)));
                 }
             }
         }
@@ -1380,38 +1380,37 @@ Keratin model.
         void setTargetArea(std::map<long int, double> const& targetArea_)
             { targetArea = targetArea_; }
 
-        std::map<long int, double> const& getPressure() const
-            { return pressure; }
-
         std::map<long int, double> const& getArea() const
             { return area; }
 
-        std::map<long int, double> const& getPerimeter() const
-            { return perimeter; }
+        std::map<long int, double> const& getPressure() const
+            { return pressure; }
 
         std::map<long int, double> const& getTension() const
             { return tension; }
-        void setTension(std::map<long int, double> const& tension_)
-            { tension = tension_; }
 
         void addForce(Vertex const& vertex) override {
 
-            // cell area elastic constant, target area relaxation time, area, and perimeter
-            double const Kk =                                   // keratin-dependent area elastic constant
-                parameters.at("K")*(1 + keffect(vertex.getIndex()));
-            double const Gammak =                               // keratin-dependent perimeter elastic constant
-                parameters.at("Gamma")*(1 + keffect(vertex.getIndex()));
+            // area elasticity
+            double const Kk =                               // keratin-dependent area elastic constant
+                parameters.at("K")*keffect(vertex.getIndex());
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
-            double const A0 = targetArea[vertex.getIndex()];
-            perimeter.emplace(vertex.getIndex(),
-                mesh->getVertexToNeighboursPerimeter(vertex.getIndex()));
-            double const P0 = parameters.at("p0")*sqrt(A0)
-                - parameters.at("T")/(2*Gammak);                // residual tension
+            double const A0 = targetArea.at(vertex.getIndex());
+            // perimeter elasticity
+            double const Gammak =                           // keratin-dependent perimeter elastic constant
+                parameters.at("Gamma")*keffect(vertex.getIndex());
+            double const perimeter =
+                mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
+            double const P0 = parameters.at("p0")*sqrt(A0);
 
-            // cell tension
+            // pressure and tension
+            pressure.emplace(vertex.getIndex(),
+                -Kk*(parameters.at("alpha")/parameters.at("A0"))
+                    *(area.at(vertex.getIndex()) - A0)
+                    *area.at(vertex.getIndex()));
             tension.emplace(vertex.getIndex(),
-                Gammak*(perimeter[vertex.getIndex()] - P0));    // cell perimeter
+                Gammak*(perimeter - P0));
 
             // neighbours
             std::vector<long int> const neighbourVerticesIndices =
@@ -1453,31 +1452,25 @@ Keratin model.
                 for (int dim=0; dim < 2; dim++) {
                     // area force
                     force = (Kk/2.)*(
-                        area[vertex.getIndex()] - A0)*( // cell area
+                        area.at(vertex.getIndex()) - A0)*(
                             crossToPreviousNeighbour[dim]
                                 - crossToNextNeighbour[dim]);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                     // perimeter force
-                    force = tension[vertex.getIndex()]*(
+                    force = tension.at(vertex.getIndex())*(
                         toPreviousNeighbour[dim]    // force from previous neighbour
                             /distToPreviousNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    force = tension[vertex.getIndex()]*(
+                    force = tension.at(vertex.getIndex())*(
                         toNextNeighbour[dim]        // force from next neighbour
                             /distToNextNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                 }
             }
-
-            pressure[vertex.getIndex()] = -(1/area[vertex.getIndex()])*(
-                Kk*(area[vertex.getIndex()] - A0)
-                    *area[vertex.getIndex()]);
-//                 Gammak*(perimeter[vertex.getIndex()] - P0)
-//                     *perimeter[vertex.getIndex()]);
         }
 
         void addAllForces() override {
-            area.clear(); perimeter.clear(); tension.clear();
+            area.clear(); pressure.clear(); tension.clear();
             VertexForce<ForcesType>::addAllForces();
         }
 
@@ -1486,33 +1479,25 @@ Keratin model.
             // integrate keratin concentration
             double const dt_ = dt/parameters.at("tau");
             double const amp = parameters.at("sigma")*sqrt(2.*dt_);
-            for (auto it=keratin.begin(); it != keratin.end(); ++it) {
+            for (auto it=pressure.begin(); it != pressure.end(); ++it) {
                 // keratin concentration
-                double const kon =                                              // on-rate...
-                    parameters.at("alpha")*std::max(0., -pressure[it->first])   // ... increases with pressure (set by addAllForces)...
-                    + parameters.at("tau")*parameters.at("ron");                // ... and time
-                double const koff = keratin[it->first]                          // keratin-dependent off-rate
-                    *(1 +  pow(keratin[it->first]/parameters.at("k0"), 2));
+                double const kon =                                  // on-rate...
+                    std::max(0., -pressure.at(it->first))           // ... increases with pressure (set by addAllForces)...
+                    + parameters.at("tau")*parameters.at("ron");    // ... and time
+                double const koff = keratin.at(it->first);          // keratin-dependent off-rate
                 keratin[it->first] +=
-                    dt_*(kon - koff)                                            // deterministic part
-                    + amp*random->gauss();                                      // stochastic part
+                    dt_*(kon - koff)                                // deterministic part
+                    + amp*random->gauss();                          // stochastic part
             }
             // integrate target area
-            for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
+            for (auto it=area.begin(); it != area.end(); ++it) {
                 double const tauk =         // keratin-dependent target area relaxation time
-                    parameters.at("taur")*(1 + keffect(it->first));
+                    parameters.at("taur")*keffect(it->first);
                 double const dtk_ = dt/tauk;
                 targetArea[it->first] +=    // relax target area
-                    -dtk_*(targetArea[it->first] - area[it->first]);        // area relaxation
-//                     -dtk_*2*(targetArea[it->first]                          // perimeter relaxation
-//                         - perimeter[it->first]*sqrt(targetArea[it->first])
-//                             /parameters.at("p0"));
-//                 targetArea[it->first] += dtk_*(                             // pressure relaxation
-//                     (pressure[it->first] < 0)
-//                         ? (-(pressure[it->first]/parameters.at("K")))
-//                         : (-(targetArea[it->first] - area[it->first])));
+                    -dtk_*(targetArea.at(it->first) - area.at(it->first));
                 targetArea[it->first] =     // minimum to target area
-                    std::max(parameters.at("A0"), targetArea[it->first]);
+                    std::max(parameters.at("A0"), targetArea.at(it->first));
             }
         }
 

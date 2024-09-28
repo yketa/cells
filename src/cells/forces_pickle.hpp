@@ -504,7 +504,7 @@ pybind11::tuple KeratinModel::pybind11_getstate() const {
         // unique identifying string for the force object
         "KeratinModel",
         // state
-        parameters, keratin, targetArea, tension);
+        parameters, keratin, targetArea);
 }
 
 // load state
@@ -513,22 +513,20 @@ VertexModel::addVertexForce<KeratinModel,
     pybind11::tuple const&>(
     std::string const& name, pybind11::tuple const& t) {
     // check
-    checkSize(t, 5);
+    checkSize(t, 4);
     assert(t[0].cast<std::string>() == "KeratinModel");
     // initialise force
     ParametersType const parameters =
         t[1].cast<ParametersType>();
     addVertexForce<KeratinModel,
         double const&, double const&, double const&,
+        double const&, double const&,
         double const&, double const&, double const&,
-        double const&, double const&,
-        double const&, double const&,
         double const&, double const&, double const&>(
         name,
         parameters.at("K"), parameters.at("A0"), parameters.at("taur"),
-        parameters.at("Gamma"), parameters.at("p0"), parameters.at("T"),
-        parameters.at("alpha"), parameters.at("beta"),
-        parameters.at("kth"), parameters.at("k0"),
+        parameters.at("Gamma"), parameters.at("p0"),
+        parameters.at("alpha"), parameters.at("beta"), parameters.at("kth"),
         parameters.at("tau"), parameters.at("sigma"), parameters.at("ron"));
     // set internal degrees of freedom state
     std::shared_ptr<KeratinModel> k =
@@ -540,9 +538,6 @@ VertexModel::addVertexForce<KeratinModel,
     std::map<long int, double> const targetArea =
         t[3].cast<std::map<long int, double>>();
     k->setTargetArea(targetArea);
-    std::map<long int, double> const tension =
-        t[4].cast<std::map<long int, double>>();
-    k->setTension(tension);
 }
 
 /*
