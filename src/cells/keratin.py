@@ -7,7 +7,7 @@ from cells.init import init_vm, K, A0, get_areas
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas,\
     _cbar_labelpad, norm_tension, scalarMap_orientation
 from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction,\
-    getPrincipalAxesCell, angle2
+    getMaximumFeretAxesCell, angle2
 from cells.run import run
 
 import matplotlib.pyplot as plt
@@ -102,22 +102,44 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     # principal axes
 
-    principalAxes = np.array(getPrincipalAxesCell(vm))
+    feretAxes = np.array(getMaximumFeretAxesCell(vm))                   # maximum Feret axes (maximum diameter)
+    boundary = (lambda v: [i for i in v if v[i].boundary])(vm.vertices) # boundary vertices...
+    assert len(boundary) == 1                                           # ... there should be only 1
+    boundary = boundary[0]
+    centre = (                                                          # centre of neighbours to boundary vertex
+        lambda positions: np.mean(
+            list(map(
+                lambda i: positions[i],
+                vm.getNeighbourVertices(boundary)[0])),
+            axis=0))(
+        vm.getPositions())
+    centreAxes = (                                                      # axes from centre to cell centres...
+        lambda positions: np.array(list(map(
+            lambda i: positions[i] - centre,
+            cells))))(
+        vm.getPositions())
+    centreAxes /= np.sqrt((centreAxes**2).sum(axis=-1, keepdims=True))  # ... normalised
+    angles = np.array(list(map(                                         # angles between Feret axes and axes to centres (between 0 and pi/2 so multiplied multiplied by 4 for colourmap)
+        lambda fax, cax: 4*np.arccos(np.abs(np.dot(fax, cax))) - np.pi,
+        *(feretAxes, centreAxes))))
+#     (
+#         lambda positions: list(map(
+#             lambda i: plt.plot(*np.transpose([centre, positions[i]])),
+#             cells)))(
+#         vm.getPositions())
+
     axes = PatchCollection(
-        list(map(                                               # all cells
+        list(map(                                                       # all cells
             lambda i, axis: plt.Line2D(
                 *np.transpose(
                     np.array([vm.vertices[i].position])
                     + np.sqrt(vm.getVertexToNeighboursArea(i))*np.array([
                         -axis/2, axis/2]))),
-            *(cells, principalAxes))))
-    axes.set_linewidth(                                         # line width
+            *(cells, feretAxes))))
+    axes.set_linewidth(                                                 # line width
         2.5/max(1, np.sqrt(len(vm.vertices))/12))
-    axes.set_color(                                             # colour according to axis orientation
-        list(map(
-            lambda axis: scalarMap_orientation.to_rgba(
-                2*(angle2(*axis)%np.pi) - np.pi),
-            principalAxes)))
+    axes.set_color(                                                     # colour according to angle between Feret axis and axis to centre
+        list(map(lambda angle: scalarMap_orientation.to_rgba(angle), angles)))
     ax.add_collection(axes)
 
 #     # junctions
