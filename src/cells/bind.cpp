@@ -57,7 +57,7 @@ PYBIND11_MODULE(bind, m) {
     m.def("getLinesHalfEdge", &getLinesHalfEdge);
     m.def("getLinesJunction", &getLinesJunction);
     m.def("getPolygonsCell", &getPolygonsCell);
-    m.def("getPrincipalAxesCell", &getPrincipalAxesCell);
+    m.def("getMaximumFeretAxesCell", &getMaximumFeretAxesCell);
 
     /*
      *  [mesh.hpp]
