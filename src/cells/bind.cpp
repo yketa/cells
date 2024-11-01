@@ -515,6 +515,22 @@ PYBIND11_MODULE(bind, m) {
             "scalingFactor : float\n"
             "    Factor by which to multiply all lengths.",
             pybind11::arg("scalingFactor"))
+        .def("setSystemSize",
+            [](VertexModel& self, pybind11::array_t<double> const& L) {
+                auto l = L.unchecked<>();
+                self.setSystemSize({l[0], l[1]});
+            },
+            "Set system size and move vertices according to displacement of\n"
+            "system centre.\n"
+            "\n"
+            "WARNING: This should only be performed on systems which are NOT\n"
+            "         periodic.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "systemSize : (2,) float array-like\n"
+            "    New system size.",
+            pybind11::arg("L"))
         .def("checkMesh",
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh,\n"

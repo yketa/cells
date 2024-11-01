@@ -499,6 +499,33 @@ void Mesh::scale(double const& scalingFactor) {
     }
 }
 
+void Mesh::setSystemSize(std::vector<double> const& systemSize_) {
+
+    std::vector<double> const disp =    // displacement of system centre
+        {(systemSize_[0] - systemSize[0])/2,
+        (systemSize_[1] - systemSize[1])/2};
+
+    // move vertices
+    for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+        // wrapped position
+        std::vector<double> const oldpos =
+            (it->second).getPosition();
+        std::vector<double> const newpos =
+            {oldpos[0] + disp[0], oldpos[1] + disp[1]};
+        assert(newpos[0] < systemSize_[0] && newpos[1] < systemSize_[1]);
+        (it->second).setPosition(newpos);
+        // unwrapped position
+        std::vector<double> const oldupos =
+            (it->second).getUPosition();
+        std::vector<double> const newupos =
+            {oldupos[0] + disp[0], oldupos[1] + disp[1]};
+        (it->second).setUPosition(newupos);
+    }
+
+    // change system size
+    systemSize = systemSize_;
+}
+
 void Mesh::checkMesh() const {
 
     std::vector<long int> vertexIndices(0);     // vector of vertex indices

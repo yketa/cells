@@ -490,6 +490,12 @@ Two-dimensional ensembles of vertices and edges.
         Rescale all lengths by `scalingFactor'.
         */
 
+        void setSystemSize(std::vector<double> const& systemSize_);
+        /*
+        Set system size and move vertices according to displacement of system
+        centre.
+        */
+
         void checkMesh() const;
         /*
         Check that the vertices and half-edges define a planar mesh, with
