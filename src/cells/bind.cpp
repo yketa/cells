@@ -506,6 +506,42 @@ PYBIND11_MODULE(bind, m) {
         .def("clear",
             &VertexModel::clear,
             "Clear all data.")
+        .def("mergeVertices",
+            &VertexModel::mergeVertices,
+            "Merge two vertices sharing an edge.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "fromVertexIndex : int\n"
+            "    Index of vertex which will be merged into the other.\n"
+            "toVertexIndex : int\n"
+            "    Index of vertex into which the other will be merged.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "deletedVertexIndex : int\n"
+            "    Index of vertex which was merged into the other.\n"
+            "    NOTE: This is fromVertexIndex.\n"
+            "deletedHalfEdgeIndices : tuple of int\n"
+            "    Indices of half-edges deleted by this operation.",
+            pybind11::arg("fromVertexIndex"),
+            pybind11::arg("toVertexIndex"))
+        .def("changeToBoundary",
+            &VertexModel::changeToBoundary,
+            "Change vertex to a boundary vertex with identical attributes\n"
+            "(including index) and empty type.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex :\n"
+            "    Vertex to change to a boundary vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "deletedVertexIndex :\n"
+            "    Index of vertex which was changed to boundary vertex.\n"
+            "    NOTE: This is `vertexIndex'.",
+            pybind11::arg("vertexIndex"))
         .def("scale",
             &VertexModel::scale,
             "Rescale all lengths.\n"
@@ -1057,6 +1093,7 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "nCells : int\n"
             "    Number of cells. (default: 1)\n"
+            "    NOTE: This must be a squared integer.\n"
             "hexagonArea : float\n"
             "    Area of regular hexagons. (default: 1)\n"
             "boxLength : float\n"

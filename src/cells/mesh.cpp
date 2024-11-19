@@ -480,6 +480,173 @@ TopoChangeEdgeInfoType Mesh::createEdge(
     return std::make_tuple(newVertexIndex, createdHalfEdgeIndices);
 }
 
+TopoChangeEdgeInfoType Mesh::mergeVertices(
+    long int const& fromVertexIndex, long int const& toVertexIndex) {
+
+    std::vector<long int> deletedHalfEdgeIndices(0);
+
+    // identify connecting edge
+
+    long int index = -1;                                        // index of half-edge belonging to edge separating vertices
+    std::vector<long int> const halfEdgesToNeighboursIndices =  // half-edge to neighbouring vertices
+        getNeighbourVertices(fromVertexIndex)[1];
+    for (long int halfEdgeIndex : halfEdgesToNeighboursIndices) {
+        long int const nextHalfEdgeIndex =
+            halfEdges.at(halfEdgeIndex).getNextIndex();
+        long int const vertexIndex =
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdges.at(
+                        nextHalfEdgeIndex
+                        ).getPairIndex()
+                    ).getNextIndex()
+                ).getToIndex();
+        if (vertexIndex == toVertexIndex) {
+            index = nextHalfEdgeIndex;
+            break;
+        }
+    }
+
+    assert(index != -1);                                        // check there is actually an edge separating the vertices
+    long int const sepHalfEdgeIndex = index;
+
+    assert(                                                     // check vertices have the same bondary indicator
+        vertices.at(fromVertexIndex).getBoundary()
+            == vertices.at(toVertexIndex).getBoundary());
+    assert(                                                     // check vertices are the same type
+        vertices.at(fromVertexIndex).getType()
+            == vertices.at(toVertexIndex).getType());
+
+    // flag interior half-edges for deletion
+
+    deletedHalfEdgeIndices.push_back(
+        sepHalfEdgeIndex);
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(sepHalfEdgeIndex).getPreviousIndex());
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(sepHalfEdgeIndex).getNextIndex());
+
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(sepHalfEdgeIndex).getPairIndex());
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(
+            halfEdges.at(sepHalfEdgeIndex).getPairIndex()
+            ).getPreviousIndex());
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(
+            halfEdges.at(sepHalfEdgeIndex).getPairIndex()
+            ).getNextIndex());
+
+    // reassign half-edges origin and destination
+
+    for (long int halfEdgeIndex : halfEdgesToNeighboursIndices) {
+        halfEdges[
+            halfEdgeIndex
+            ].setFromIndex(toVertexIndex);
+        halfEdges[
+            halfEdges.at(halfEdgeIndex).getPreviousIndex()
+            ].setToIndex(toVertexIndex);
+    }
+
+    // reassign half-edge pairs
+
+    long int const inFromHalfEdgeIndex =
+        halfEdges.at(
+            halfEdges.at(
+                sepHalfEdgeIndex
+                ).getPreviousIndex()
+            ).getPairIndex();
+    long int const outFromHalfEdgeIndex =
+        halfEdges.at(
+            halfEdges.at(
+                sepHalfEdgeIndex
+                ).getNextIndex()
+            ).getPairIndex();
+
+    long int const inToHalfEdgeIndex =
+        halfEdges.at(
+            halfEdges.at(
+                halfEdges.at(
+                    sepHalfEdgeIndex
+                    ).getPairIndex()
+                ).getPreviousIndex()
+            ).getPairIndex();
+    long int const outToHalfEdgeIndex =
+        halfEdges.at(
+            halfEdges.at(
+                halfEdges.at(
+                    sepHalfEdgeIndex
+                    ).getPairIndex()
+                ).getNextIndex()
+            ).getPairIndex();
+
+    halfEdges[inFromHalfEdgeIndex].setPairIndex(outToHalfEdgeIndex);
+    halfEdges[outToHalfEdgeIndex].setPairIndex(inFromHalfEdgeIndex);
+
+    halfEdges[outFromHalfEdgeIndex].setPairIndex(inToHalfEdgeIndex);
+    halfEdges[inToHalfEdgeIndex].setPairIndex(outFromHalfEdgeIndex);
+
+    // set half-edge going out of vertex
+
+    vertices[toVertexIndex].setHalfEdgeIndex(
+        outToHalfEdgeIndex);
+    vertices[halfEdges.at(outFromHalfEdgeIndex).getToIndex()].setHalfEdgeIndex(
+        inToHalfEdgeIndex);
+    vertices[halfEdges.at(outToHalfEdgeIndex).getToIndex()].setHalfEdgeIndex(
+        inFromHalfEdgeIndex);
+
+    // move vertex
+
+    std::vector<double> const fromVertexUPosition =
+        vertices.at(fromVertexIndex).getUPosition();
+    std::vector<double> const toVertexUPosition =
+        vertices.at(toVertexIndex).getUPosition();
+
+    std::vector<double> const midUPosition = {
+        (fromVertexUPosition[0] + toVertexUPosition[0])/2,
+        (fromVertexUPosition[1] + toVertexUPosition[1])/2};
+
+    vertices[toVertexIndex].setPosition(wrap(midUPosition));
+    vertices[toVertexIndex].setUPosition(midUPosition);
+
+    // delete vertex half-edges
+
+    vertices.erase(fromVertexIndex);                                        // delete vertex
+    for (long int index : deletedHalfEdgeIndices) halfEdges.erase(index);   // delete half-edges
+
+    return std::make_tuple(fromVertexIndex, deletedHalfEdgeIndices);
+}
+
+long int Mesh::changeToBoundary(
+    long int const& vertexIndex) {
+
+    // copy attributes
+
+    std::vector<double> const position =
+        vertices.at(vertexIndex).getPosition();
+    std::vector<double> const uposition =
+        vertices.at(vertexIndex).getUPosition();
+    long int const halfEdgeIndex =
+        vertices.at(vertexIndex).getHalfEdgeIndex();
+
+    // delete vertex
+
+    vertices.erase(vertexIndex);
+
+    // create boundary vertex
+
+    vertices.emplace(vertexIndex, Vertex(
+        // vertices is std::map so add with std::map::emplace
+        vertexIndex,
+        position,
+        halfEdgeIndex,
+        true,   // boundary
+        ""));   // type
+    vertices[vertexIndex].setUPosition(uposition);
+
+    return vertexIndex;
+}
+
 void Mesh::scale(double const& scalingFactor) {
 
     auto scaleVector = [&scalingFactor](std::vector<double>& vector)
@@ -512,7 +679,9 @@ void Mesh::setSystemSize(std::vector<double> const& systemSize_) {
             (it->second).getPosition();
         std::vector<double> const newpos =
             {oldpos[0] + disp[0], oldpos[1] + disp[1]};
-        assert(newpos[0] < systemSize_[0] && newpos[1] < systemSize_[1]);
+        if (!(it->second).getBoundary()) {
+            assert(newpos[0] < systemSize_[0] && newpos[1] < systemSize_[1]);
+        }
         (it->second).setPosition(newpos);
         // unwrapped position
         std::vector<double> const oldupos =

@@ -485,6 +485,45 @@ Two-dimensional ensembles of vertices and edges.
             Indices of half-edges created by this operation.
         */
 
+        TopoChangeEdgeInfoType mergeVertices(
+            long int const& fromVertexIndex, long int const& toVertexIndex);
+        /*
+        Merge two vertices sharing an edge.
+
+        Parameters
+        ----------
+        fromVertexIndex :
+            Index of vertex which will be merged into the other.
+        toVertexIndex :
+            Index of vertex into which the other will be merged.
+
+        Returns
+        -------
+        deletedVertexIndex :
+            Index of vertex which was merged into the other.
+            NOTE: This is `fromVertexIndex'.
+        deletedHalfEdgeIndices :
+            Indices of half-edges deleted by this operation.
+        */
+
+        long int changeToBoundary(
+            long int const& vertexIndex);
+        /*
+        Change vertex to a boundary vertex with identical attributes (including
+        index) and empty type.
+
+        Parameters
+        ----------
+        vertexIndex :
+            Vertex to change to a boundary vertex.
+
+        Returns
+        -------
+        deletedVertexIndex :
+            Index of vertex which was changed to boundary vertex.
+            NOTE: This is `vertexIndex'.
+        */
+
         void scale(double const& scalingFactor);
         /*
         Rescale all lengths by `scalingFactor'.
