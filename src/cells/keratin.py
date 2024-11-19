@@ -11,7 +11,7 @@ from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction,\
 from cells.run import run
 
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, LinearSegmentedColormap
 from matplotlib.cm import ScalarMappable
 from matplotlib.collections import PatchCollection, LineCollection
 
@@ -41,10 +41,20 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
         ax_size, fig_width, fig_height = _measure_fig(ax)       # measure
 
-        if "kmax" in kwargs:                                    # colourmap from user-defined max
-            global scalarMap_keratin
-            norm_keratin = Normalize(0, kwargs["kmax"])
-            scalarMap_keratin = ScalarMappable(norm_keratin, cmap_keratin)
+        # keratin colourmap
+        kmax = 25 if not("kmax" in kwargs) else kwargs["kmax"]          # user-defined maximum keratin
+        kth = param["kth"]                                              # keratin threshold
+        colours = list(map(
+            lambda i: (
+                lambda k:
+                    plt.cm.Greens((k - kth)/(kmax - kth)) if k >= kth   # colourmap for percolated keratin
+                    else plt.cm.autumn(k/kth))(                         # colourmap for unpercolated keratin
+                (i/255.)*kmax),
+            range(256)))
+        norm_keratin = Normalize(0, kmax)
+        cmap_keratin = LinearSegmentedColormap.from_list("keratin", colours)
+        global scalarMap_keratin
+        scalarMap_keratin = ScalarMappable(norm_keratin, cmap_keratin)
 
         # keratin colourbar
         cbar_keratin = fig.colorbar(
@@ -198,7 +208,7 @@ if __name__ == "__main__":
     # sigma is defined by {sigma}
     parser.add_argument("-ron", type=float, default=0,
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
-    parser.add_argument("-fpull", type=float, default=2,
+    parser.add_argument("-fpull", type=float, default=0,
         help="outer vertices pulling force scale")
 
     args, vm = init_vm(parser=parser, boxLength=5)
@@ -225,6 +235,7 @@ if __name__ == "__main__":
             args.Gamma, args.p0,
             args.alpha, args.beta, args.kth,
             args.tau, args.sigma, args.ron)
+        if args.fpull == 0: break
 
         # --- compute forces
         scale = (scalemin + scalemax)/2
@@ -247,11 +258,13 @@ if __name__ == "__main__":
         if meanForce < 0: scalemax = scale
 
     # pullin force
-    vm.addPressureForce("pull",
-        args.fpull, False)
+    if args.fpull != 0:
+        vm.addPressureForce("pull",
+            args.fpull, False)
 
     # RUN
 
+    vm.nintegrate(1, 0)
     with open("keratin.init_vm.p", "wb") as dump: pickle.dump(vm, dump)
     run(args, vm, plot_function=plot_keratin, time0=time0)
 
