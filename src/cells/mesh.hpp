@@ -76,9 +76,9 @@ Individual nodes of the two-dimensional mesh.
             { return boundary; }
         std::string getType() const
             { return type; }
-        std::vector<double> getPosition() const
+        std::vector<double> const& getPosition() const
             { return position; }
-        std::vector<double> getUPosition() const
+        std::vector<double> const& getUPosition() const
             { return uposition; }
         long int getHalfEdgeIndex() const
             { return halfEdgeIndex; }
