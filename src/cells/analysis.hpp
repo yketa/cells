@@ -29,16 +29,16 @@ Compute velocities of the centroid of each cell.
 
     std::map<long int, std::vector<double>> centreVelocities;
 
-    std::map<long int, std::vector<double>> const velocities =
+    std::map<long int, std::vector<double>> const& velocities =
         vm.getVelocities();
-    std::map<long int, Vertex> const vertices =
+    std::map<long int, Vertex> const& vertices =
         vm.getVertices();
 
     std::vector<long int> const vertexIndices =
         vm.getVertexIndicesByType("centre");
     for (long int vertexIndex : vertexIndices) {
 
-        std::vector<double> const upos =                            // uwrapped position of cell
+        std::vector<double> const& upos =                           // uwrapped position of cell
             vertices.at(vertexIndex).getUPosition();
         double const cellArea =                                     // cell area
             vm.getVertexToNeighboursArea(vertexIndex);
@@ -76,6 +76,42 @@ Compute velocities of the centroid of each cell.
     return centreVelocities;
 }
 
+std::vector<long int> getNeighbouringCellIndices(
+    VertexModel const& vm, long int const& vertexIndex) {
+/*
+Compute neighbouring cell indices.
+*/
+
+    std::map<long int, Vertex> const& vertices =
+        vm.getVertices();
+    std::map<long int, HalfEdge> const& halfEdges =
+        vm.getHalfEdges();
+
+    std::vector<long int> const halfEdgesToNeighbours =
+        vm.getNeighbourVertices(vertexIndex)[1];
+    std::vector<long int> neighbourCellIndices;
+    for (long int index : halfEdgesToNeighbours) {  // loop over half-edges to neighbour vertices
+
+        long int const neighbourVertexIndex =       // neighbour cell index
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdges.at(
+                        halfEdges.at(index).getNextIndex()
+                    ).getPairIndex()
+                ).getNextIndex()
+            ).getToIndex();
+
+        if (vertices.at(neighbourVertexIndex).getBoundary())    // ignore boundary vertices
+            { continue; }
+        assert(                                                 // the vertex should be a cell centre
+            vertices.at(neighbourVertexIndex).getType()
+                == "centre");
+        neighbourCellIndices.push_back(neighbourVertexIndex);
+    }
+
+    return neighbourCellIndices;
+}
+
 std::map<long int, std::vector<std::vector<double>>>
 getVectorsToNeighbouringCells(VertexModel const& vm) {
 /*
@@ -85,37 +121,18 @@ Compute vectors to neighbouring cell centres.
     std::map<long int, std::vector<std::vector<double>>>
         vectorsToNeighbours;
 
-    std::map<long int, Vertex> const vertices =
-        vm.getVertices();
-    std::map<long int, HalfEdge> const halfEdges =
-        vm.getHalfEdges();
-
-    std::vector<long int> const vertexIndices =
+    std::vector<long int> const centreVertexIndices =
         vm.getVertexIndicesByType("centre");
-    for (long int vertexIndex : vertexIndices) {
-        vectorsToNeighbours.emplace(vertexIndex,
+    for (long int centreVertexIndex : centreVertexIndices) {
+        vectorsToNeighbours.emplace(centreVertexIndex,
             std::vector<std::vector<double>>(0));
 
-        std::vector<long int> const halfEdgesToNeighbours =
-            vm.getNeighbourVertices(vertexIndex)[1];
-        for (long int index : halfEdgesToNeighbours) {  // loop over half-edges to neighbour vertices
+        std::vector<long int> const neighbourCellIndices =
+            getNeighbouringCellIndices(vm, centreVertexIndex);
+        for (long int neighbourCellIndex : neighbourCellIndices) {
 
-            long int const neighbourVertexIndex =       // neighbour cell index
-                halfEdges.at(
-                    halfEdges.at(
-                        halfEdges.at(
-                            halfEdges.at(index).getNextIndex()
-                        ).getPairIndex()
-                    ).getNextIndex()
-                ).getToIndex();
-
-            if (vertices.at(neighbourVertexIndex).getBoundary())    // ignore boundary vertices
-                { continue; }
-            assert(                                                 // the vertex should be a cell centre
-                vertices.at(neighbourVertexIndex).getType()
-                    == "centre");
-            vectorsToNeighbours[vertexIndex].push_back(
-                vm.wrapTo(vertexIndex, neighbourVertexIndex,        // unnormalised vector to neighbouring cell
+            vectorsToNeighbours[centreVertexIndex].push_back(
+                vm.wrapTo(centreVertexIndex, neighbourCellIndex,    // unnormalised vector to neighbouring cell
                     false));
         }
     }
@@ -154,8 +171,6 @@ periodic boundary conditions.
 
     std::vector<long int> const centres =
         vm.getVertexIndicesByType("centre");
-    std::map<long int, Vertex> const vertices =
-        vm.getVertices();
 
     std::map<long int, double> maxLength;
     for (long int index : centres) {
@@ -184,7 +199,7 @@ ignoring periodic boundary conditions.
 */
 
     std::map<long int, double> maxLength;
-    std::map<long int, Vertex> const vertices = vm.getVertices();
+    std::map<long int, Vertex> const& vertices = vm.getVertices();
     for (auto it=vertices.begin(); it != vertices.end(); ++it) {
         if (!(it->second).getBoundary()) continue;
         std::vector<long int> const neighbours =
@@ -226,14 +241,14 @@ Return percentage of kept cell neighbours between two states of a vertex model.
     for (long int index0 : centres0)
         { nNeigh.emplace(index0, 0); nKept.emplace(index0, 0); }
 
-    std::map<long int, HalfEdge> const halfEdges0 =
+    std::map<long int, HalfEdge> const& halfEdges0 =
         vm0.getHalfEdges();
-    std::map<long int, Vertex> const vertices0 =
+    std::map<long int, Vertex> const& vertices0 =
         vm0.getVertices();
 
-    std::map<long int, HalfEdge> const halfEdges1 =
+    std::map<long int, HalfEdge> const& halfEdges1 =
         vm1.getHalfEdges();
-    std::map<long int, Vertex> const vertices1 =
+    std::map<long int, Vertex> const& vertices1 =
         vm1.getVertices();
 
     std::vector<long int> const junctions0 =
@@ -269,14 +284,14 @@ Return percentage of kept cell neighbours between two states of a vertex model.
                 ).getToIndex();
             if (cellB1 == cellB0) {                 // these are the same cells...
 
-                std::vector<double> const uposA0 =  // initial position of first cell
+                std::vector<double> const& uposA0 = // initial position of first cell
                     vertices0.at(cellA0).getUPosition();
-                std::vector<double> const uposA1 =  // final position of first cell
+                std::vector<double> const& uposA1 = // final position of first cell
                     vertices1.at(cellA0).getUPosition();
 
-                std::vector<double> const uposB0 =  // initial position of second cell
+                std::vector<double> const& uposB0 = // initial position of second cell
                     vertices0.at(cellB0).getUPosition();
-                std::vector<double> const uposB1 =  // final position of second cell
+                std::vector<double> const& uposB1 = // final position of second cell
                     vertices1.at(cellB0).getUPosition();
 
                 std::vector<double> const finSep =  // final separation

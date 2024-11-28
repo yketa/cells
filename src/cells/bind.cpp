@@ -1116,6 +1116,22 @@ PYBIND11_MODULE(bind, m) {
             "centreVelocities : {int: list} dict\n"
             "    Dictionary which associates cell centre vertex indices to\n"
             "    the velocity of the centroid of the cell.")
+        .def("getNeighbouringCellIndices", &getNeighbouringCellIndices,
+            "Compute neighbouring cell indices.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of vertex from which to compute neighbouring cell\n"
+            "    indices.\n"
+            "    NOTE: This vertex should be surrounded by cells from which\n"
+            "          it is separated by single edges.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "neighbourCellIndices : list of int\n"
+            "    Indices of neighbouring cells.",
+            pybind11::arg("vertexIndex"))
         .def("getVectorsToNeighbouringCells", &getVectorsToNeighbouringCells,
             "Compute vectors to neighbouring cell centres.\n"
             "\n"
