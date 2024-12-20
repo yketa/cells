@@ -2,6 +2,9 @@
 Functions for vertex model analysis.
 */
 
+#ifndef ANALYSIS_HPP
+#define ANALYSIS_HPP
+
 #include <complex>
 #include <map>
 #include <numbers>
@@ -13,6 +16,7 @@ using namespace std::complex_literals;  // using comlex numbers
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 
+#include "plot.hpp"
 #include "system.hpp"
 #include "tools.hpp"
 
@@ -317,6 +321,56 @@ Return percentage of kept cell neighbours between two states of a vertex model.
     return pct;
 }
 
+std::tuple<std::vector<std::vector<double>>, std::vector<std::vector<double>>>
+getMaximumFeretAnglesCell(VertexModel const& vm) {
+/*
+Return maximum Feret axes (see getMaximumFeretAxesCell) and vector
+[[d0, a0], ..., [dN-1, aN-1]] where di is the norm of the radius between the
+i-th cell centre and the boundary centre, and ai is the angle between the
+maximum Feret diameter of this radius.
+*/
+
+    std::map<long int, Vertex> const vertices = vm.getVertices();
+    std::vector<long int> boundaries(0);
+    for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+        if ((it->second).getBoundary()) { boundaries.push_back(it->first); }
+    }
+    assert((int) boundaries.size() == 1);               // there should be at most 1 boundary vertex
+    long int const boundary = boundaries.at(0);         // boundary vertex index
+
+    std::vector<long int> const neighbours =
+        vm.getNeighbourVertices(boundary)[0];
+    long int const nNeighbours = neighbours.size();
+    std::vector<double> centre(2, 0);                   // centre of neighbours of boundary vertex
+    for (long int index : neighbours) {
+        std::vector<double> const& position = vertices.at(index).getPosition();
+        for (int dim=0; dim < 2; dim++) {
+            centre[dim] += position.at(dim)/nNeighbours;
+        }
+    }
+
+    std::vector<std::vector<double>> const feretAxes =  // maximum Feret Axes
+        getMaximumFeretAxesCell(vm);
+
+    std::vector<long int> cells = vm.getVertexIndicesByType("centre");
+    std::vector<std::vector<double>> angles(0);
+    for (long int i=0; i < (long int) cells.size(); i++) {
+        std::vector<double> const& position =
+            vertices.at(cells[i]).getPosition();
+        std::vector<double> const feretAxis =
+            feretAxes.at(i);
+        std::vector<double> const centreAxis =          // radium from centre of boundary to cell centre
+            {position.at(0) - centre.at(0), position.at(1) - centre.at(1)};
+        double const angle =                            // angle between Feret axes and axes to centres (in [0, pi/2] so multiplied by 4 and substracted of pi to be in [-pi, pi])
+            4*std::acos(
+                std::abs(cdot(normalise(feretAxis), normalise(centreAxis))))
+            - std::numbers::pi;
+        angles.push_back({norm2(centreAxis), angle});
+    }
+
+    return std::make_tuple(feretAxes, angles);
+}
+
 /*
  *  General particles
  *
@@ -442,4 +496,6 @@ vectorswhose norms belong to [`qmin', `qmax'].
 
     return ft;
 }
+
+#endif
 
