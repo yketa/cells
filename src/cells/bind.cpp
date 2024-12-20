@@ -303,7 +303,9 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("area",
             &KeratinModel::getArea)
         .def_property_readonly("tension",
-            &KeratinModel::getTension);
+            &KeratinModel::getTension)
+        .def_property_readonly("tension_junction",
+            &KeratinModel::getTensionJunction);
 
     /*
      *  [base_integrators.hpp]
@@ -1218,6 +1220,29 @@ PYBIND11_MODULE(bind, m) {
         pybind11::arg("vm0"),
         pybind11::arg("vm1"),
         pybind11::arg("a")=std::numeric_limits<double>::infinity());
+
+    m.def("getMaximumFeretAnglesCell", &getMaximumFeretAnglesCell,
+        "Return maximum Feret axes and angles of Feret axes with respect to\n"
+        "the centre of the boundary.\n"
+        "\n"
+        "NOTE: There should be exactly 1 boundary vertex.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "vm : VertexModel\n"
+        "    Vertex model object from which to compute Feret axes and\n"
+        "    angles.\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "feretAxes : (*, 2) float list\n"
+        "    Vector of unit vectors corresponding to maximum Feret diameter\n"
+        "    of each cell.\n"
+        "feretAngles : (*, 2) float list\n"
+        "    Vector of tuple of norm of the radius between the cell centre\n"
+        "    and the centre of boundary vertices, and angle between the\n"
+        "    maximum Feret diameter and this radius.\n",
+        pybind11::arg("vm"));
 
     m.def("getAllWaveVectors2D", &getAllWaveVectors2D,
         "Return wave vectors associated to rectangular box.\n"
