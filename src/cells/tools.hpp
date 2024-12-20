@@ -26,8 +26,19 @@ template<class T> void eraseInVec(std::vector<T>& vec, T const& val) {          
     if (position != vec.end()) { vec.erase(position); } // if element was found
 }
 
-template<class T> T norm2(std::vector<T> vec)                                   // norm 2 of vector
-    { T nsq = 0; for (T el : vec) nsq += el*el; return sqrt(nsq); }
+template<class T> T cdot(std::vector<T> const& v1, std::vector<T> const& v2) {  // dot product of vectors
+    T cdot = 0;
+    for (long int i=0; i < (long int) v1.size(); i++)
+        { cdot += v1.at(i)*v2.at(i); }
+    return cdot;
+}
+template<class T> T norm2(std::vector<T> const& vec)                            // norm 2 of vector
+    { return sqrt(cdot(vec, vec)); }
+template<class T> std::vector<T> normalise(std::vector<T> const& vec) {         // normalise vector by norm 2
+    std::vector<T> nvec(0); T const n = norm2(vec);
+    for (T el : vec) nvec.push_back(el/n);
+    return nvec;
+}
 
 template<class T>
 bool const inVec(std::vector<T> const& vec, T const& val)                       // is value in vector
