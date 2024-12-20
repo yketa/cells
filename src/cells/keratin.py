@@ -7,7 +7,7 @@ from cells.init import init_vm, K, A0, get_areas
 from cells.plot import plot, _measure_fig, _resize_fig, _update_canvas,\
     _cbar_labelpad, norm_tension, scalarMap_orientation
 from cells.bind import getLinesHalfEdge, getPolygonsCell, getLinesJunction,\
-    getMaximumFeretAxesCell, angle2
+    getMaximumFeretAnglesCell, angle2
 from cells.run import run
 
 import matplotlib.pyplot as plt
@@ -19,6 +19,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import numpy as np
 import copy
 import pickle
+from operator import itemgetter
 
 # tension colourbar
 scalarMap_tension = ScalarMappable(norm_tension, plt.cm.bwr)    # conversion from scalar value to colour
@@ -112,32 +113,11 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     # principal axes
 
-    feretAxes = np.array(getMaximumFeretAxesCell(vm))                       # maximum Feret axes (maximum diameter)
     boundary = (lambda v: [i for i in v if v[i].boundary])(vm.vertices)     # boundary vertices...
     assert len(boundary) <= 1                                               # ... there should be at most 1
     if len(boundary) == 1:
-        boundary = boundary[0]
-        centre = (                                                          # centre of neighbours to boundary vertex
-            lambda positions: np.mean(
-                list(map(
-                    lambda i: positions[i],
-                    vm.getNeighbourVertices(boundary)[0])),
-                axis=0))(
-            vm.getPositions())
-        centreAxes = (                                                      # axes from centre to cell centres...
-            lambda positions: np.array(list(map(
-                lambda i: positions[i] - centre,
-                cells))))(
-            vm.getPositions())
-        centreAxes /= np.sqrt((centreAxes**2).sum(axis=-1, keepdims=True))  # ... normalised
-        angles = np.array(list(map(                                         # angles between Feret axes and axes to centres (between 0 and pi/2 so multiplied multiplied by 4 for colourmap)
-            lambda fax, cax: 4*np.arccos(np.abs(np.dot(fax, cax))) - np.pi,
-            *(feretAxes, centreAxes))))
-#         (
-#             lambda positions: list(map(
-#                 lambda i: plt.plot(*np.transpose([centre, positions[i]])),
-#                 cells)))(
-#             vm.getPositions())
+
+        feretAxes, dAngles = np.array(getMaximumFeretAnglesCell(vm))        # maximum Feret axes and angles with respect to centre of boundary
 
         axes = PatchCollection(
             list(map(                                                       # all cells
@@ -149,8 +129,9 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
                 *(cells, feretAxes))))
         axes.set_linewidth(                                                 # line width
             2.5/max(1, np.sqrt(len(vm.vertices))/12))
-        axes.set_color(                                                     # colour according to angle between Feret axis and axis to centre
-            list(map(lambda angle: scalarMap_orientation.to_rgba(angle), angles)))
+        axes.set_color(list(map(                                            # colour according to angle between Feret axis and axis to centre
+            lambda angle: scalarMap_orientation.to_rgba(angle),
+            dAngles[:, 1])))
         ax.add_collection(axes)
 
 #     # junctions
@@ -158,6 +139,81 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 #     lines = LineCollection(getLinesJunction(vm), colors="pink", # all junctions
 #         linewidths=2.5/max(1, np.sqrt(len(vm.vertices))/12))    # scale junction width with linear system size
 #     ax.add_collection(lines)
+
+    # title
+
+    title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
+        % (vm.time - time0, vm.nT1, len(cells)))
+    title += r"$, \tau_r=%s, p_0=%.2f$" % (
+        "%.2f" % param["taur"] if param["taur"] < np.inf else "\\infty",
+        param["p0"])
+    title += "\n"
+    title += r"$\alpha=%.1e, \beta=%.1e$" % (
+        param["alpha"], param["beta"])
+    title += r"$, [\mathrm{ker}]_{\mathrm{th.}}=%.1e$" % param["kth"]
+    title += r"$, \tau=%.1e, \sigma=%.1e$" % (
+        param["tau"], param["sigma"])
+    title += r"$, \tau_{\mathrm{on}}=$" + (
+        r"$\infty$" if param["ron"] == 0 else r"$%.1e$" % (1./param["ron"]))
+    if "pull" in vm.vertexForces:
+        title += r"$, F_{\mathrm{pull}}=%.1e$" % (
+            vm.vertexForces["pull"].parameters["F"])
+
+    ax.set_title(title)
+
+    # update canvas
+    if update: _update_canvas(fig)
+
+    return fig, ax
+
+def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
+
+    assert("keratin" in vm.vertexForces)
+    param = vm.vertexForces["keratin"].parameters
+    set_call = (fig is None or ax is None)
+    fig, ax = plot(vm, fig=fig, ax=ax, only_set=True)   # initialise figure and axis
+
+    # colourbars
+
+    if set_call:
+
+        ax_size, fig_width, fig_height = _measure_fig(ax)       # measure
+
+        # tension colourmap
+        tmax = 1 if not("tmax" in kwargs) else kwargs["tmax"]
+        norm_tension = Normalize(-tmax, tmax)
+        cmap_tension = plt.cm.Spectral
+        global scalarMap_tension
+        scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)
+
+        # tension colourbar
+        cbar_tension = fig.colorbar(
+            mappable=scalarMap_tension, ax=ax,
+            shrink=0.75, pad=0.01)
+        cbar_tension.set_label(
+            r"$t_i$",
+            rotation=270, labelpad=_cbar_labelpad)
+        ax_size, fig_width, fig_height = (
+            _resize_fig(ax, ax_size, fig_width, fig_height))
+
+    # displayed quantities
+
+    junctions = vm.getHalfEdgeIndicesByType("junction")
+    cells = vm.getVertexIndicesByType("centre")
+
+    # junctions
+
+    tension = np.array(
+        itemgetter(*junctions)(vm.vertexForces["keratin"].tension_junction))
+    lwmin = 2.5/max(1, np.sqrt(len(vm.vertices))/12)
+    lwmax = lwmin*10
+    linewidths = np.array(list(map(
+        lambda t: (
+            lambda st: st*(lwmax - lwmin) + lwmin)(
+            min(np.abs(t/scalarMap_tension.norm.vmax), 1)),
+        tension)))
+    ax.add_collection(LineCollection(getLinesJunction(vm),
+        colors=scalarMap_tension.to_rgba(tension), linewidths=linewidths))
 
     # title
 
