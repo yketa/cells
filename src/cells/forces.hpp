@@ -1359,9 +1359,10 @@ Keratin model.
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
                     keratin.emplace(it->first,              // zero keratin initial value
-                        std::max(
-                            0.,
-                            parameters.at("kth")*(1 + random->gauss())));
+                        0);
+//                         std::max(
+//                             0.,
+//                             parameters.at("kth")*(1 + random->gauss())));
                     targetArea.emplace(it->first,           // initial area as initial target area
                         std::max(
                             parameters.at("A0"),
@@ -1388,6 +1389,30 @@ Keratin model.
 
         std::map<long int, double> const& getTension() const
             { return tension; }
+        std::map<long int, double> getTensionJunction() const {
+            std::map<long int, double> tension_junction;
+            std::map<long int, HalfEdge> const& halfEdges =
+                mesh->getHalfEdges();
+            std::vector<long int> const halfEdgeIndices =
+                mesh->getHalfEdgeIndicesByType("junction");
+            for (long int halfEdgeIndex : halfEdgeIndices) {
+                tension_junction.emplace(halfEdgeIndex, 0);
+                for (long int index :
+                    {halfEdgeIndex,
+                        (halfEdges.at(halfEdgeIndex)).getPairIndex()}) {
+                    long int const vertexIndex =
+                        (halfEdges.at(
+                            (halfEdges.at(index)
+                                ).getNextIndex())
+                            ).getToIndex();
+                    if (inMap(tension, vertexIndex)) {
+                        tension_junction[halfEdgeIndex] +=
+                            tension.at(vertexIndex);
+                    }
+                }
+            }
+            return tension_junction;
+        }
 
         void addForce(Vertex const& vertex) override {
 
