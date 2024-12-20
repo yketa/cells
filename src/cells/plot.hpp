@@ -11,9 +11,6 @@ Functions using VertexModel to speed up plotting.
 
 #include "system.hpp"
 
-/*
-*/
-
 std::vector<std::vector<std::vector<double>>> getLinesHalfEdge(
     VertexModel const& vm, std::vector<long int> const& indices) {
 /*
@@ -57,18 +54,14 @@ where the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
     std::vector<double> fromPos, disp;
     std::vector<long int> const halfEdgeIndices =
         vm.getHalfEdgeIndicesByType("junction");
-    for (long int halfEdgeIndex : halfEdgeIndices) {                            // loop over all junctions
-
-        for (long int index :
-            {halfEdgeIndex, (halfEdges.at(halfEdgeIndex)).getPairIndex()}) {    // junction half-edge and its pair half-edge
-
-            fromPos = (vertices.at((halfEdges.at(index)).getFromIndex()))
-                .getPosition();                                     // position of origin vertex
-            disp = vm.getHalfEdgeVector(index, false);              // displacement to destination vertex
-            lines.push_back({
-                {fromPos[0], fromPos[1]},
-                {fromPos[0] + disp[0], fromPos[1] + disp[1]}});
-        }
+    for (long int halfEdgeIndex : halfEdgeIndices) {        // loop over all junctions
+        fromPos =
+            (vertices.at((halfEdges.at(halfEdgeIndex)).getFromIndex()))
+                .getPosition();                             // position of origin vertex
+        disp = vm.getHalfEdgeVector(halfEdgeIndex, false);  // displacement to destination vertex
+        lines.push_back({
+            {fromPos[0], fromPos[1]},
+            {fromPos[0] + disp[0], fromPos[1] + disp[1]}});
     }
 
     return lines;
