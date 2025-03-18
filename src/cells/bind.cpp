@@ -508,6 +508,72 @@ PYBIND11_MODULE(bind, m) {
         .def("clear",
             &VertexModel::clear,
             "Clear all data.")
+        .def("moveToNeigboursBarycentre",
+            &VertexModel::moveToNeigboursBarycentre,
+            "Move vertex to centre of mass (= barycentre) of its neighbours.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of vertex.",
+            pybind11::arg("vertexIndex"))
+        .def("deleteEdge",
+            &VertexModel::deleteEdge,
+            "Delete edge by merging two vertices.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIntex : int\n"
+            "    Index of half-edge linking two vertices to be merged.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "deletedVertexIndex : int\n"
+            "    Index of deleted vertex.\n"
+            "deletedHalfEdgeIndices : tuple of int\n"
+            "    Indices of deleted half-edges.",
+            pybind11::arg("halfEdgeIntex"))
+        .def("createEdge",
+            &VertexModel::createEdge,
+            "Create edge by splitting one vertex.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIndex0 : int\n"
+            "    Index of first half-edge going out of a vertex, and from\n"
+            "    whose pair half-edge it will be separated after the\n"
+            "    introduction of a new junction.\n"
+            "halfEdgeIndex1 : int\n"
+            "    Index of second half-edge going out of the same vertex, and\n"
+            "    from whose pair half-edge it will be separated after the\n"
+            "    introduction of a new junction.\n"
+            "angle : float\n"
+            "    Angle of the new junction with respect to the horizontal\n"
+            "    axis.\n"
+            "length : float\n"
+            "    Length to set for the new junction. (default: 1)\n"
+            "type0 : str\n"
+            "    Name of the type of half-edge for the half-edge going from\n"
+            "    the splitted vertex to the created vertex. (default: \"\")\n"
+            "type1 : str\n"
+            "    Name of the type of half-edge for the half-edge going from\n"
+            "    the created vertex to the splitted vertex. (default: \"\")\n"
+            "NOTE: Other created half-edges will inherit the type of their\n"
+            "      pair half-edge, and the created vertex inheretit the type\n"
+            "      of the splitted vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "createdVertexIndex : int\n"
+            "    Index of created vertex.\n"
+            "createdHalfEdgeIndices : tuple of int\n"
+            "    Indices of created half-edges.",
+            pybind11::arg("halfEdgeIndex0"),
+            pybind11::arg("halfEdgeIndex1"),
+            pybind11::arg("angle"),
+            pybind11::arg("length")=1,
+            pybind11::arg("type0")="",
+            pybind11::arg("type1")="")
         .def("mergeVertices",
             &VertexModel::mergeVertices,
             "Merge two vertices sharing an edge.\n"
@@ -528,6 +594,121 @@ PYBIND11_MODULE(bind, m) {
             "    Indices of half-edges deleted by this operation.",
             pybind11::arg("fromVertexIndex"),
             pybind11::arg("toVertexIndex"))
+        .def("splitVertices",
+            &VertexModel::splitVertices,
+            "Split a vertex into two vertices along an edge.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIntex : int\n"
+            "    Index of half-edge in the middle of which a vertex will be\n"
+            "    created.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "createdVertexIndex : int\n"
+            "    Index of created vertex.\n"
+            "createdHalfEdgeIndices : tuple of int\n"
+            "    Indices of created half-edges.",
+            pybind11::arg("halfEdgeIntex"))
+        .def("swapEdge",
+            &VertexModel::swapEdge,
+            "Remove an edge and replace it with an other edge between the\n"
+            "two triangle corners which the original edge did not link.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIndex : int\n"
+            "    Index of half-edge belonging to the edge which will be\n"
+            "    removed.\n"
+            "type0 : str\n"
+            "    Type to give to the first of the created half-edges.\n"
+            "    (default: \"\")\n"
+            "type1 : str\n"
+            "    Type to give to the second of the created half-edges.\n"
+            "    (default: \"\")\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "newHalfEdgeIndex0 : int\n"
+            "    Index of the first of the created half-edges.\n"
+            "newHalfEdgeIndex1 : int\n"
+            "    Index of the second of the created half-edges.",
+            pybind11::arg("halfEdgeIndex"),
+            pybind11::arg("type0")="",
+            pybind11::arg("type1")="")
+        .def("splitCell",
+            &VertexModel::splitCell,
+            "Split one cell into two by adding vertices in the middle of\n"
+            "edges with half-edges with index `halfEdgeIndex0' and\n"
+            "`halfEdgeIndex1' and adding a junction between these vertices.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIndex0 : int\n"
+            "    First half-edge on the middle of which to add a vertex.\n"
+            "halfEdgeIndex1 : int\n"
+            "    Second half-edge on the middle of which to add a vertex.\n"
+            "NOTE: `halfEdgeIndex0' and `halfEdgeIndex1' must belong to the\n"
+            "      boundary of the same cell.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "newCellVertexIndex : int\n"
+            "    Index of newly created cell centre.",
+            pybind11::arg("halfEdgeIndex0"),
+            pybind11::arg("halfEdgeIndex1"))
+        .def("splitCellAtMax",
+            [](VertexModel& self, long int const cellVertexIndex) {
+
+                std::map<long int, HalfEdge> const& halfEdges =
+                    self.getHalfEdges();
+
+                double maxDist = 0;
+                std::vector<long int> const centreToBoundaryHalfEdges = // half-edges from cell centre to cell corners
+                    self.getNeighbourVertices(cellVertexIndex)[1];
+                std::vector<long int> maxHalfEdgeIndices;               // pair of half-edges which maximises distance between their centres
+
+                for (long int halfEdgeIndex0 : centreToBoundaryHalfEdges) {
+                    long int const boundaryHalfEdgeIndex0 =             // first given boundary half-edge
+                        halfEdges.at(halfEdgeIndex0).getNextIndex();
+
+                    for (long int halfEdgeIndex1 : centreToBoundaryHalfEdges) {
+                        long int const boundaryHalfEdgeIndex1 =         // second given boundary half-edge
+                            halfEdges.at(halfEdgeIndex1).getNextIndex();
+
+                        double const dist = norm2(self.wrapDiff(        // distance between the centres of first and second given boundary half-edges
+                            self.getHalfEdgeCentre(boundaryHalfEdgeIndex0),
+                            self.getHalfEdgeCentre(boundaryHalfEdgeIndex1)));
+                        if (dist > maxDist) {
+                            maxDist = dist;
+                            maxHalfEdgeIndices.clear();
+                            maxHalfEdgeIndices.push_back(
+                                boundaryHalfEdgeIndex0);
+                            maxHalfEdgeIndices.push_back(
+                                boundaryHalfEdgeIndex1);
+                        }
+                    }
+                }
+
+                assert((int) maxHalfEdgeIndices.size() == 2);
+                return self.splitCell(
+                    maxHalfEdgeIndices.at(0),
+                    maxHalfEdgeIndices.at(1));
+            },
+            "Split cell across the two most separated boundary half-edge\n"
+            "centres.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "cellVertexIndex : int\n"
+            "    Vertex index of centre of cell to split.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "newCellVertexIndex : int\n"
+            "    Index of newly created cell centre.",
+            pybind11::arg("cellVertexIndex"))
         .def("changeToBoundary",
             &VertexModel::changeToBoundary,
             "Change vertex to a boundary vertex with identical attributes\n"
@@ -571,15 +752,18 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("L"))
         .def("checkMesh",
             &VertexModel::checkMesh,
-            "Check that the vertices and half-edges define a planar mesh,\n"
-            "with anticlockwise triangles.\n"
+            "Check that the vertices and half-edges define a planar mesh.\n"
             "\n"
             "Parameters\n"
             "----------\n"
             "halfEdgeTypes : list of str\n"
             "    These types should not be defined identically for both\n"
-            "    half-edges of a single pair (default: []).",
-            pybind11::arg("helfEdgeTypes")=std::vector<std::string>())
+            "    half-edges of a single pair (default: []).\n"
+            "checkOrientations : bool\n"
+            "    Check that triangles have anticlockwise orientation.\n"
+            "    (default: True)",
+            pybind11::arg("helfEdgeTypes")=std::vector<std::string>(),
+            pybind11::arg("checkOrientations")=true)
         .def("getVertexIndicesByType",
             &VertexModel::getVertexIndicesByType,
             "Return vertex indices corresponding to type.\n"

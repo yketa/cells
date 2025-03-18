@@ -183,7 +183,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
                     halfEdgesNeighboursFromMerge[i]);
             }
             if (vertices.at(vertexIndex).getBoundary()) {           // boundary neighbours of the first vertex
-            
+
                 halfEdgeToBoundariesIndices.push_back(
                     halfEdgesNeighboursFromMerge[i]);
             }
@@ -211,7 +211,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
                     halfEdgesNeighboursToMerge[i]);
             }
             if (vertices.at(vertexIndex).getBoundary()) {           // boundary neighbours of the second vertex
-            
+
                 halfEdgeToBoundariesIndices.push_back(
                     halfEdgesNeighboursToMerge[i]);
             }
@@ -231,7 +231,7 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
             + angle2(getHalfEdgeVector(mergeHalfEdgeIndex));
 
 //         // output T1 to standard error
-// 
+//
 //         long int cellA0, cellB0, cellA1, cellB1;
 //         cellA0 = halfEdges[                                     // first cell for which junction is created
 //             halfEdges[mergeHalfEdgeIndex]
@@ -282,7 +282,51 @@ void VertexModel::doT1(double const& delta, double const& epsilon) {
 //     checkMesh({"junction"});
 }
 
-void VertexModel::checkMesh(std::vector<std::string> halfEdgeTypes) const {
+long int VertexModel::splitCell(
+    long int const& halfEdgeIndex0, long int const& halfEdgeIndex1) {
+
+    long int const cellVertexIndex =    // index of cell centre vertex
+        halfEdges.at(halfEdges.at(halfEdgeIndex0).getNextIndex()).getToIndex();
+    assert(cellVertexIndex ==           // check that two half-edges belong to the boundary of the same cell
+        halfEdges.at(halfEdges.at(halfEdgeIndex1).getNextIndex()).getToIndex()
+        );
+
+    TopoChangeEdgeInfoType info;
+
+    // create new vertices
+
+    std::vector<long int> halfEdgeToSplitIndices;
+    std::vector<long int> const halfEdgeIndices =
+        {halfEdgeIndex0, halfEdgeIndex1};
+    for (long int halfEdgeIndex : halfEdgeIndices) {            // loop over half-edges in the middle of which to create vertices
+        long int const newVertexIndex =
+            std::get<0>(splitVertices(halfEdgeIndex));          // add new vertex in the middle of half-edge
+        halfEdgeToSplitIndices.push_back(
+            getHalfEdgeIndex(cellVertexIndex, newVertexIndex)); // half-edge from cell centre to the created vertex
+    }
+
+    // create new cell centre
+
+    long int const newCellVertexIndex = std::get<0>(
+        createEdge(                         // split the half-edges from the initial centre to the newly created vertices in order to create the new cell centre
+            halfEdgeToSplitIndices.at(0), halfEdgeToSplitIndices.at(1),
+            0, 0, "", ""));
+    long int const halfEdgeToSwapIndex =    // half-edge from initial cell centre to the created cell centre
+        getHalfEdgeIndex(cellVertexIndex, newCellVertexIndex);
+
+    // flip edge to create cell junction
+
+    swapEdge(halfEdgeToSwapIndex, "junction");      // swap edge and create junction
+    moveToNeigboursBarycentre(cellVertexIndex);     // move initial cell vertex to its barycentre
+    moveToNeigboursBarycentre(newCellVertexIndex);  // move new cell vertex to its barycentre
+
+    checkMesh({"junction"});
+    return newCellVertexIndex;
+}
+
+void VertexModel::checkMesh(
+    std::vector<std::string> const& halfEdgeTypes,
+    bool const& checkOrientations) const {
 
     for (auto it=halfEdges.begin(); it != halfEdges.end(); ++it) {
         if (inVec(halfEdgeTypes, (it->second).getType())) {                 // type of half-edge is in helfEdgeTypes
@@ -294,6 +338,6 @@ void VertexModel::checkMesh(std::vector<std::string> halfEdgeTypes) const {
         }
     }
 
-    Mesh::checkMesh();
+    Mesh::checkMesh(checkOrientations);
 }
 

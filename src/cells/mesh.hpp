@@ -30,7 +30,7 @@ Individual nodes of the two-dimensional mesh.
 
         std::vector<double> position;   // position wrapped with respect to periodic boundary conditions
         std::vector<double> uposition;  // unwrapped position
-        long int halfEdgeIndex;
+        long int halfEdgeIndex;         // index of half-edge leaving the vertex
 
     public:
 
@@ -324,6 +324,23 @@ Two-dimensional ensembles of vertices and edges.
             Index of half-edge.
         */
 
+        std::vector<double> getHalfEdgeCentre(
+            long int const& halfEdgeIndex)
+            const;
+        /*
+        Return wrapped position at the centre of the half-edge.
+
+        Parameters
+        ----------
+        halfEdgeIndex :
+            Index of the half-edge.
+
+        Returns
+        -------
+        halfEdgeCentrePosition :
+            Wrapped position at the centre of the half-edge.
+        */
+
         std::vector<double> getHalfEdgeVector(
             long int const& halfEdgeIndex, bool const& unit=false)
             const;
@@ -443,7 +460,7 @@ Two-dimensional ensembles of vertices and edges.
         deletedVertexIndex :
             Index of deleted vertex.
         deletedHalfEdgeIndices :
-            Indices of half-edges deleted by this operation.
+            Indices of deleted half-edges.
         */
 
         TopoChangeEdgeInfoType createEdge(
@@ -482,7 +499,7 @@ Two-dimensional ensembles of vertices and edges.
         createdVertexIndex :
             Index of created vertex.
         createdHalfEdgeIndices :
-            Indices of half-edges created by this operation.
+            Indices of created half-edges.
         */
 
         TopoChangeEdgeInfoType mergeVertices(
@@ -504,6 +521,48 @@ Two-dimensional ensembles of vertices and edges.
             NOTE: This is `fromVertexIndex'.
         deletedHalfEdgeIndices :
             Indices of half-edges deleted by this operation.
+        */
+
+        TopoChangeEdgeInfoType splitVertices(
+            long int const& halfEdgeIndex);
+        /*
+        Split a vertex into two vertices along an edge.
+
+        Parameters
+        ----------
+        halfEdgeIntex :
+            Index of half-edge in the middle of which a vertex will be created.
+
+        Returns
+        -------
+        createdVertexIndex :
+            Index of created vertex.
+        createdHalfEdgeIndices :
+            Indices of created half-edges.
+        */
+
+        std::tuple<long int, long int> swapEdge(
+            long int const& halfEdgeIndex,
+            std::string const& type0="", std::string const& type1="");
+        /*
+        Remove an edge and replace it with an other edge between the two
+        triangle corners which the original edge did not link.
+
+        Parameters
+        ----------
+        halfEdgeIndex :
+            Index of half-edge belonging to the edge which will be removed.
+        type0 :
+            Type to give to the first of the created half-edges.
+        type1 :
+            Type to give to the second of the created half-edges.
+
+        Returns
+        -------
+        newHalfEdgeIndex0 :
+            Index of the first of the created half-edges.
+        newHalfEdgeIndex1 :
+            Index of the second of the created half-edges.
         */
 
         long int changeToBoundary(
@@ -535,10 +594,14 @@ Two-dimensional ensembles of vertices and edges.
         centre.
         */
 
-        void checkMesh() const;
+        void checkMesh(bool const& checkOrientations=true) const;
         /*
-        Check that the vertices and half-edges define a planar mesh, with
-        anticlockwise triangles.
+        Check that the vertices and half-edges define a planar mesh.
+
+        Parameters
+        ----------
+        checkOrientations :
+            Check that triangles have anticlockwise orientation.
         */
 
 };

@@ -174,8 +174,32 @@ class VertexModel : public Mesh {
             Create two vertices at distance `delta' + `epsilon'.
         */
 
+        long int splitCell(
+            long int const& halfEdgeIndex0, long int const& halfEdgeIndex1);
+        /*
+        Split one cell into two by adding vertices in the middle of edges with
+        half-edges with index `halfEdgeIndex0' and `halfEdgeIndex1' and adding
+        a junction between these vertices.
+
+        Parameters
+        ----------
+        halfEdgeIndex0 :
+            First half-edge on the middle of which to add a vertex.
+        halfEdgeIndex1 :
+            Second half-edge on the middle of which to add a vertex.
+        NOTE: `halfEdgeIndex0' and `halfEdgeIndex1' must belong to the boundary
+              of the same cell.
+
+        Returns
+        -------
+        newCellVertexIndex :
+            Index of newly created cell centre.
+        */
+
         void checkMesh(
-            std::vector<std::string> helfEdgeTypes=std::vector<std::string>())
+            std::vector<std::string> const&
+                helfEdgeTypes=std::vector<std::string>(),
+            bool const& checkOrientations=true)
             const;
         /*
         Check mesh with Mesh::checkMesh and that types in `helfEdgeTypes' are
