@@ -69,24 +69,9 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
         ax_size, fig_width, fig_height = (                      # resize
             _resize_fig(ax, ax_size, fig_width, fig_height))
 
-        # tension colourbar
-        cbar_tension = fig.colorbar(
-            mappable=scalarMap_tension, ax=ax,
-            shrink=0.75, pad=0.01)
-        cbar_tension.set_label(
-            r"$(t_i - \left<t_i\right>)/\mathrm{std}(t_i)$",
-            rotation=270, labelpad=_cbar_labelpad)
-        ax_size, fig_width, fig_height = (
-            _resize_fig(ax, ax_size, fig_width, fig_height))
-
     # displayed quantities
 
     keratin = vm.vertexForces["keratin"].keratin    # keratin concentration
-    tension = (                                     # scaled cell tension
-        lambda t: (
-            lambda m, s: {i: (t[i] - m)/s for i in t})(
-            np.mean(list(t.values())), np.std(list(t.values()))))(
-        vm.vertexForces["keratin"].tension)
     cells = vm.getVertexIndicesByType("centre")
 
     # cells
@@ -98,10 +83,7 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
         facecolors="none")
     polygons.set_linewidth(                                     # outer line width
         2.5/max(1, np.sqrt(len(vm.vertices))/12))
-    polygons.set_edgecolor(                                     # edge colour according to keratin
-        list(map(
-            lambda i: scalarMap_tension.to_rgba(tension[i]),
-            cells)))
+    polygons.set_edgecolor("white")
     polygons.set_facecolor(                                     # face colour according to keratin
         list(map(
             lambda i: (
@@ -181,8 +163,10 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
         # tension colourmap
         tmax = 1 if not("tmax" in kwargs) else kwargs["tmax"]
-        norm_tension = Normalize(-tmax, tmax)
-        cmap_tension = plt.cm.Spectral
+#         norm_tension = Normalize(-tmax, tmax)
+        norm_tension = Normalize(0, tmax)
+#         cmap_tension = plt.cm.Spectral
+        cmap_tension = plt.cm.jet
         global scalarMap_tension
         scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)
 
@@ -205,12 +189,14 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     tension = np.array(
         itemgetter(*junctions)(vm.vertexForces["keratin"].tension_junction))
-    lwmin = 2.5/max(1, np.sqrt(len(vm.vertices))/12)
-    lwmax = lwmin*10
+    lwmin = 2.5/max(1, np.sqrt(len(vm.vertices))/12)/2
+    lwmax = lwmin*30
     linewidths = np.array(list(map(
         lambda t: (
-            lambda st: st*(lwmax - lwmin) + lwmin)(
-            min(np.abs(t/scalarMap_tension.norm.vmax), 1)),
+#             lambda st: st*(lwmax - lwmin) + lwmin)(
+#             min(np.abs(t/scalarMap_tension.norm.vmax), 1)),
+            lambda st: (st**2)*(lwmax - lwmin) + lwmin)(
+            min(t/scalarMap_tension.norm.vmax, 1)),
         tension)))
     ax.add_collection(LineCollection(getLinesJunction(vm),
         colors=scalarMap_tension.to_rgba(tension), linewidths=linewidths))
