@@ -220,6 +220,12 @@ def plot(vm, fig=None, ax=None, update=True,
         _set_lim(ax, vm)
     if only_set: return fig, ax
 
+#     # all vertices and half-edges
+#     ax.add_collection(LineCollection(   # half-edges
+#         getLinesHalfEdge(vm, list(vm.halfEdges)), colors="blue", lw=0.5))
+#     ax.scatter(                         # vertices
+#         *np.transpose(list(vm.getPositions().values())), color="red", s=50)
+
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="pink",                 # all junctions
         linewidths=2.5/max(1, np.sqrt(len(vm.vertices))/12))                    # scale junction width with linear system size
@@ -249,8 +255,6 @@ def plot(vm, fig=None, ax=None, update=True,
                     lambda s_tension: scalarMap_tension.to_rgba(s_tension),
                     (tensions - tensions.mean())/tensions_std)))
     ax.add_collection(lines)
-#     ax.add_collection(LineCollection(                                           # all half-edges
-#         getLinesHalfEdge(vm, list(vm.halfEdges)), colors="blue", lw=1))
 
     # cells
     polygons = PatchCollection(
