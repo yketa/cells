@@ -448,6 +448,24 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("fromPos"),
             pybind11::arg("toPos"),
             pybind11::arg("unit")=false)
+        .def("getHalfEdgeIndex",
+            &VertexModel::getHalfEdgeIndex,
+            "Index of the half-edge between two vertices.\n"
+            "Throws error if this half-edge does not exist.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "fromVertexIndex : int\n"
+            "    Index of origin vertex.\n"
+            "toVertexIndex : int\n"
+            "    Index of destination vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "halfEdgeIndex : int\n"
+            "    Index of half-edge.",
+            pybind11::arg("fromVertexIndex"),
+            pybind11::arg("toVertexIndex"))
         .def("getNeighbourVertices",
             [](VertexModel const& self, long int const& vertexIndex) {
                 std::vector<std::vector<long int>> neighbours =
@@ -590,10 +608,9 @@ PYBIND11_MODULE(bind, m) {
             "\n"
             "Parameters\n"
             "----------\n"
-            "fromVertexIndex : int\n"
-            "    Index of vertex which will be merged into the other.\n"
-            "toVertexIndex : int\n"
-            "    Index of vertex into which the other will be merged.\n"
+            "halfEdgeIndex : int\n"
+            "    Index of half-edge from the first to second vertex where\n"
+            "    the first will be merged into the second.\n"
             "\n"
             "Returns\n"
             "-------\n"
@@ -602,8 +619,7 @@ PYBIND11_MODULE(bind, m) {
             "    NOTE: This is fromVertexIndex.\n"
             "deletedHalfEdgeIndices : tuple of int\n"
             "    Indices of half-edges deleted by this operation.",
-            pybind11::arg("fromVertexIndex"),
-            pybind11::arg("toVertexIndex"))
+            pybind11::arg("halfEdgeIndex"))
         .def("splitVertices",
             &VertexModel::splitVertices,
             "Split a vertex into two vertices along an edge.\n"

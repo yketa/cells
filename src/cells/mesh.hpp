@@ -515,16 +515,15 @@ Two-dimensional ensembles of vertices and edges.
         */
 
         TopoChangeEdgeInfoType mergeVertices(
-            long int const& fromVertexIndex, long int const& toVertexIndex);
+            long int const& halfEgdeIndex);
         /*
         Merge two vertices sharing an edge.
 
         Parameters
         ----------
-        fromVertexIndex :
-            Index of vertex which will be merged into the other.
-        toVertexIndex :
-            Index of vertex into which the other will be merged.
+        halfEdgeIndex :
+            Index of half-edge from the first to second vertex where the first
+            will be merged into the second.
 
         Returns
         -------

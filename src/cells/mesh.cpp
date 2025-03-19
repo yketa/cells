@@ -533,70 +533,54 @@ TopoChangeEdgeInfoType Mesh::createEdge(
 }
 
 TopoChangeEdgeInfoType Mesh::mergeVertices(
-    long int const& fromVertexIndex, long int const& toVertexIndex) {
+    long int const& halfEdgeIndex) {
 
-    std::vector<long int> deletedHalfEdgeIndices(0);
+    // identify origin and destination vertex
 
-    // identify connecting edge
+    long int const fromVertexIndex =    // index of vertex which will be merged into the other
+        halfEdges.at(halfEdgeIndex).getFromIndex();
+    long int const toVertexIndex =      // index of vertex into which the other will be merged
+        halfEdges.at(halfEdgeIndex).getToIndex();
 
-    long int index = -1;                                        // index of half-edge belonging to edge separating vertices
-    std::vector<long int> const halfEdgesToNeighboursIndices =  // half-edge to neighbouring vertices
-        getNeighbourVertices(fromVertexIndex)[1];
-    for (long int halfEdgeIndex : halfEdgesToNeighboursIndices) {
-        long int const nextHalfEdgeIndex =
-            halfEdges.at(halfEdgeIndex).getNextIndex();
-        long int const vertexIndex =
-            halfEdges.at(
-                halfEdges.at(
-                    halfEdges.at(
-                        nextHalfEdgeIndex
-                        ).getPairIndex()
-                    ).getNextIndex()
-                ).getToIndex();
-        if (vertexIndex == toVertexIndex) {
-            index = nextHalfEdgeIndex;
-            break;
-        }
-    }
-
-    assert(index != -1);                                        // check there is actually an edge separating the vertices
-    long int const sepHalfEdgeIndex = index;
-
-    assert(                                                     // check vertices have the same bondary indicator
+    assert(                             // check vertices have the same bondary indicator
         vertices.at(fromVertexIndex).getBoundary()
             == vertices.at(toVertexIndex).getBoundary());
-    assert(                                                     // check vertices are the same type
+    assert(                             // check vertices are the same type
         vertices.at(fromVertexIndex).getType()
             == vertices.at(toVertexIndex).getType());
 
     // flag interior half-edges for deletion
 
-    deletedHalfEdgeIndices.push_back(
-        sepHalfEdgeIndex);
-    deletedHalfEdgeIndices.push_back(
-        halfEdges.at(sepHalfEdgeIndex).getPreviousIndex());
-    deletedHalfEdgeIndices.push_back(
-        halfEdges.at(sepHalfEdgeIndex).getNextIndex());
+    std::vector<long int> deletedHalfEdgeIndices(0);
 
     deletedHalfEdgeIndices.push_back(
-        halfEdges.at(sepHalfEdgeIndex).getPairIndex());
+        halfEdgeIndex);
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(halfEdgeIndex).getPreviousIndex());
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(halfEdgeIndex).getNextIndex());
+
+    deletedHalfEdgeIndices.push_back(
+        halfEdges.at(halfEdgeIndex).getPairIndex());
     deletedHalfEdgeIndices.push_back(
         halfEdges.at(
-            halfEdges.at(sepHalfEdgeIndex).getPairIndex()
+            halfEdges.at(halfEdgeIndex).getPairIndex()
             ).getPreviousIndex());
     deletedHalfEdgeIndices.push_back(
         halfEdges.at(
-            halfEdges.at(sepHalfEdgeIndex).getPairIndex()
+            halfEdges.at(halfEdgeIndex).getPairIndex()
             ).getNextIndex());
 
     // reassign half-edges origin and destination
 
-    for (long int halfEdgeIndex : halfEdgesToNeighboursIndices) {
-        halfEdges[
-            halfEdgeIndex
+    std::vector<long int> const halfEdgesToNeighboursIndices =  // half-edge from origin vertex to neighbouring vertices
+        getNeighbourVertices(fromVertexIndex)[1];
+    for (long int halfEdgeToNeighbourIndex : halfEdgesToNeighboursIndices) {
+        halfEdges[                                              // relabel origin to merging vertex
+            halfEdgeToNeighbourIndex
             ].setFromIndex(toVertexIndex);
-        halfEdges[
-            halfEdges.at(halfEdgeIndex).getPreviousIndex()
+        halfEdges[                                              // relabel destination of previous half-edge to merging vertex
+            halfEdges.at(halfEdgeToNeighbourIndex).getPreviousIndex()
             ].setToIndex(toVertexIndex);
     }
 
@@ -605,31 +589,31 @@ TopoChangeEdgeInfoType Mesh::mergeVertices(
     long int const inFromHalfEdgeIndex =
         halfEdges.at(
             halfEdges.at(
-                sepHalfEdgeIndex
-                ).getPreviousIndex()
+                halfEdges.at(
+                    halfEdgeIndex
+                    ).getPairIndex()
+                ).getNextIndex()
             ).getPairIndex();
     long int const outFromHalfEdgeIndex =
         halfEdges.at(
             halfEdges.at(
-                sepHalfEdgeIndex
-                ).getNextIndex()
+                halfEdgeIndex
+                ).getPreviousIndex()
             ).getPairIndex();
 
     long int const inToHalfEdgeIndex =
         halfEdges.at(
             halfEdges.at(
-                halfEdges.at(
-                    sepHalfEdgeIndex
-                    ).getPairIndex()
-                ).getPreviousIndex()
+                halfEdgeIndex
+                ).getNextIndex()
             ).getPairIndex();
     long int const outToHalfEdgeIndex =
         halfEdges.at(
             halfEdges.at(
                 halfEdges.at(
-                    sepHalfEdgeIndex
+                    halfEdgeIndex
                     ).getPairIndex()
-                ).getNextIndex()
+                ).getPreviousIndex()
             ).getPairIndex();
 
     halfEdges[inFromHalfEdgeIndex].setPairIndex(outToHalfEdgeIndex);
@@ -655,8 +639,8 @@ TopoChangeEdgeInfoType Mesh::mergeVertices(
         vertices.at(toVertexIndex).getUPosition();
 
     std::vector<double> const midUPosition = {
-        (fromVertexUPosition[0] + toVertexUPosition[0])/2,
-        (fromVertexUPosition[1] + toVertexUPosition[1])/2};
+        (fromVertexUPosition.at(0) + toVertexUPosition.at(0))/2,
+        (fromVertexUPosition.at(1) + toVertexUPosition.at(1))/2};
 
     vertices[toVertexIndex].setPosition(wrap(midUPosition));
     vertices[toVertexIndex].setUPosition(midUPosition);
