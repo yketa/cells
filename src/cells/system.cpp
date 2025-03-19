@@ -290,6 +290,38 @@ long int VertexModel::splitCell(
     return newCellVertexIndex;
 }
 
+long int VertexModel::splitCellAtMax(
+    long int const& cellVertexIndex) {
+
+    double maxDist = 0;
+    std::vector<long int> const centreToBoundaryHalfEdges = // half-edges from cell centre to cell corners
+        getNeighbourVertices(cellVertexIndex)[1];
+    std::vector<long int> maxHalfEdgeIndices;               // pair of half-edges which maximises distance between their centres
+
+    for (long int halfEdgeIndex0 : centreToBoundaryHalfEdges) {
+        long int const boundaryHalfEdgeIndex0 =             // first given boundary half-edge
+            halfEdges.at(halfEdgeIndex0).getNextIndex();
+
+        for (long int halfEdgeIndex1 : centreToBoundaryHalfEdges) {
+            long int const boundaryHalfEdgeIndex1 =         // second given boundary half-edge
+                halfEdges.at(halfEdgeIndex1).getNextIndex();
+
+            double const dist = norm2(wrapDiff(             // distance between the centres of first and second given boundary half-edges
+                getHalfEdgeCentre(boundaryHalfEdgeIndex0),
+                getHalfEdgeCentre(boundaryHalfEdgeIndex1)));
+            if (dist > maxDist) {
+                maxDist = dist;
+                maxHalfEdgeIndices.clear();
+                maxHalfEdgeIndices.push_back(boundaryHalfEdgeIndex0);
+                maxHalfEdgeIndices.push_back(boundaryHalfEdgeIndex1);
+            }
+        }
+    }
+
+    assert((int) maxHalfEdgeIndices.size() == 2);
+    return splitCell(maxHalfEdgeIndices.at(0), maxHalfEdgeIndices.at(1));
+}
+
 void VertexModel::checkMesh(
     std::vector<std::string> const& halfEdgeTypes,
     bool const& checkOrientations) const {

@@ -196,6 +196,23 @@ class VertexModel : public Mesh {
             Index of newly created cell centre.
         */
 
+        long int splitCellAtMax(
+            long int const& cellVertexIndex);
+        /*
+        Split cell across the two most separated boundary half-edge
+        centres.
+
+        Parameters
+        ----------
+        cellVertexIndex :
+            Vertex index of centre of cell to split.
+
+        Returns
+        -------
+        newCellVertexIndex :
+            Index of newly created cell centre.
+        */
+
         void checkMesh(
             std::vector<std::string> const&
                 helfEdgeTypes=std::vector<std::string>(),
