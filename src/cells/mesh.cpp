@@ -70,6 +70,31 @@ long int Mesh::getHalfEdgeIndex(
         + std::to_string(toVertexIndex) + ".");
 }
 
+long int Mesh::getHalfEdgeBetweenIndex(
+    long int const& vertexIndex0, long int const& vertexIndex1)
+    const {
+
+    std::vector<long int> halfEdgesToNeighbours =   // indices of half-edges to neighbouring vertices
+        getNeighbourVertices(vertexIndex0)[1];
+
+    for (long int halfEdgeToNeighbour : halfEdgesToNeighbours) {
+        long int const nextHalfEdgeIndex =          // half-edge in triangle containing vertex but not directly connected to it
+            halfEdges.at(halfEdgeToNeighbour).getNextIndex();
+        long int const vertexIndex =                // vertex on other triangle symmetrically to the vertex
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdges.at(
+                        nextHalfEdgeIndex)
+                        .getPairIndex())
+                    .getNextIndex())
+                .getToIndex();
+        if (vertexIndex == vertexIndex1) return nextHalfEdgeIndex;
+    }
+    throw std::runtime_error("There is not half-edge separating vertex index "
+        + std::to_string(vertexIndex0) + " and vertex index "
+        + std::to_string(vertexIndex1) + ".");
+}
+
 std::vector<double> Mesh::getHalfEdgeVector(
     long int const& halfEdgeIndex, bool const& unit)
     const {

@@ -308,7 +308,7 @@ Two-dimensional ensembles of vertices and edges.
             long int const& fromVertexIndex, long int const& toVertexIndex)
             const;
         /*
-        Index of the half-edge between two vertices.
+        Index of the half-edge from one vertex to the other.
         Throws error if this half-edge does not exist.
 
         Parameters
@@ -317,6 +317,29 @@ Two-dimensional ensembles of vertices and edges.
             Index of origin vertex.
         toVertexIndex :
             Index of destination vertex.
+
+        Returns
+        -------
+        halfEdgeIndex :
+            Index of half-edge.
+        */
+
+        long int getHalfEdgeBetweenIndex(
+            long int const& vertexIndex0, long int const& vertexIndex1)
+            const;
+
+        /*
+        Index of a half-edge within a triangle to which vertex `vertexIndex0'
+        belongs and which is paired to a half-edge in a triangle to which
+        vertex `vertexIndex1' belongs.
+        Throws error if this half-edge does not exist.
+
+        Parameters
+        ----------
+        vertexIndex0 :
+            Index of first vertex.
+        vertexIndex1 :
+            Index of second vertex.
 
         Returns
         -------

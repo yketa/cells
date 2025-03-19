@@ -430,6 +430,28 @@ long int VertexModel::mergeCell(
     return toCellVertexIndex;
 }
 
+long int VertexModel::mergeCellAtMin(
+    long int const& cellVertexIndex) {
+
+    // find cell neighbour with the lowest area
+    std::vector<long int> const neighCellVertexIndices =
+        getNeighbouringCellIndices(cellVertexIndex);
+    assert((int) neighCellVertexIndices.size() > 0);
+    long int minAreaNeighCellVertexIndex = neighCellVertexIndices.at(0);
+    double minArea = getVertexToNeighboursArea(minAreaNeighCellVertexIndex);
+    for (long int neighCellVertexIndex : neighCellVertexIndices) {
+        double const area = getVertexToNeighboursArea(neighCellVertexIndex);
+        if (area < minArea) {
+            minAreaNeighCellVertexIndex = neighCellVertexIndex;
+            minArea = area;
+        }
+    }
+
+    // merge cells
+    return mergeCell(
+        getHalfEdgeBetweenIndex(cellVertexIndex, minAreaNeighCellVertexIndex));
+}
+
 void VertexModel::checkMesh(
     std::vector<std::string> const& halfEdgeTypes,
     bool const& checkOrientations) const {

@@ -466,6 +466,26 @@ PYBIND11_MODULE(bind, m) {
             "    Index of half-edge.",
             pybind11::arg("fromVertexIndex"),
             pybind11::arg("toVertexIndex"))
+        .def("getHalfEdgeBetweenIndex",
+            &VertexModel::getHalfEdgeBetweenIndex,
+            "Index of a half-edge within a triangle to which vertex\n"
+            "`vertexIndex0' belongs and which is paired to a half-edge in a\n"
+            "triangle to which vertex `vertexIndex1' belongs.\n"
+            "Throws error if this half-edge does not exist.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex0 : int\n"
+            "    Index of first vertex.\n"
+            "vertexIndex1 : int\n"
+            "    Index of second vertex.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "halfEdgeIndex : int\n"
+            "    Index of half-edge.",
+            pybind11::arg("vertexIndex0"),
+            pybind11::arg("vertexIndex1"))
         .def("getNeighbourVertices",
             [](VertexModel const& self, long int const& vertexIndex) {
                 std::vector<std::vector<long int>> neighbours =
@@ -871,6 +891,21 @@ PYBIND11_MODULE(bind, m) {
             "    Index of cell centre to which the origin cell centre was\n"
             "    merged.",
             pybind11::arg("halfEdgeIndex"))
+        .def("mergeCellAtMin",
+            &VertexModel::mergeCellAtMin,
+            "Merge cell with its neighbouring cell of minimum area.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "cellVertexIndex : int\n"
+            "    Index of centre of cell to merge with its neighbour.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "toCellVertexIndex : int\n"
+            "    Index of cell centre to which the origin cell centre was\n"
+            "    merged.",
+            pybind11::arg("mergeCellAtMin"))
         .def("checkMesh",
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh.\n"

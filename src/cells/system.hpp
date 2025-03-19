@@ -250,6 +250,22 @@ class VertexModel : public Mesh {
             Index of cell centre to which the origin cell centre was merged.
         */
 
+        long int mergeCellAtMin(
+            long int const& cellVertexIndex);
+        /*
+        Merge cell with its neighbouring cell of minimum area.
+
+        Parameters
+        ----------
+        cellVertexIndex :
+            Index of centre of cell to merge with its neighbour.
+
+        Returns
+        -------
+        toCellVertexIndex :
+             Index of cell centre to which the origin cell centre was merged.
+        */
+
         void checkMesh(
             std::vector<std::string> const&
                 helfEdgeTypes=std::vector<std::string>(),
