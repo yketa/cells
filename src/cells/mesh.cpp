@@ -631,20 +631,6 @@ TopoChangeEdgeInfoType Mesh::mergeVertices(
     vertices[halfEdges.at(outToHalfEdgeIndex).getToIndex()].setHalfEdgeIndex(
         inFromHalfEdgeIndex);
 
-    // move vertex
-
-    std::vector<double> const fromVertexUPosition =
-        vertices.at(fromVertexIndex).getUPosition();
-    std::vector<double> const toVertexUPosition =
-        vertices.at(toVertexIndex).getUPosition();
-
-    std::vector<double> const midUPosition = {
-        (fromVertexUPosition.at(0) + toVertexUPosition.at(0))/2,
-        (fromVertexUPosition.at(1) + toVertexUPosition.at(1))/2};
-
-    vertices[toVertexIndex].setPosition(wrap(midUPosition));
-    vertices[toVertexIndex].setUPosition(midUPosition);
-
     // delete vertex half-edges
 
     vertices.erase(fromVertexIndex);                                        // delete vertex
