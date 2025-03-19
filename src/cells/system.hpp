@@ -135,6 +135,24 @@ class VertexModel : public Mesh {
 
         // METHODS
 
+        std::vector<long int> getNeighbouringCellIndices(
+            long int const& vertexIndex) const;
+        /*
+        Compute neighbouring cell indices.
+
+        Parameters
+        ----------
+        vertexIndex :
+            Index of vertex from which to compute neighbouring cell indices.
+            NOTE: This vertex should be surrounded by cells from which it is
+                  separated by single edges.
+
+        Returns
+        -------
+        neighbourCellIndices :
+             Indices of neighbouring cells.
+        */
+
         void integrate(double const& dt=0,
             double const& delta=0.1, double const& epsilon=0.1);
         /*

@@ -80,42 +80,6 @@ Compute velocities of the centroid of each cell.
     return centreVelocities;
 }
 
-std::vector<long int> getNeighbouringCellIndices(
-    VertexModel const& vm, long int const& vertexIndex) {
-/*
-Compute neighbouring cell indices.
-*/
-
-    std::map<long int, Vertex> const& vertices =
-        vm.getVertices();
-    std::map<long int, HalfEdge> const& halfEdges =
-        vm.getHalfEdges();
-
-    std::vector<long int> const halfEdgesToNeighbours =
-        vm.getNeighbourVertices(vertexIndex)[1];
-    std::vector<long int> neighbourCellIndices;
-    for (long int index : halfEdgesToNeighbours) {  // loop over half-edges to neighbour vertices
-
-        long int const neighbourVertexIndex =       // neighbour cell index
-            halfEdges.at(
-                halfEdges.at(
-                    halfEdges.at(
-                        halfEdges.at(index).getNextIndex()
-                    ).getPairIndex()
-                ).getNextIndex()
-            ).getToIndex();
-
-        if (vertices.at(neighbourVertexIndex).getBoundary())    // ignore boundary vertices
-            { continue; }
-        assert(                                                 // the vertex should be a cell centre
-            vertices.at(neighbourVertexIndex).getType()
-                == "centre");
-        neighbourCellIndices.push_back(neighbourVertexIndex);
-    }
-
-    return neighbourCellIndices;
-}
-
 std::map<long int, std::vector<std::vector<double>>>
 getVectorsToNeighbouringCells(VertexModel const& vm) {
 /*
@@ -132,7 +96,7 @@ Compute vectors to neighbouring cell centres.
             std::vector<std::vector<double>>(0));
 
         std::vector<long int> const neighbourCellIndices =
-            getNeighbouringCellIndices(vm, centreVertexIndex);
+            vm.getNeighbouringCellIndices(centreVertexIndex);
         for (long int neighbourCellIndex : neighbourCellIndices) {
 
             vectorsToNeighbours[centreVertexIndex].push_back(

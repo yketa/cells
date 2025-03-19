@@ -772,6 +772,23 @@ PYBIND11_MODULE(bind, m) {
             "seed : int\n"
             "    Random number generator seed.",
             pybind11::arg("seed"))
+        .def("getNeighbouringCellIndices",
+            &VertexModel::getNeighbouringCellIndices,
+            "Compute neighbouring cell indices.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of vertex from which to compute neighbouring cell\n"
+            "    indices.\n"
+            "    NOTE: This vertex should be surrounded by cells from which\n"
+            "          it is separated by single edges.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "neighbourCellIndices : list of int\n"
+            "    Indices of neighbouring cells.",
+            pybind11::arg("vertexIndex"))
         .def("nintegrate",
             [](VertexModel& self,
                 long int const& niter, double const& dt,
@@ -835,6 +852,25 @@ PYBIND11_MODULE(bind, m) {
             "newCellVertexIndex : int\n"
             "    Index of newly created cell centre.",
             pybind11::arg("cellVertexIndex"))
+        .def("mergeCell",
+            &VertexModel::mergeCell,
+            "Merge two cells whose centres are separated by the half-edge\n"
+            "with index `halfEdgeIndex'.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIndex : int\n"
+            "    Half-edge separating the two cell centres to merge.\n"
+            "    NOTE: Two cell centres should not be connected by any\n"
+            "          half-edge. This half-edge should belong to the\n"
+            "          junction between the cells.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "toCellVertexIndex : int\n"
+            "    Index of cell centre to which the origin cell centre was\n"
+            "    merged.",
+            pybind11::arg("halfEdgeIndex"))
         .def("checkMesh",
             &VertexModel::checkMesh,
             "Check that the vertices and half-edges define a planar mesh.\n"
@@ -1292,22 +1328,6 @@ PYBIND11_MODULE(bind, m) {
             "centreVelocities : {int: list} dict\n"
             "    Dictionary which associates cell centre vertex indices to\n"
             "    the velocity of the centroid of the cell.")
-        .def("getNeighbouringCellIndices", &getNeighbouringCellIndices,
-            "Compute neighbouring cell indices.\n"
-            "\n"
-            "Parameters\n"
-            "----------\n"
-            "vertexIndex : int\n"
-            "    Index of vertex from which to compute neighbouring cell\n"
-            "    indices.\n"
-            "    NOTE: This vertex should be surrounded by cells from which\n"
-            "          it is separated by single edges.\n"
-            "\n"
-            "Returns\n"
-            "-------\n"
-            "neighbourCellIndices : list of int\n"
-            "    Indices of neighbouring cells.",
-            pybind11::arg("vertexIndex"))
         .def("getVectorsToNeighbouringCells", &getVectorsToNeighbouringCells,
             "Compute vectors to neighbouring cell centres.\n"
             "\n"

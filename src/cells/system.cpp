@@ -5,6 +5,34 @@
 #include "system.hpp"
 #include "tools.hpp"
 
+std::vector<long int> VertexModel::getNeighbouringCellIndices(
+    long int const& vertexIndex) const {
+
+    std::vector<long int> const halfEdgesToNeighbours =
+        getNeighbourVertices(vertexIndex)[1];
+    std::vector<long int> neighbourCellIndices;
+    for (long int index : halfEdgesToNeighbours) {  // loop over half-edges to neighbour vertices
+
+        long int const neighbourVertexIndex =       // neighbour cell index
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdges.at(
+                        halfEdges.at(index).getNextIndex()
+                    ).getPairIndex()
+                ).getNextIndex()
+            ).getToIndex();
+
+        if (vertices.at(neighbourVertexIndex).getBoundary())    // ignore boundary vertices
+            { continue; }
+        assert(                                                 // the vertex should be a cell centre
+            vertices.at(neighbourVertexIndex).getType()
+                == "centre");
+        neighbourCellIndices.push_back(neighbourVertexIndex);
+    }
+
+    return neighbourCellIndices;
+}
+
 void VertexModel::integrate(double const& dt,
     double const& delta, double const& epsilon) {
 
