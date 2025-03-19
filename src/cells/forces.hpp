@@ -411,8 +411,8 @@ the number of boundary vertices divided by the perimeter of the boundary
             if (vertex.getBoundary()) { // force is computed for neighbours of boundary vertices
 
                 // compute centre of mass of vertices
-                mesh->moveToNeigboursBarycentre(vertex.getIndex()); // move to barycentre to compute radial vectors
-                std::vector<double> const posCM =                   // position of centre of mass (= barycentre)
+                mesh->moveToNeighboursBarycentre(vertex.getIndex());    // move to barycentre to compute radial vectors
+                std::vector<double> const posCM =                       // position of centre of mass (= barycentre)
                     (vertices->at(vertex.getIndex())).getPosition();
 
                 // compute neighbours

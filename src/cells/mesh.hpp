@@ -434,10 +434,22 @@ Two-dimensional ensembles of vertices and edges.
             Perimeter encapsulated by neighbours.
         */
 
-        void moveToNeigboursBarycentre(
+        void moveToNeighboursBarycentre(
             long int const& vertexIndex);
         /*
         Move vertex to centre of mass (= barycentre) of its neighbours.
+
+        Parameters
+        ----------
+        vertexIndex :
+            Index of vertex.
+        */
+
+        void moveToNeighboursCentroid(
+            long int const& vertexIndex);
+        /*
+        Move vertex to centroid of (= arithmetic mean of all the points on) the
+        surface enclosed by its neighbours.
 
         Parameters
         ----------

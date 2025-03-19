@@ -33,44 +33,10 @@ void VertexModel::integrate(double const& dt,
     // move cell centres
 
     #if true
-    std::vector<double> upos(0);
-    std::vector<long int> neighbourVerticesIndices(0);
-    long int numberNeighbours;
-    std::vector<double> disp(0);
     std::vector<long int> const cellCentreVertexIndices =
         getVertexIndicesByType("centre");
-    for (long int vertexIndex : cellCentreVertexIndices) {  // only consider cell centres
-
-        double const cellArea = getVertexToNeighboursArea(vertexIndex);
-
-        upos = {0, 0};
-        neighbourVerticesIndices = getNeighbourVertices(vertexIndex)[0];
-        numberNeighbours = neighbourVerticesIndices.size();
-        std::vector<double> const uposr =           // use cell centre as reference rather than vertex
-            vertices.at(vertexIndex).getUPosition();
-        for (long int i=0; i < numberNeighbours; i++) {
-            long int const index0 =
-                neighbourVerticesIndices[i];
-            std::vector<double> const upos0 =       // from reference position
-                wrapDiff(uposr, vertices.at(index0).getUPosition());
-            long int const index1 =
-                neighbourVerticesIndices[pmod(i + 1, numberNeighbours)];
-            std::vector<double> const upos1 =       // from reference position
-                wrapDiff(uposr, vertices.at(index1).getUPosition());
-            for (int dim=0; dim < 2; dim++) {
-                upos[dim] +=
-                    (upos0[dim] + upos1[dim])*(
-                        upos0[0]*upos1[1] - upos1[0]*upos0[1]
-                    )/(6*cellArea);
-            }
-        }
-        for (int dim=0; dim < 2; dim++)             // add reference position
-            { upos[dim] += uposr[dim]; }
-        vertices[vertexIndex].setUPosition( // unwrapped position
-            upos);
-        vertices[vertexIndex].setPosition(  // (wrapped) position
-            wrap(vertices.at(vertexIndex).getUPosition()));
-    }
+    for (long int vertexIndex : cellCentreVertexIndices)    // only consider cell centres
+        { moveToNeighboursCentroid(vertexIndex); }
     #endif
 
     // integrate internal degrees of freedom
@@ -317,8 +283,8 @@ long int VertexModel::splitCell(
     // flip edge to create cell junction
 
     swapEdge(halfEdgeToSwapIndex, "junction");      // swap edge and create junction
-    moveToNeigboursBarycentre(cellVertexIndex);     // move initial cell vertex to its barycentre
-    moveToNeigboursBarycentre(newCellVertexIndex);  // move new cell vertex to its barycentre
+    moveToNeighboursCentroid(cellVertexIndex);      // move initial cell vertex to its barycentre
+    moveToNeighboursCentroid(newCellVertexIndex);   // move new cell vertex to its barycentre
 
     checkMesh({"junction"});
     return newCellVertexIndex;

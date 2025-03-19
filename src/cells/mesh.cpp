@@ -191,7 +191,7 @@ double Mesh::getVertexToNeighboursPerimeter(
     return perimeter;
 }
 
-void Mesh::moveToNeigboursBarycentre(
+void Mesh::moveToNeighboursBarycentre(
     long int const& vertexIndex) {
 
     // compute centre of mass
@@ -211,6 +211,44 @@ void Mesh::moveToNeigboursBarycentre(
         wrap(posCM));
     vertices[vertexIndex].setUPosition( // set unwrapped position back to wrapped position
         vertices.at(vertexIndex).getPosition());
+}
+
+void Mesh::moveToNeighboursCentroid(
+    long int const& vertexIndex) {
+
+    double const area = getVertexToNeighboursArea(vertexIndex);
+
+    std::vector<long int> const neighbourVerticesIndices =
+        getNeighbourVertices(vertexIndex)[0];
+    long int const numberNeighbours = neighbourVerticesIndices.size();
+
+    std::vector<double> const uposr = vertices.at(vertexIndex).getUPosition();  // reference unwrapped position
+    std::vector<double> diff = {0, 0};                                          // difference from vertex position to reference position
+
+    for (long int i=0; i < numberNeighbours; i++) {
+
+        long int const index0 =             // index of first neighbour
+            neighbourVerticesIndices[i];
+        std::vector<double> const diff0 =   // wrapped difference from unwrapped reference position to unwrapped unwrapped position of first neighbour
+            wrapDiff(uposr, vertices.at(index0).getUPosition());
+
+        long int const index1 =             // index of second (next) neighbour
+            neighbourVerticesIndices[pmod(i + 1, numberNeighbours)];
+        std::vector<double> const diff1 =   // wrapped difference from unwrapped reference position to unwrapped unwrapped position of second neighbour
+            wrapDiff(uposr, vertices.at(index1).getUPosition());
+
+        for (int dim=0; dim < 2; dim++) {
+            diff[dim] +=                    // position of centroid in the space where reference position is the centre
+                (diff0[dim] + diff1[dim])*(
+                    diff0[0]*diff1[1] - diff1[0]*diff0[1]
+                )/(6*area);
+        }
+    }
+
+    vertices[vertexIndex].setUPosition( // unwrapped position
+        {uposr.at(0) + diff.at(0), uposr.at(1) + diff.at(1)});
+    vertices[vertexIndex].setPosition(  // (wrapped) position
+        wrap(vertices.at(vertexIndex).getUPosition()));
 }
 
 TopoChangeEdgeInfoType Mesh::deleteEdge(

@@ -508,9 +508,19 @@ PYBIND11_MODULE(bind, m) {
         .def("clear",
             &VertexModel::clear,
             "Clear all data.")
-        .def("moveToNeigboursBarycentre",
-            &VertexModel::moveToNeigboursBarycentre,
+        .def("moveToNeighboursBarycentre",
+            &VertexModel::moveToNeighboursBarycentre,
             "Move vertex to centre of mass (= barycentre) of its neighbours.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vertexIndex : int\n"
+            "    Index of vertex.",
+            pybind11::arg("vertexIndex"))
+        .def("moveToNeighboursCentroid",
+            &VertexModel::moveToNeighboursCentroid,
+            "Move vertex to centroid of (= arithmetic mean of all the points\n"
+            "on) the surface enclosed by its neighbours.\n"
             "\n"
             "Parameters\n"
             "----------\n"
