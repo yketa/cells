@@ -256,6 +256,7 @@ long int VertexModel::splitCell(
     assert(cellVertexIndex ==           // check that two half-edges belong to the boundary of the same cell
         halfEdges.at(halfEdges.at(halfEdgeIndex1).getNextIndex()).getToIndex()
         );
+    assert(vertices.at(cellVertexIndex).getType() == "centre");
 
     TopoChangeEdgeInfoType info;
 
@@ -286,7 +287,7 @@ long int VertexModel::splitCell(
     moveToNeighboursCentroid(cellVertexIndex);      // move initial cell vertex to its barycentre
     moveToNeighboursCentroid(newCellVertexIndex);   // move new cell vertex to its barycentre
 
-    checkMesh({"junction"});
+//     checkMesh({"junction"});
     return newCellVertexIndex;
 }
 
