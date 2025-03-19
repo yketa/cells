@@ -4,7 +4,7 @@ __pycache__
 *.egg-info
 old
 tools
-.*.swp
+.*.sw*
 test*
 *.o
 *.so
