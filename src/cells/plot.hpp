@@ -52,16 +52,22 @@ where the line (xi, yi) -- (xi', yi') corresponds to the i-th junction in `vm'.
     HalfEdgesType const halfEdges = vm.getHalfEdges();
 
     std::vector<double> fromPos, disp;
-    std::vector<long int> const halfEdgeIndices =
+    std::vector<long int> const firstHalfEdgeIndices =
         vm.getHalfEdgeIndicesByType("junction");
-    for (long int halfEdgeIndex : halfEdgeIndices) {        // loop over all junctions
-        fromPos =
-            (vertices.at((halfEdges.at(halfEdgeIndex)).getFromIndex()))
-                .getPosition();                             // position of origin vertex
-        disp = vm.getHalfEdgeVector(halfEdgeIndex, false);  // displacement to destination vertex
-        lines.push_back({
-            {fromPos[0], fromPos[1]},
-            {fromPos[0] + disp[0], fromPos[1] + disp[1]}});
+    for (long int firstHalfEdgeIndex : firstHalfEdgeIndices) {  // loop over all half-edges with label "junction"
+        long int const secondHalfEdgeIndex =
+            halfEdges.at(firstHalfEdgeIndex).getPairIndex();    // there are 2 half-edges in a junction (and only 1 with the label "juction")
+        std::vector<long int> const halfEdgesIndices =
+            {firstHalfEdgeIndex, secondHalfEdgeIndex};
+        for (long int halfEdgeIndex : halfEdgesIndices) {
+            fromPos =
+                (vertices.at((halfEdges.at(halfEdgeIndex)).getFromIndex()))
+                    .getPosition();                             // position of origin vertex
+            disp = vm.getHalfEdgeVector(halfEdgeIndex, false);  // displacement to destination vertex
+            lines.push_back({
+                {fromPos[0], fromPos[1]},
+                {fromPos[0] + disp[0], fromPos[1] + disp[1]}});
+        }
     }
 
     return lines;
