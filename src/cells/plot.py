@@ -221,10 +221,14 @@ def plot(vm, fig=None, ax=None, update=True,
     if only_set: return fig, ax
 
 #     # all vertices and half-edges
-#     ax.add_collection(LineCollection(   # half-edges
+#     ax.add_collection(LineCollection(                   # half-edges
 #         getLinesHalfEdge(vm, list(vm.halfEdges)), colors="blue", lw=0.5))
-#     ax.scatter(                         # vertices
-#         *np.transpose(list(vm.getPositions().values())), color="red", s=50)
+#     pos = vm.getPositions()
+#     cells = vm.getVertexIndicesByType("centre")
+#     ax.scatter(*np.transpose(list(pos.values())),       # vertices
+#         color="red", s=50, marker="o")
+#     ax.scatter(*np.transpose(itemgetter(*cells)(pos)),  # cell centres
+#         color="green", s=100, marker="d")
 
     # junctions and half-edges
     lines = LineCollection(getLinesJunction(vm), colors="pink",                 # all junctions
