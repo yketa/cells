@@ -199,8 +199,7 @@ class VertexModel : public Mesh {
         long int splitCellAtMax(
             long int const& cellVertexIndex);
         /*
-        Split cell across the two most separated boundary half-edge
-        centres.
+        Split cell across the two most separated boundary half-edge centres.
 
         Parameters
         ----------
@@ -211,6 +210,26 @@ class VertexModel : public Mesh {
         -------
         newCellVertexIndex :
             Index of newly created cell centre.
+        */
+
+        long int mergeCell(
+            long int const& halfEdgeIndex);
+        /*
+        Merge two cells whose centres are separated by the half-edge with index
+        `halfEdgeIndex'.
+
+        Parameters
+        ----------
+        halfEdgeIndex :
+            Half-edge separating the two cell centres to merge.
+            NOTE: Two cell centres should not be connected by any half-edge.
+                  This half-edge should belong to the junction between the
+                  cells.
+
+        Returns
+        -------
+        toCellVertexIndex :
+            Index of cell centre to which the origin cell centre was merged.
         */
 
         void checkMesh(

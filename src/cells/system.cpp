@@ -323,6 +323,85 @@ long int VertexModel::splitCellAtMax(
     return splitCell(maxHalfEdgeIndices.at(0), maxHalfEdgeIndices.at(1));
 }
 
+long int VertexModel::mergeCell(
+    long int const& halfEdgeIndex) {
+
+    long int const fromCellVertexIndex =    // centre vertex index of the cell which will be merged from
+        halfEdges.at(halfEdges.at(halfEdgeIndex).getNextIndex())
+            .getToIndex();
+    long int const pairHalfEdgeIndex =      // pair half-edge index belonging to cell which will be merged to
+        halfEdges.at(halfEdgeIndex).getPairIndex();
+    long int const toCellVertexIndex =      // centre vertex index of the cell which will be merged to
+        halfEdges.at(halfEdges.at(pairHalfEdgeIndex).getNextIndex())
+            .getToIndex();
+
+    assert(vertices.at(fromCellVertexIndex).getType() == "centre");
+    assert(vertices.at(toCellVertexIndex).getType() == "centre");
+
+    // flip cell junction
+
+    swapEdge(halfEdgeIndex);
+
+    // identify edges to remove
+
+    long int const fromToHalfEdgeIndex =    // half-edge connecting two cell centres
+        getHalfEdgeIndex(fromCellVertexIndex, toCellVertexIndex);
+
+    long int const halfEdgeToDeleteIndex0 = // index of half-edge connecting the third vertex in the triangle which contains fromToHalfEdgeIndex to a neighbouring vertex to which it will be merged
+        halfEdges.at(
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdgeIndex)
+                    .getPreviousIndex())
+                .getPairIndex())
+            .getNextIndex();
+    long int const neighbourCellVertexIndex0 =
+        halfEdges.at(
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdgeToDeleteIndex0)
+                    .getPairIndex())
+                .getNextIndex())
+            .getToIndex();
+
+    long int const halfEdgeToDeleteIndex1 = // index of half-edge connecting the third vertex in the triangle which contains the pair of fromToHalfEdgeIndex to a neighbouring vertex to which it will be merged
+        halfEdges.at(
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdges.at(halfEdgeIndex).getPairIndex())
+                    .getPreviousIndex())
+                .getPairIndex())
+            .getNextIndex();
+    long int const neighbourCellVertexIndex1 =
+        halfEdges.at(
+            halfEdges.at(
+                halfEdges.at(
+                    halfEdgeToDeleteIndex1)
+                    .getPairIndex())
+                .getNextIndex())
+            .getToIndex();
+
+    // connect both cell centre
+
+    deleteEdge(fromToHalfEdgeIndex);
+
+    // merge vertices
+
+    mergeVertices(halfEdgeToDeleteIndex0);
+    mergeVertices(halfEdgeToDeleteIndex1);
+
+    // move cells with merged vertices and destination cell centres
+    if (vertices.at(neighbourCellVertexIndex0).getType() == "centre")
+        moveToNeighboursCentroid(neighbourCellVertexIndex0);    // first cell with merged vertices centre
+    if (vertices.at(neighbourCellVertexIndex1).getType() == "centre")
+        moveToNeighboursCentroid(neighbourCellVertexIndex1);    // second cell with merged vertices centre
+    moveToNeighboursCentroid(toCellVertexIndex);                // destination cell centre vertex
+
+
+//     checkMesh({"junction"});
+    return toCellVertexIndex;
+}
+
 void VertexModel::checkMesh(
     std::vector<std::string> const& halfEdgeTypes,
     bool const& checkOrientations) const {
