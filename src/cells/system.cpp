@@ -38,19 +38,20 @@ void VertexModel::integrate(double const& dt,
 
     // integrate positions
 
-    long int vertexIndex;
     std::vector<double> uposition;
     if (dt > 0) {
-        for (auto it=velocities.begin(); it != velocities.end(); ++it) {
-            vertexIndex = it->first;
-            uposition = vertices.at(vertexIndex).getUPosition();
-            for (int dim=0; dim < 2; dim++) {
-                uposition[dim] += velocities[vertexIndex][dim]*dt;  // Euler integration of position
+        for (auto it=vertices.begin(); it != vertices.end(); ++it) {    // loop over vertices
+            long int const vertexIndex = it->first;
+            if (inMap(velocities, vertexIndex)) {                       // is there a velocity for this vertex?
+                uposition = vertices.at(vertexIndex).getUPosition();
+                for (int dim=0; dim < 2; dim++) {
+                    uposition[dim] += velocities.at(vertexIndex).at(dim)*dt;    // Euler integration of position
+                }
+                vertices[vertexIndex].setUPosition(                             // unwrapped position
+                    uposition);
+                vertices[vertexIndex].setPosition(                              // (wrapped) position
+                    wrap(vertices[vertexIndex].getUPosition()));
             }
-            vertices[vertexIndex].setUPosition(                     // unwrapped position
-                uposition);
-            vertices[vertexIndex].setPosition(                      // (wrapped) position
-                wrap(vertices[vertexIndex].getUPosition()));
         }
     }
 
@@ -85,7 +86,7 @@ void VertexModel::integrate(double const& dt,
 
 void VertexModel::integrateVelocities(double const& dt) {
 
-    // clear forces and velocities
+    // clear forces
     forces.clear();
     for (auto it=vertices.begin(); it != vertices.end(); ++it)
         { if (!(it->second).getBoundary()) { forces[it->first] = {0, 0}; } }
