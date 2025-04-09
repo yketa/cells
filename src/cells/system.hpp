@@ -215,7 +215,8 @@ class VertexModel : public Mesh {
         */
 
         long int splitCellAtMax(
-            long int const& cellVertexIndex);
+            long int const& cellVertexIndex,
+            bool const& avoidThreeEdgeCells=false);
         /*
         Split cell across the two most separated boundary half-edge centres.
 
@@ -228,9 +229,11 @@ class VertexModel : public Mesh {
         -------
         newCellVertexIndex :
             Index of newly created cell centre.
+        avoidThreeEdgeCells :
+            Ignore divisions which would result in cells with three edges.
         */
 
-        long int mergeCell(
+        std::tuple<long int, std::vector<long int>> mergeCell(
             long int const& halfEdgeIndex);
         /*
         Merge two cells whose centres are separated by the half-edge with index
@@ -248,9 +251,11 @@ class VertexModel : public Mesh {
         -------
         toCellVertexIndex :
             Index of cell centre to which the origin cell centre was merged.
+        neighbouringCellIndices :
+            Indices of neighbouring cell centres whose edges have been removed.
         */
 
-        long int mergeCellAtMin(
+        std::tuple<long int, std::vector<long int>> mergeCellAtMin(
             long int const& cellVertexIndex);
         /*
         Merge cell with its neighbouring cell of minimum area.
@@ -263,7 +268,9 @@ class VertexModel : public Mesh {
         Returns
         -------
         toCellVertexIndex :
-             Index of cell centre to which the origin cell centre was merged.
+            Index of cell centre to which the origin cell centre was merged.
+        neighbouringCellIndices :
+            Indices of neighbouring cell centres whose edges have been removed.
         */
 
         void checkMesh(

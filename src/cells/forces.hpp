@@ -124,6 +124,79 @@ Cell area restoring force.
 
 };
 
+class SurfaceForce : public VertexForce<ForcesType> {
+/*
+Cell surface restoring force.
+*/
+
+    protected:
+
+        Mesh* const mesh;
+
+    public:
+
+        SurfaceForce(
+            double const& Lambda_, double const& V0_,
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("centre",
+                {{"Lambda", Lambda_}, {"V0", V0_}},
+                forces_, vertices_),
+            mesh(mesh_) {}
+
+        void addForce(Vertex const& vertex) override {
+//             std::cerr <<
+//                 "Area force on vertex " << vertex.getIndex() << "."
+//                 << std::endl;
+            double const area = mesh->getVertexToNeighboursArea(
+                vertex.getIndex());
+            double const perimeter = mesh->getVertexToNeighboursPerimeter(
+                vertex.getIndex());
+            std::vector<long int> neighbourVerticesIndices =
+                mesh->getNeighbourVertices(vertex.getIndex())[0];
+            long int const numberNeighbours = neighbourVerticesIndices.size();
+            std::vector<double> crossToPreviousNeighbour, crossToNextNeighbour;
+            std::vector<double> toPreviousNeighbour, toNextNeighbour;
+            for (int i=0; i < numberNeighbours; i++) {
+                assert(vertices->at(neighbourVerticesIndices[i]).getType()
+                    != "centre");
+                // force analogous to area force
+                crossToPreviousNeighbour = cross2z(mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i - 1, numberNeighbours)],
+                    false));
+                crossToNextNeighbour = cross2z(mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i + 1, numberNeighbours)],
+                    false));
+                for (int dim=0; dim < 2; dim++) {
+                    (*forces)[neighbourVerticesIndices[i]][dim] +=
+                        (parameters.at("Lambda")/2)*(
+                            2 - parameters.at("V0")*perimeter/(area*area))*(
+                                crossToPreviousNeighbour[dim]
+                                    - crossToNextNeighbour[dim]);
+                }
+                // force analogous to perimeter force
+                toPreviousNeighbour = mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i - 1, numberNeighbours)],
+                    true);
+                toNextNeighbour = mesh->wrapTo(
+                    neighbourVerticesIndices[i],
+                    neighbourVerticesIndices[pmod(i + 1, numberNeighbours)],
+                    true);
+                for (int dim=0; dim < 2; dim++) {
+                    (*forces)[neighbourVerticesIndices[i]][dim] +=
+                        parameters.at("Lambda")*(parameters.at("V0")/area)*(
+                            toPreviousNeighbour[dim] + toNextNeighbour[dim]);
+                }
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
 class VolumeForce : public VertexForce<ForcesType> {
 /*
 Cell volume restoring force.
@@ -552,6 +625,130 @@ Line tension on open boundaries.
         }
 
         pybind11::tuple pybind11_getstate() const override;
+};
+
+class GrowingAreaPerimeterForce : public VertexForce<ForcesType> {
+/*
+Cell area and perimeter restoring force with growing target area.
+*/
+
+    protected:
+
+        Mesh* const mesh;
+
+        std::map<long int, double> targetArea;  // target area
+
+    public:
+
+        GrowingAreaPerimeterForce(
+            double const& kA_, double const& s0_,
+                double const& A0_, double const& tauA_,
+            Mesh* const mesh_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("centre",
+                {{"kA", kA_}, {"s0", s0_},
+                    {"A0", A0_}, {"tauA", tauA_}},
+                forces_, vertices_),
+            mesh(mesh_) {
+
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if ((it->second).getType() == "centre") {
+                    targetArea.emplace(it->first,   // initial area as initial target area
+                        mesh->getVertexToNeighboursArea(it->first));
+                }
+            }
+        }
+
+        std::map<long int, double> const& getTargetArea() const
+            { return targetArea; }
+        void setTargetArea(std::map<long int, double> const& targetArea_)
+            { targetArea = targetArea_; }
+
+        void addForce(Vertex const& vertex) override {
+
+            double const area = mesh->getVertexToNeighboursArea(
+                vertex.getIndex());
+            double const perimeter = mesh->getVertexToNeighboursPerimeter(
+                vertex.getIndex());
+
+            double const A0 = targetArea.at(vertex.getIndex());
+            double const P0 = parameters.at("s0")*sqrt(A0);
+
+            std::vector<long int> neighbourVerticesIndices =
+                mesh->getNeighbourVertices(vertex.getIndex())[0];
+            long int const nNeighbours = neighbourVerticesIndices.size();
+
+            for (int i=0; i < nNeighbours; i++) {
+                assert(vertices->at(neighbourVerticesIndices[i]).getType()
+                    != "centre");
+                // area force
+                std::vector<double> const crossToPreviousNeighbour =
+                    cross2z(mesh->wrapTo(
+                        neighbourVerticesIndices[i],
+                        neighbourVerticesIndices[pmod(i - 1, nNeighbours)],
+                        false));
+                std::vector<double> const crossToNextNeighbour =
+                    cross2z(mesh->wrapTo(
+                        neighbourVerticesIndices[i],
+                        neighbourVerticesIndices[pmod(i + 1, nNeighbours)],
+                        false));
+                for (int dim=0; dim < 2; dim++) {
+                    (*forces)[neighbourVerticesIndices[i]][dim] +=
+                        (parameters.at("kA")/2.)*(
+                            area - A0)*(
+                            crossToPreviousNeighbour[dim]
+                                - crossToNextNeighbour[dim]);
+                }
+                // perimeter force
+                std::vector<double> const toPreviousNeighbour =
+                    mesh->wrapTo(
+                        neighbourVerticesIndices[i],
+                        neighbourVerticesIndices[pmod(i - 1, nNeighbours)],
+                        true);
+                std::vector<double> const toNextNeighbour =
+                    mesh->wrapTo(
+                        neighbourVerticesIndices[i],
+                        neighbourVerticesIndices[pmod(i + 1, nNeighbours)],
+                        true);
+                for (int dim=0; dim < 2; dim++) {
+                    (*forces)[neighbourVerticesIndices[i]][dim] +=
+                        parameters.at("kA")*A0*(
+                            perimeter - P0)*(
+                            toPreviousNeighbour[dim] + toNextNeighbour[dim]);
+                }
+            }
+        }
+
+        void integrate(double const& dt) override {
+
+            // index correspondence between vertices and target areas
+            for (auto it=targetArea.begin(); it != targetArea.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = targetArea.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = targetArea.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if (!inMap(targetArea, it->first)
+                    && (it->second).getType() == type) {                // new vertex index
+                    targetArea[it->first] = mesh->getVertexToNeighboursArea(
+                        it->first);
+                }
+            }
+
+            // integrate target areas
+            for (auto it=targetArea.begin(); it != targetArea.end(); ++it) {
+                it->second += dt*parameters.at("A0")/parameters.at("tauA");
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class ActiveBrownianForce : public VertexForce<ForcesType> {

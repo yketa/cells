@@ -74,6 +74,9 @@ def plot(vm, fig=None, ax=None, update=True,
 
     if "area" in vm.vertexForces:
         A0 = vm.vertexForces["area"].parameters["A0"]
+    if "surface" in vm.vertexForces:
+        V0 = vm.vertexForces["surface"].parameters["V0"]
+        A0 = (np.sqrt(3)*(V0**2)/2)**(1./3.)
     if "perimeter" in vm.vertexForces:
         if "area" in vm.vertexForces:
             p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
@@ -149,7 +152,8 @@ def plot(vm, fig=None, ax=None, update=True,
                 ax_size, fig_width, fig_height = (
                     _resize_fig(ax, ax_size, fig_width, fig_height))
 
-            if "area" in vm.vertexForces and not("volume" in vm.vertexForces):
+            if ("area" in vm.vertexForces or "surface" in vm.vertexForces
+                and not("volume" in vm.vertexForces)):
                 cbar_area = fig.colorbar(
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)

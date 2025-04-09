@@ -181,6 +181,16 @@ PYBIND11_MODULE(bind, m) {
         .def_property_readonly("heightVelocity",
             &LinearVolumeForce::getHeightVelocity);
 
+    pybind11::class_<GrowingAreaPerimeterForce,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<GrowingAreaPerimeterForce>>(
+        m, "GrowingAreaPerimeterForce",
+        "Python wrapper around C++ area and perimeter restoring force with\n"
+        "growing target area computation object.\n")
+        .def_property("targetArea",
+            &GrowingAreaPerimeterForce::getTargetArea,
+            &GrowingAreaPerimeterForce::setTargetArea);
+
     pybind11::class_<ActiveBrownianForce,
         VertexForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<ActiveBrownianForce>>(
@@ -866,12 +876,16 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "cellVertexIndex : int\n"
             "    Vertex index of centre of cell to split.\n"
+            "avoidThreeEdgeCells : bool\n"
+            "    Ignore divisions which would result in cells with three\n"
+            "    edges. (default: False)\n"
             "\n"
             "Returns\n"
             "-------\n"
             "newCellVertexIndex : int\n"
             "    Index of newly created cell centre.",
-            pybind11::arg("cellVertexIndex"))
+            pybind11::arg("cellVertexIndex"),
+            pybind11::arg("avoidThreeEdgeCells")=false)
         .def("mergeCell",
             &VertexModel::mergeCell,
             "Merge two cells whose centres are separated by the half-edge\n"
@@ -889,7 +903,10 @@ PYBIND11_MODULE(bind, m) {
             "-------\n"
             "toCellVertexIndex : int\n"
             "    Index of cell centre to which the origin cell centre was\n"
-            "    merged.",
+            "    merged."
+            "neighbouringCellIndices : list of int\n"
+            "    Indices of neighbouring cell centres whose edges have been\n"
+            "     removed.",
             pybind11::arg("halfEdgeIndex"))
         .def("mergeCellAtMin",
             &VertexModel::mergeCellAtMin,
@@ -904,7 +921,10 @@ PYBIND11_MODULE(bind, m) {
             "-------\n"
             "toCellVertexIndex : int\n"
             "    Index of cell centre to which the origin cell centre was\n"
-            "    merged.",
+            "    merged."
+            "neighbouringCellIndices : list of int\n"
+            "    Indices of neighbouring cell centres whose edges have been\n"
+            "     removed.",
             pybind11::arg("mergeCellAtMin"))
         .def("checkMesh",
             &VertexModel::checkMesh,
@@ -1004,6 +1024,22 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("kA"),
             pybind11::arg("A0"))
+        .def("addSurfaceForce",
+            &VertexModel::addVertexForce<SurfaceForce,
+                double const&, double const&>,
+            "Add cell surface restoring force.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "Lambda : float\n"
+            "    Surface tension.\n"
+            "V0 : float\n"
+            "    Cell volume.",
+            pybind11::arg("name"),
+            pybind11::arg("Lambda"),
+            pybind11::arg("V0"))
         .def("addVolumeForce",
             &VertexModel::addVertexForce<VolumeForce,
                 double const&, double const&, double const&>,
@@ -1076,6 +1112,30 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("F"),
             pybind11::arg("fixedForce")=true)
+        .def("addGrowingAreaPerimeterForce",
+            &VertexModel::addVertexForce<GrowingAreaPerimeterForce,
+                double const&, double const&,
+                double const&, double const&>,
+            "Add area and perimeter force with growing target area.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "kA : float\n"
+            "    Area elasticity.\n"
+            "s0 : float\n"
+            "    Shape inde.\n"
+            "A0 : float\n"
+            "    Reference area.\n"
+            "tauA : float\n"
+            "    Time scale of increase of target area.\n"
+            "    NOTE: `A0'/`tauA' is the target area increase rate.",
+            pybind11::arg("name"),
+            pybind11::arg("kA"),
+            pybind11::arg("s0"),
+            pybind11::arg("A0"),
+            pybind11::arg("tauA"))
         .def("addBoundaryTension",
             &VertexModel::addVertexForce<BoundaryTension,
                 double const&>,

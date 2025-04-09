@@ -321,22 +321,28 @@ long int VertexModel::splitCell(
 }
 
 long int VertexModel::splitCellAtMax(
-    long int const& cellVertexIndex) {
+    long int const& cellVertexIndex,
+    bool const& avoidThreeEdgeCells) {
 
     double maxDist = 0;
-    std::vector<long int> const centreToBoundaryHalfEdges = // half-edges from cell centre to cell corners
+    std::vector<long int> const centreToBoundaryHalfEdges =     // half-edges from cell centre to cell corners
         getNeighbourVertices(cellVertexIndex)[1];
-    std::vector<long int> maxHalfEdgeIndices;               // pair of half-edges which maximises distance between their centres
+    int const nEdges = centreToBoundaryHalfEdges.size();        // number of cell edges
+    std::vector<long int> maxHalfEdgeIndices;                   // pair of half-edges which maximises distance between their centres
 
-    for (long int halfEdgeIndex0 : centreToBoundaryHalfEdges) {
-        long int const boundaryHalfEdgeIndex0 =             // first given boundary half-edge
-            halfEdges.at(halfEdgeIndex0).getNextIndex();
+    for (int i=0; i < nEdges; i++) {
+        long int const boundaryHalfEdgeIndex0 =                 // first given boundary half-edge
+            halfEdges.at(centreToBoundaryHalfEdges.at(i)).getNextIndex();
 
-        for (long int halfEdgeIndex1 : centreToBoundaryHalfEdges) {
-            long int const boundaryHalfEdgeIndex1 =         // second given boundary half-edge
-                halfEdges.at(halfEdgeIndex1).getNextIndex();
+        for (int j=i + 1; j < nEdges; j++) {
+            long int const boundaryHalfEdgeIndex1 =             // second given boundary half-edge
+                halfEdges.at(centreToBoundaryHalfEdges.at(j)).getNextIndex();
 
-            double const dist = norm2(wrapDiff(             // distance between the centres of first and second given boundary half-edges
+            if (avoidThreeEdgeCells
+                && (j == i + 1 || (i == 0 && j == nEdges - 1))) // ignore successive edges
+                continue;
+
+            double const dist = norm2(wrapDiff(                 // distance between the centres of first and second given boundary half-edges
                 getHalfEdgeCentre(boundaryHalfEdgeIndex0),
                 getHalfEdgeCentre(boundaryHalfEdgeIndex1)));
             if (dist > maxDist) {
@@ -352,7 +358,7 @@ long int VertexModel::splitCellAtMax(
     return splitCell(maxHalfEdgeIndices.at(0), maxHalfEdgeIndices.at(1));
 }
 
-long int VertexModel::mergeCell(
+std::tuple<long int, std::vector<long int>> VertexModel::mergeCell(
     long int const& halfEdgeIndex) {
 
     long int const fromCellVertexIndex =    // centre vertex index of the cell which will be merged from
@@ -420,18 +426,23 @@ long int VertexModel::mergeCell(
     mergeVertices(halfEdgeToDeleteIndex1);
 
     // move cells with merged vertices and destination cell centres
-    if (vertices.at(neighbourCellVertexIndex0).getType() == "centre")
+    std::vector<long int> neighbouringCellIndices;
+    if (vertices.at(neighbourCellVertexIndex0).getType() == "centre") {
         moveToNeighboursCentroid(neighbourCellVertexIndex0);    // first cell with merged vertices centre
-    if (vertices.at(neighbourCellVertexIndex1).getType() == "centre")
+        neighbouringCellIndices.push_back(neighbourCellVertexIndex0);
+    }
+    if (vertices.at(neighbourCellVertexIndex1).getType() == "centre") {
         moveToNeighboursCentroid(neighbourCellVertexIndex1);    // second cell with merged vertices centre
+        neighbouringCellIndices.push_back(neighbourCellVertexIndex1);
+    }
     moveToNeighboursCentroid(toCellVertexIndex);                // destination cell centre vertex
 
 
 //     checkMesh({"junction"});
-    return toCellVertexIndex;
+    return std::make_tuple(toCellVertexIndex, neighbouringCellIndices);
 }
 
-long int VertexModel::mergeCellAtMin(
+std::tuple<long int, std::vector<long int>> VertexModel::mergeCellAtMin(
     long int const& cellVertexIndex) {
 
     // find cell neighbour with the lowest area

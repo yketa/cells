@@ -68,6 +68,33 @@ VertexModel::addVertexForce<AreaForce, pybind11::tuple const&>(
 }
 
 /*
+ *  SurfaceForce
+ *
+ */
+
+// save state
+pybind11::tuple SurfaceForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "SurfaceForce",
+        // state
+        parameters);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<SurfaceForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 2);
+    assert(t[0].cast<std::string>() == "SurfaceForce");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addVertexForce<SurfaceForce, double const&, double const&>(
+        name, parameters.at("Lambda"), parameters.at("V0"));
+}
+
+/*
  *  VolumeForce
  *
  */
@@ -166,6 +193,44 @@ VertexModel::addVertexForce<PressureForce, pybind11::tuple const&>(
     ParametersType const parameters = t[1].cast<ParametersType>();
     addVertexForce<PressureForce, double const&, bool const&>(
         name, parameters.at("F"), parameters.at("fixedForce"));
+}
+
+/*
+ *  GrowingAreaPerimeterForce
+ *
+ */
+
+// save state
+pybind11::tuple GrowingAreaPerimeterForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "GrowingAreaPerimeterForce",
+        // state
+        parameters, targetArea);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<GrowingAreaPerimeterForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 3);
+    assert(t[0].cast<std::string>() == "GrowingAreaPerimeterForce");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addVertexForce<GrowingAreaPerimeterForce,
+        double const&, double const&,
+        double const&, double const&>(
+        name,
+        parameters.at("kA"), parameters.at("s0"),
+        parameters.at("A0"), parameters.at("tauA"));
+    // set internal degrees of freedom state
+    std::map<long int, double> const targetArea =
+        t[2].cast<std::map<long int, double>>();
+    std::shared_ptr<GrowingAreaPerimeterForce> gapf =
+        std::static_pointer_cast<GrowingAreaPerimeterForce>(
+            vertexForces[name]);
+    gapf->setTargetArea(targetArea);
 }
 
 /*
@@ -563,6 +628,9 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         else if (forceName == "AreaForce") {
             addVertexForce.template operator()<AreaForce>();
         }
+        else if (forceName == "SurfaceForce") {
+            addVertexForce.template operator()<SurfaceForce>();
+        }
         else if (forceName == "VolumeForce") {
             addVertexForce.template operator()<VolumeForce>();
         }
@@ -574,6 +642,9 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         }
         else if (forceName == "BoundaryTension") {
             addVertexForce.template operator()<BoundaryTension>();
+        }
+        else if (forceName == "GrowingAreaPerimeterForce") {
+            addVertexForce.template operator()<GrowingAreaPerimeterForce>();
         }
         else if (forceName == "ActiveBrownianForce") {
             addVertexForce.template operator()<ActiveBrownianForce>();
