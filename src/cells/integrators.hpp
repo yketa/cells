@@ -9,9 +9,6 @@ Integrators definitions.
 #include <vector>
 
 #include <Eigen/Sparse> // WARNING: this imports <cassert> which defines assert,
-#ifndef ASSERT_HPP
-#undef assert           //          it is undefined to avoid clash with "assert.hpp".
-#endif
 
 #include "assert.hpp"
 #include "base_integrators.hpp"
