@@ -809,9 +809,16 @@ Active Brownian self-propulsion force acting on vertices.
                 }
             }
             // integration
-            double const amp = sqrt(2.*dt/parameters.at("taup"));
-            for (auto it=theta.begin(); it != theta.end(); ++it) {
-                it->second += amp*random->gauss();
+            if (parameters.at("taup") != 0) {
+                double const amp = sqrt(2.*dt/parameters.at("taup"));
+                for (auto it=theta.begin(); it != theta.end(); ++it) {
+                    it->second += amp*random->gauss();
+                }
+            }
+            else {
+                for (auto it=theta.begin(); it != theta.end(); ++it) {
+                    it->second += 2.*std::numbers::pi*random->random01();
+                }
             }
         }
 
