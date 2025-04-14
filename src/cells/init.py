@@ -98,7 +98,7 @@ def init_vm(user_args=None, parser=None, **kwargs):
             K, A0)
     if args.surface:
         vm.addSurfaceForce("surface",
-            K, V0)
+            K, np.sqrt(2*(args.ra0**3)/np.sqrt(3)))
     if args.volume:
         vm.addVolumeForce("volume",
             K, args.h0*np.sqrt(A0), A0)
@@ -199,6 +199,8 @@ def parse_args(user_args=None, parser=None):
     parser.add_argument("-surface",
         action=BooleanOptionalAction,
         help="add surface force")
+    parser.add_argument("-ra0", type=float, default=1,
+        help="dimensionless target area corresponding to minimal surface")
     # volume force
     parser.add_argument("-volume",
         action=BooleanOptionalAction,
