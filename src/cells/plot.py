@@ -65,7 +65,7 @@ def plot(vm, fig=None, ax=None, update=True,
     """
 
     rainbow_plot = (type(rainbow) == VertexModel)   # is it a rainbow plot?
-    rainbow_means_relaxation = True                 # is rainbow plot a relaxation plot?
+    rainbow_means_relaxation = False                # is rainbow plot a relaxation plot?
     if only_set: clear = True
     if rainbow_plot and clear:
         raise ValueError("`rainbow' and `clear' options are exclusionary.")
@@ -77,6 +77,7 @@ def plot(vm, fig=None, ax=None, update=True,
     if "surface" in vm.vertexForces:
         V0 = vm.vertexForces["surface"].parameters["V0"]
         A0 = (np.sqrt(3)*(V0**2)/2)**(1./3.)
+        h0 = V0/A0
     if "perimeter" in vm.vertexForces:
         if "area" in vm.vertexForces:
             p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
@@ -146,19 +147,32 @@ def plot(vm, fig=None, ax=None, update=True,
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)
                 cbar_volume.set_label(
-                    r"$(h_i - \left<h_i\right>)/\mathrm{std}(h_i)$",
+                    r"$(h_i - h_0)/h_0$",
                     rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
                     _resize_fig(ax, ax_size, fig_width, fig_height))
 
-            if ("area" in vm.vertexForces or "surface" in vm.vertexForces
-                and not("volume" in vm.vertexForces)):
+            if "area" in vm.vertexForces and not("volume" in vm.vertexForces):
                 cbar_area = fig.colorbar(
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)
                 cbar_area.set_label(
-                    r"$(A_i - \left<A_i\right>)/\mathrm{std}(A_i)$",
+                    r"$(A_i - A_0)/A_0$",
+                    rotation=270, labelpad=_cbar_labelpad)
+                # resize
+                ax_size, fig_width, fig_height = (
+                    _resize_fig(ax, ax_size, fig_width, fig_height))
+
+            if "surface" in vm.vertexForces:
+                assert(not("volume" in vm.vertexForces))
+                assert(not("area" in vm.vertexForces))
+                assert(not("perimeter" in vm.vertexForces))
+                cbar_area = fig.colorbar(
+                    mappable=scalarMap_area, ax=ax,
+                    shrink=0.75, pad=0.01)
+                cbar_area.set_label(
+                    r"$(h_i - h_0)/h_0$",
                     rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
@@ -289,28 +303,27 @@ def plot(vm, fig=None, ax=None, update=True,
                 polygons.set_facecolor(list(map(    # colour according to percentage of lost neighbours
                     lambda i: scalarMap_relaxation.to_rgba(1 - pct[i]),
                     cells)))
-        elif "volume_force" in locals():
-            heights = (
-                lambda height: np.array(list(map(
-                    lambda i: height[i],
-                    cells))))(
-                volume_force.height)
-            heights_mean, heights_std = heights.mean(), heights.std()
-            areas = np.array(list(map(lambda i: vm.getVertexToNeighboursArea(i), cells)))
-            volumes = areas*heights
-            if heights_std != 0:
-                polygons.set_facecolor(list(map(    # colour according to height
-                    lambda s_height: scalarMap_area.to_rgba(s_height),
-                    (heights - heights_mean)/heights_std)))
+        elif "h0" in locals():
+            if "volume_force" in locals():
+                heights = (
+                    lambda height: np.array(list(map(
+                        lambda i: height[i],
+                        cells))))(
+                    volume_force.height)
+            elif "V0" in locals():
+                heights = np.array(list(map(
+                    lambda i: V0/vm.getVertexToNeighboursArea(i),
+                    vm.getVertexIndicesByType("centre"))))
+            polygons.set_facecolor(list(map(        # colour according to height
+                lambda s_height: scalarMap_area.to_rgba(s_height),
+                (heights - h0)/h0)))
         elif "A0" in locals():
             areas = np.array(list(map(
                 lambda i: vm.getVertexToNeighboursArea(i),
                 cells)))
-            areas_mean, areas_std = areas.mean(), areas.std()
-            if areas_std != 0:
-                polygons.set_facecolor(list(map(    # colour according to area
-                    lambda s_area: scalarMap_area.to_rgba(s_area),
-                    (areas - areas_mean)/areas_std)))
+            polygons.set_facecolor(list(map(        # colour according to area
+                lambda s_area: scalarMap_area.to_rgba(s_area),
+                    (areas - A0)/A0)))
     ax.add_collection(polygons)
 
     # vertex indices
@@ -322,6 +335,8 @@ def plot(vm, fig=None, ax=None, update=True,
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time, vm.nT1, len(cells)))
+    if "A0" in locals():
+        title += r"$, A_0=%.1e$" % A0
     if "eta" in locals():
         title += r"$, \eta=%.1e$" % eta
     if "gamma" in locals():
@@ -735,7 +750,7 @@ cmap_area = (                                                               # co
         (3/4, (0.925, 0.804, 0.000)),
         (4/4, (0.886, 0.549, 0.000))))
     or plt.cm.bwr)
-norm_area = Normalize(-2, 2)                                                # interval of value represented by colourmap
+norm_area = Normalize(-1, 1)                                                # interval of value represented by colourmap
 scalarMap_area = ScalarMappable(norm_area, cmap_area)                       # conversion from scalar value to colour
 
 # tension colourbar
