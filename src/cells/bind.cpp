@@ -195,10 +195,21 @@ PYBIND11_MODULE(bind, m) {
         VertexForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<ActiveBrownianForce>>(
         m, "ActiveBrownianForce",
-        "Python wrapper around C++ active Brownian force computation object.")
+        "Python wrapper around C++ active Brownian force on vertices\n"
+        "computation object.")
         .def_property("theta",
             &ActiveBrownianForce::getTheta,
             &ActiveBrownianForce::setTheta);
+
+    pybind11::class_<ActiveBrownianCellForce,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<ActiveBrownianCellForce>>(
+        m, "ActiveBrownianCellForce",
+        "Python wrapper around C++ active Brownian force on cell centres\n"
+        "computation object.")
+        .def_property("theta",
+            &ActiveBrownianCellForce::getTheta,
+            &ActiveBrownianCellForce::setTheta);
 
     pybind11::class_<OrnsteinUhlenbeckTension,
         HalfEdgeForce<ForcesType>, BaseForce<ForcesType>,
@@ -1150,9 +1161,9 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("name"),
             pybind11::arg("gamma"))
         .def("addActiveBrownianForce",
-            &VertexModel::addVertexForce<ActiveBrownianForce,
+            &VertexModel::addVertexForce<ActiveBrownianCellForce,
                 double const&, double const&>,
-            "Add active Brownian force on vertices.\n"
+            "Add active Brownian force on cell centres.\n"
             "\n"
             "Parameters\n"
             "----------\n"

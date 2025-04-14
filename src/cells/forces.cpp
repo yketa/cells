@@ -141,6 +141,20 @@ template<> void VertexModel::addVertexForce<
         &random, &forces, &vertices);   // VertexModel attributes
 }
 
+template<> void VertexModel::addVertexForce<
+    // derived force class
+    ActiveBrownianCellForce,
+    // argument types
+    double const&, double const&>(
+    // user-defined arguments
+    std::string const& name, double const& v0, double const& taup) {
+    // set force
+    vertexForces.add<ActiveBrownianCellForce>(
+        name,                               // (unique) user-defined name for forces
+        v0, taup,                           // user-defined parameters
+        this, &random, &forces, &vertices); // VertexModel attributes
+}
+
 template<> void VertexModel::addHalfEdgeForce<
     // derived force class
     OrnsteinUhlenbeckTension,

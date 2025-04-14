@@ -826,6 +826,93 @@ Active Brownian self-propulsion force acting on vertices.
 
 };
 
+class ActiveBrownianCellForce : public VertexForce<ForcesType> {
+/*
+Active Brownian self-propulsion force acting on cell centres.
+*/
+
+    protected:
+
+        Mesh* const mesh;                   // mesh object
+        Random* random;                     // random number generator
+        std::map<long int, double> theta;   // orientation of self-propulsion force
+
+    public:
+
+        ActiveBrownianCellForce(
+            double const& v0_, double const& taup_,
+            Mesh* const mesh_, Random* random_,
+            ForcesType* forces_, VerticesType* const vertices_) :
+            VertexForce<ForcesType>("vertex",
+                {{"v0", v0_}, {"taup", taup_}},
+                forces_, vertices_),
+            mesh(mesh_), random(random_)
+            { integrate(0); }
+
+        std::map<long int, double> const& getTheta() const
+            { return theta; }
+        void setTheta(std::map<long int, double> const& theta_)
+            { theta = theta_; }
+
+        void addForce(Vertex const& vertex) override {
+            std::vector<long int> const neighbours =
+                mesh->getNeighbourVertices(vertex.getIndex())[0];
+            std::vector<double> neighbourThetas;
+            for (long int neighbour : neighbours) {
+                if (inMap(theta, neighbour)) {
+                    neighbourThetas.push_back(theta.at(neighbour));
+                }
+            }
+            long int const nNeighbours = neighbourThetas.size();
+            if (nNeighbours > 0) {
+                for (double neighbourTheta : neighbourThetas) {
+                    for (int dim=0; dim < 2; dim++) {
+                        (*forces)[vertex.getIndex()][dim] +=
+                            parameters.at("v0")*cos(neighbourTheta
+                                - dim*std::numbers::pi/2.)
+                                /nNeighbours;
+                    }
+                }
+            }
+        }
+
+        void integrate(double const& dt) override {
+            // index correspondence between vertices and orientations
+            for (auto it=theta.begin(); it != theta.end();) {
+                if (!inMap(*vertices, it->first)) {                         // vertex index not present any more
+                    it = theta.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != "centre") { // not a cell centre any more
+                    it = theta.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if (!inMap(theta, it->first)                                // new vertex index
+                    && (it->second).getType() == "centre") {
+                    theta[it->first] = 2.*std::numbers::pi*random->random01();
+                }
+            }
+            // integration
+            if (parameters.at("taup") != 0) {
+                double const amp = sqrt(2.*dt/parameters.at("taup"));
+                for (auto it=theta.begin(); it != theta.end(); ++it) {
+                    it->second += amp*random->gauss();
+                }
+            }
+            else {
+                for (auto it=theta.begin(); it != theta.end(); ++it) {
+                    it->second += 2.*std::numbers::pi*random->random01();
+                }
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
 class OrnsteinUhlenbeckTension : public HalfEdgeForce<ForcesType> {
 /*
 Ornstein-Uhlenbeck tension acting on junctions.

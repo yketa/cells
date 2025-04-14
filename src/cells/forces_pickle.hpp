@@ -296,6 +296,41 @@ VertexModel::addVertexForce<ActiveBrownianForce, pybind11::tuple const&>(
 }
 
 /*
+ *  ActiveBrownianCellForce
+ *
+ */
+
+// save state
+pybind11::tuple ActiveBrownianCellForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "ActiveBrownianCellForce",
+        // state
+        parameters, theta);
+}
+
+// load state
+template<> void
+VertexModel::addVertexForce<ActiveBrownianCellForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 3);
+    assert(t[0].cast<std::string>() == "ActiveBrownianCellForce");
+    // initialise force
+    ParametersType const parameters =
+        t[1].cast<ParametersType>();
+    addVertexForce<ActiveBrownianCellForce, double const&, double const&>(
+        name, parameters.at("v0"), parameters.at("taup"));
+    // set internal degrees of freedom state
+    std::map<long int, double> const theta =
+        t[2].cast<std::map<long int, double>>();
+    std::shared_ptr<ActiveBrownianCellForce> abcp =
+        std::static_pointer_cast<ActiveBrownianCellForce>(
+            vertexForces[name]);
+    abcp->setTheta(theta);
+}
+
+/*
  *  OrnsteinUhlenbeckTension
  *
  */
@@ -648,6 +683,9 @@ pybind11_setstate_force_class_factory<VertexForce<ForcesType>>(
         }
         else if (forceName == "ActiveBrownianForce") {
             addVertexForce.template operator()<ActiveBrownianForce>();
+        }
+        else if (forceName == "ActiveBrownianCellForce") {
+            addVertexForce.template operator()<ActiveBrownianCellForce>();
         }
         else if (forceName == "KeratinModel") {
             addVertexForce.template operator()<KeratinModel>();
