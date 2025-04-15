@@ -50,7 +50,17 @@ def init_vm(user_args=None, parser=None, **kwargs):
 
     # INITIALISATION
 
-    if args.input is None:
+    if args.resume:
+
+        # resume simulation
+
+        try: assert not(args.input is None)
+        except AssertionError: raise ValueError("No input file to resume.")
+
+        vm = None       # do not initialise vertex model object
+        return args, vm # return args anyway
+
+    elif args.input is None:
 
         # regular grid
 
@@ -164,11 +174,16 @@ def parse_args(user_args=None, parser=None):
         parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 
     # INITIALISATION
+    # resume simulation
+    if script[-5:] == "vm.py":
+        parser.add_argument("-resume",
+            action=BooleanOptionalAction,
+            help="resume simulation from last frame of file set with -input")
     # regular grid
     parser.add_argument("-N", type=int, default=36,
         help=
             "[--no-periodic (default)] number of cells (! square number) "
-            "[-periodic] number of vertices in each direction"
+            "[-periodic] number of vertices in each direction "
             "(! multiple of 6)")
     parser.add_argument("--periodic", "-periodic", "-p",
         action=BooleanOptionalAction,
