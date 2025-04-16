@@ -24,7 +24,7 @@ std::vector<double> Mesh::wrapDiff(
     bool const& unit)
     const {
 
-    // compute difference bector
+    // compute difference vector
     std::vector<double> disp(2, 0);
     for (int dim=0; dim < 2; dim++) {
         disp[dim] = std::remainder(toPos[dim] - fromPos[dim], systemSize[dim]);
