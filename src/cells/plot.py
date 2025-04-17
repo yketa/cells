@@ -75,9 +75,17 @@ def plot(vm, fig=None, ax=None, update=True,
     if "area" in vm.vertexForces:
         A0 = vm.vertexForces["area"].parameters["A0"]
     if "surface" in vm.vertexForces:
-        V0 = vm.vertexForces["surface"].parameters["V0"]
-        A0 = (np.sqrt(3)*(V0**2)/2)**(1./3.)
-        h0 = V0/A0
+        surface_force = vm.vertexForces["surface"]
+        if surface_force.parameters["tauV"] == 0:
+            V0 = surface_force.parameters["V0"]
+            A0 = (np.sqrt(3)*(V0**2)/2)**(1/3)
+            h0 = V0/A0
+        else:
+            V0 = surface_force.volume
+            A0 = dict(map(lambda i: (i, (np.sqrt(3)*(V0[i]**2)/2)**(1/3)), V0))
+            h0 = dict(map(lambda i: (i, V0[i]/A0[i]), V0))
+        del A0
+        A0 = (np.sqrt(3)*(surface_force.parameters["V0"]**2)/2)**(1/3)
     if "perimeter" in vm.vertexForces:
         if "area" in vm.vertexForces:
             p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
@@ -305,18 +313,26 @@ def plot(vm, fig=None, ax=None, update=True,
                     cells)))
         elif "h0" in locals():
             if "volume_force" in locals():
-                heights = (
+                s_heights = (
                     lambda height: np.array(list(map(
-                        lambda i: height[i],
+                        lambda i: (height[i] - h0)/h0,
                         cells))))(
                     volume_force.height)
-            elif "V0" in locals():
-                heights = np.array(list(map(
-                    lambda i: V0/vm.getVertexToNeighboursArea(i),
-                    vm.getVertexIndicesByType("centre"))))
+            elif "surface_force" in locals():
+                areas = dict(map(
+                    lambda i: (i, vm.getVertexToNeighboursArea(i)),
+                    cells))
+                if surface_force.parameters["tauV"] == 0:
+                    s_heights = np.array(list(map(
+                        lambda i: (V0/areas[i] - h0)/h0,
+                        cells)))
+                else:
+                    s_heights = np.array(list(map(
+                        lambda i: (V0[i]/areas[i] - h0[i])/h0[i],
+                        cells)))
             polygons.set_facecolor(list(map(        # colour according to height
                 lambda s_height: scalarMap_area.to_rgba(s_height),
-                (heights - h0)/h0)))
+                s_heights)))
         elif "A0" in locals():
             areas = np.array(list(map(
                 lambda i: vm.getVertexToNeighboursArea(i),

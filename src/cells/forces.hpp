@@ -126,32 +126,39 @@ Cell area restoring force.
 
 class SurfaceForce : public VertexForce<ForcesType> {
 /*
-Cell surface restoring force.
+Cell surface minimising force at constant volume.
 */
 
     protected:
 
         Mesh* const mesh;
 
+        std::map<long int, double> volume;
+
     public:
 
         SurfaceForce(
-            double const& Lambda_, double const& V0_,
+            double const& Lambda_, double const& V0_, double const& tauV_,
             Mesh* const mesh_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
-                {{"Lambda", Lambda_}, {"V0", V0_}},
+                {{"Lambda", Lambda_}, {"V0", V0_}, {"tauV", tauV_}},
                 forces_, vertices_),
             mesh(mesh_) {}
 
+        std::map<long int, double> const& getVolume() const
+            { return volume; }
+        void setVolume(std::map<long int, double> const& volume_)
+            { if (parameters.at("tauV") == 0) return; volume = volume_; }
+
         void addForce(Vertex const& vertex) override {
-//             std::cerr <<
-//                 "Area force on vertex " << vertex.getIndex() << "."
-//                 << std::endl;
             double const area = mesh->getVertexToNeighboursArea(
                 vertex.getIndex());
             double const perimeter = mesh->getVertexToNeighboursPerimeter(
                 vertex.getIndex());
+            double const V0 =
+                (parameters.at("tauV") == 0) ? parameters.at("V0") :
+                volume.at(vertex.getIndex());
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
             long int const numberNeighbours = neighbourVerticesIndices.size();
@@ -172,7 +179,7 @@ Cell surface restoring force.
                 for (int dim=0; dim < 2; dim++) {
                     (*forces)[neighbourVerticesIndices[i]][dim] +=
                         (parameters.at("Lambda")/2)*(
-                            2 - parameters.at("V0")*perimeter/(area*area))*(
+                            2 - V0*perimeter/(area*area))*(
                                 crossToPreviousNeighbour[dim]
                                     - crossToNextNeighbour[dim]);
                 }
@@ -187,9 +194,39 @@ Cell surface restoring force.
                     true);
                 for (int dim=0; dim < 2; dim++) {
                     (*forces)[neighbourVerticesIndices[i]][dim] +=
-                        parameters.at("Lambda")*(parameters.at("V0")/area)*(
+                        parameters.at("Lambda")*(V0/area)*(
                             toPreviousNeighbour[dim] + toNextNeighbour[dim]);
                 }
+            }
+        }
+
+        void integrate(double const& dt) override {
+
+            if (parameters.at("tauV") == 0) return;
+
+            // index correspondence between vertices and volumes
+            for (auto it=volume.begin(); it != volume.end();) {
+                if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
+                    it = volume.erase(it);
+                }
+                else if ((vertices->at(it->first)).getType() != type) { // not a vertex any more
+                    it = volume.erase(it);
+                }
+                else {
+                    ++it;
+                }
+            }
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if (!inMap(volume, it->first)
+                    && (it->second).getType() == type) {                // new vertex index
+                    volume[it->first] = parameters.at("V0");
+                }
+            }
+
+            // integrate volume
+            for (auto it=volume.begin(); it != volume.end(); ++it) {
+                it->second += (parameters.at("V0") - it->second)
+                    *dt/parameters.at("tauV");
             }
         }
 

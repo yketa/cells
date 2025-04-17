@@ -158,6 +158,16 @@ PYBIND11_MODULE(bind, m) {
      *
      */
 
+    pybind11::class_<SurfaceForce,
+        VertexForce<ForcesType>, BaseForce<ForcesType>,
+        std::shared_ptr<SurfaceForce>>(
+        m, "SurfaceForce",
+        "Python wrapper around C++ cell surface minimising force at constant\n"
+        "volume.\n")
+        .def_property("volume",
+            &SurfaceForce::getVolume,
+            &SurfaceForce::setVolume);
+
     pybind11::class_<VolumeForce,
         VertexForce<ForcesType>, BaseForce<ForcesType>,
         std::shared_ptr<VolumeForce>>(
@@ -1037,8 +1047,8 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("A0"))
         .def("addSurfaceForce",
             &VertexModel::addVertexForce<SurfaceForce,
-                double const&, double const&>,
-            "Add cell surface restoring force.\n"
+                double const&, double const&, double const&>,
+            "Add cell surface minimising force at constant volume.\n"
             "\n"
             "Parameters\n"
             "----------\n"
@@ -1047,10 +1057,14 @@ PYBIND11_MODULE(bind, m) {
             "Lambda : float\n"
             "    Surface tension.\n"
             "V0 : float\n"
-            "    Cell volume.",
+            "    Cell volume.\n"
+            "tauV : float\n"
+            "    Cell volume relaxation time towards V0. (default: 0)\n"
+            "    NOTE: if tauV == 0 then volume is always V0.",
             pybind11::arg("name"),
             pybind11::arg("Lambda"),
-            pybind11::arg("V0"))
+            pybind11::arg("V0"),
+            pybind11::arg("tauV")=0)
         .def("addVolumeForce",
             &VertexModel::addVertexForce<VolumeForce,
                 double const&, double const&, double const&>,

@@ -78,7 +78,7 @@ pybind11::tuple SurfaceForce::pybind11_getstate() const {
         // unique identifying string for the force object
         "SurfaceForce",
         // state
-        parameters);
+        parameters, volume);
 }
 
 // load state
@@ -86,12 +86,21 @@ template<> void
 VertexModel::addVertexForce<SurfaceForce, pybind11::tuple const&>(
     std::string const& name, pybind11::tuple const& t) {
     // check
-    checkSize(t, 2);
+    checkSize(t, 3);
     assert(t[0].cast<std::string>() == "SurfaceForce");
     // initialise force
     ParametersType const parameters = t[1].cast<ParametersType>();
-    addVertexForce<SurfaceForce, double const&, double const&>(
-        name, parameters.at("Lambda"), parameters.at("V0"));
+    addVertexForce<SurfaceForce,
+        double const&, double const&, double const&>(
+        name,
+        parameters.at("Lambda"), parameters.at("V0"), parameters.at("tauV"));
+    // set internal degrees of freedom state
+    std::map<long int, double> const volume =
+        t[2].cast<std::map<long int, double>>();
+    std::shared_ptr<SurfaceForce> sf =
+        std::static_pointer_cast<SurfaceForce>(
+            vertexForces[name]);
+    sf->setVolume(volume);
 }
 
 /*

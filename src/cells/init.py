@@ -18,7 +18,7 @@ import sys
 
 K = 1                                                   # area elasticity
 A0 = 1                                                  # area of a regular hexagon
-V0 = np.sqrt(2*(A0**3)/np.sqrt(3))                      # volume with minimum surface based on unit area hexagon
+V0 = lambda ra0: np.sqrt(2*((ra0*A0)**3)/np.sqrt(3))    # volume with minimum surface based on hexagons whose area is a given ratio of the reference area
 script = os.path.basename(sys.argv[0])                  # name of invoking script
 out_fname = "out.p"                                     # default saving file name
 movie_sh_fname = os.path.join(__path__[-1], "movie.sh") # movie making shell script file name
@@ -50,7 +50,7 @@ def init_vm(user_args=None, parser=None, **kwargs):
 
     # INITIALISATION
 
-    if args.resume:
+    if hasattr(args, "resume") and args.resume:
 
         # resume simulation
 
@@ -108,7 +108,7 @@ def init_vm(user_args=None, parser=None, **kwargs):
             K, A0)
     if args.surface:
         vm.addSurfaceForce("surface",
-            K, np.sqrt(2*(args.ra0**3)/np.sqrt(3)))
+            K, V0(args.ra0))
     if args.volume:
         vm.addVolumeForce("volume",
             K, args.h0*np.sqrt(A0), A0)
