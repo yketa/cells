@@ -603,6 +603,74 @@ def plot_translational(vm, fig=None, ax=None, update=True, **kwargs):
 
     return fig, ax
 
+def plot_p0(vm, fig=None, ax=None, update=True, **kwargs):
+    """
+    Plot vertex model with colouring according to value of instantaneous shape
+    index.
+
+    Parameters
+    ----------
+    vm : cells.bind.VertexModel
+        State of the system to plot.
+    fig : matplotlib.figure.Figure or None
+        Figure on which to plot. (default: None)
+        NOTE: if fig == None then a new figure and axes subplot is created.
+    ax : matplotlib.axes._subplots.AxesSubplot or None
+        Axes subplot on which to plot. (default: None)
+        NOTE: if ax == None then a new figure and axes subplot is created.
+    update : bool
+        Update figure canvas. (default: True)
+
+    Additional keyword arguments are passed to cells.plot.plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figure.
+    ax : matplotlib.axes._subplots.AxesSubplot
+        Axes subplot.
+    """
+
+    assert(not("clear" in kwargs) or not(kwargs["clear"]))  # not compatible with clear plot
+
+    set_call = (fig is None or ax is None)
+    fig, ax = plot(vm, fig=fig, ax=ax, clear=True, update=False, **kwargs)  # initialise figure and axis
+
+    cells = vm.getVertexIndicesByType("centre")                         # indices of cell centres
+    areas = np.array(list(map(# areas of cells
+        lambda i: vm.getVertexToNeighboursArea(i),
+        cells)))
+    perimeters = np.array(list(map(# perimeters of cells
+        lambda i: vm.getVertexToNeighboursPerimeter(i),
+        cells)))
+    p0 = perimeters/np.sqrt(areas)
+
+    # colourbars
+    if set_call:
+        # measure
+        ax_size, fig_width, fig_height = _measure_fig(ax)
+        # colourbar
+        cbar_p0 = fig.colorbar(
+            mappable=scalarMap_p0, ax=ax,
+            shrink=0.75, pad=0.01)
+        cbar_p0.set_label(
+            r"$P/\sqrt{A}$",
+            rotation=270, labelpad=_cbar_labelpad)
+        cbar_p0.set_ticks([norm_p0.vmin, 3.72, 3.81, norm_p0.vmax])
+        cbar_p0.set_ticklabels(
+            [r"$%.2f$" % t for t in cbar_p0.get_ticks()])
+        # resize
+        ax_size, fig_width, fig_height = (
+            _resize_fig(ax, ax_size, fig_width, fig_height))
+
+    # set colours
+    ax.collections[1].set_facecolor(scalarMap_p0.to_rgba(p0))
+
+    # update canvas
+    if update: _update_canvas(fig)
+
+    return fig, ax
+
 def plot_velocities(vm, fig=None, ax=None, update=True,
     av_norm=0.2, hide_centres=True, hide_vertices=False, override=None,
     **kwargs):
@@ -828,7 +896,7 @@ scalarMap_neigh = ScalarMappable(cmap=cmap_neigh, norm=norm_neigh)          # co
 # relaxation colourbar
 cmap_relaxation = ListedColormap([                                          # colourmap
     ScalarMappable(
-        norm=Normalize(vmin=0, vmax=1),
+        norm=Normalize(0, 1),
             cmap=(LinearSegmentedColormap.from_list("polysexual", (         # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Polysexuality_Pride_Flag.svg
                 (0/2, (0.110, 0.573, 0.965)),
                 (1/2, (0.027, 0.835, 0.412)),
@@ -838,4 +906,21 @@ cmap_relaxation = ListedColormap([                                          # co
     for x in (0/2, 1/2, 2/2)])
 norm_relaxation = Normalize(0, 1)                                           # interval of value represented by colourmap
 scalarMap_relaxation = ScalarMappable(norm_relaxation, cmap_relaxation)     # conversion from scalar value to colour
+
+# shape index colourbar
+cmap_p0 = ListedColormap([                                                  # colourmap
+    ScalarMappable(
+        norm=Normalize(0, 1),
+            cmap=(LinearSegmentedColormap.from_list("genderflux", (         # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Genderflux_Pride_Flag.png
+                (0/5, (1.000, 0.957, 0.557)),
+                (1/5, (0.243, 0.804, 0.976)),
+                (2/5, (0.486, 0.878, 0.969)),
+                (3/5, (0.808, 0.808, 0.808)),
+                (4/5, (0.949, 0.639, 0.725)),
+                (5/5, (0.957, 0.463, 0.580))))
+            or plt.cm.tab10),
+        ).to_rgba(x)
+    for x in (0/5, 1/5, 2/5, 3/5, 4/5, 5/5)])
+norm_p0 = Normalize(3.60, 4.02)                                             # interval of value represented by colourmap
+scalarMap_p0 = ScalarMappable(norm_p0, cmap_p0)                             # conversion from scalar value to colour
 
