@@ -23,6 +23,13 @@ script = os.path.basename(sys.argv[0])                  # name of invoking scrip
 out_fname = "out.p"                                     # default saving file name
 movie_sh_fname = os.path.join(__path__[-1], "movie.sh") # movie making shell script file name
 
+###########################
+# AD-HOC MODIFICATION OF A0
+if "A0" in os.environ:
+    A0 = float(os.environ["A0"])
+    V0 = lambda ra0: np.sqrt(2*((ra0*1)**3)/np.sqrt(3))
+###########################
+
 def init_vm(user_args=None, parser=None, **kwargs):
     """
     Initilise VertexModel object with command line arguments.
