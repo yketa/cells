@@ -166,7 +166,9 @@ PYBIND11_MODULE(bind, m) {
         "volume.\n")
         .def_property("volume",
             &SurfaceForce::getVolume,
-            &SurfaceForce::setVolume);
+            &SurfaceForce::setVolume)
+        .def_property_readonly("height",
+            &SurfaceForce::getHeight);
 
     pybind11::class_<VolumeForce,
         VertexForce<ForcesType>, BaseForce<ForcesType>,

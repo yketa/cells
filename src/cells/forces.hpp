@@ -151,6 +151,23 @@ Cell surface minimising force at constant volume.
         void setVolume(std::map<long int, double> const& volume_)
             { if (parameters.at("tauV") == 0) return; volume = volume_; }
 
+        std::map<long int, double> getHeight() const {
+            std::map<long int, double> height;
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if ((it->second).getType() == type) {
+                    double const area =
+                        mesh->getVertexToNeighboursArea(it->first);
+                    if (inMap(volume, it->first)) {
+                        height.emplace(it->first, volume.at(it->first)/area);
+                    }
+                    else {
+                        height.emplace(it->first, parameters.at("V0")/area);
+                    }
+                }
+            }
+            return height;
+        }
+
         void addForce(Vertex const& vertex) override {
             double const area = mesh->getVertexToNeighboursArea(
                 vertex.getIndex());

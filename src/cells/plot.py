@@ -319,16 +319,14 @@ def plot(vm, fig=None, ax=None, update=True,
                         cells))))(
                     volume_force.height)
             elif "surface_force" in locals():
-                areas = dict(map(
-                    lambda i: (i, vm.getVertexToNeighboursArea(i)),
-                    cells))
+                heights = surface_force.height
                 if surface_force.parameters["tauV"] == 0:
                     s_heights = np.array(list(map(
-                        lambda i: (V0/areas[i] - h0)/h0,
+                        lambda i: (heights[i] - h0)/h0,
                         cells)))
                 else:
                     s_heights = np.array(list(map(
-                        lambda i: (V0[i]/areas[i] - h0[i])/h0[i],
+                        lambda i: (heights[i] - h0[i])/h0[i],
                         cells)))
             polygons.set_facecolor(list(map(        # colour according to height
                 lambda s_height: scalarMap_area.to_rgba(s_height),
