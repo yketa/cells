@@ -23,8 +23,9 @@ MPFLAGS=-fopenmp
 PYTHON:=$(shell perl -MCwd -le 'print Cwd::abs_path(shift)' "`which $(PYTHON)`")
 PYTHONFLAGS=
 # python libraries
-# PYTHONFLAGS+=$(shell $(PYTHON)-config --includes)
-PYTHONFLAGS+=$(shell $(PYTHON) -m pybind11 --includes)
+# https://stackoverflow.com/a/59074274
+PYTHONFLAGS+=$(shell $(PYTHON)-config --includes 2> /dev/null)
+PYTHONFLAGS+=$(shell $(PYTHON) -m pybind11 --includes 2> /dev/null)
 # -- external libraries flags --
 EXTERNFLAGS=
 # use pkg-config to find libraries
