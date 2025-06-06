@@ -155,7 +155,7 @@ def plot(vm, fig=None, ax=None, update=True,
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)
                 cbar_volume.set_label(
-                    r"$(h_i - h_0)/h_0$",
+                    r"$(h_i - h_6^*)/h_6^*$",
                     rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
@@ -180,7 +180,7 @@ def plot(vm, fig=None, ax=None, update=True,
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)
                 cbar_area.set_label(
-                    r"$(h_i - h_0)/h_0$",
+                    r"$(h_i - h_6^*)/h_6^*$",
                     rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
@@ -906,19 +906,21 @@ norm_relaxation = Normalize(0, 1)                                           # in
 scalarMap_relaxation = ScalarMappable(norm_relaxation, cmap_relaxation)     # conversion from scalar value to colour
 
 # shape index colourbar
-cmap_p0 = ListedColormap([                                                  # colourmap
-    ScalarMappable(
-        norm=Normalize(0, 1),
-            cmap=(LinearSegmentedColormap.from_list("genderflux", (         # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Genderflux_Pride_Flag.png
-                (0/5, (1.000, 0.957, 0.557)),
-                (1/5, (0.243, 0.804, 0.976)),
-                (2/5, (0.486, 0.878, 0.969)),
-                (3/5, (0.808, 0.808, 0.808)),
-                (4/5, (0.949, 0.639, 0.725)),
-                (5/5, (0.957, 0.463, 0.580))))
-            or plt.cm.tab10),
-        ).to_rgba(x)
-    for x in (0/5, 1/5, 2/5, 3/5, 4/5, 5/5)])
-norm_p0 = Normalize(3.60, 4.02)                                             # interval of value represented by colourmap
+cmap_p0 = (                                                                 # colourmap
+    ListedColormap([
+        ScalarMappable(
+            norm=Normalize(0, 1),
+                cmap=(LinearSegmentedColormap.from_list("genderflux", (     # https://en.wikipedia.org/wiki/Pride_flag#/media/File:Genderflux_Pride_Flag.png
+                    (0/5, (1.000, 0.957, 0.557)),
+                    (1/5, (0.243, 0.804, 0.976)),
+                    (2/5, (0.486, 0.878, 0.969)),
+                    (3/5, (0.808, 0.808, 0.808)),
+                    (4/5, (0.949, 0.639, 0.725)),
+                    (5/5, (0.957, 0.463, 0.580))))
+                or plt.cm.tab10),
+            ).to_rgba(x)
+        for x in (0/5, 1/5, 2/5, 3/5, 4/5, 5/5)])
+    and plt.cm.Reds)
+norm_p0 = Normalize(3.72, 4.5)                                              # interval of value represented by colourmap
 scalarMap_p0 = ScalarMappable(norm_p0, cmap_p0)                             # conversion from scalar value to colour
 
