@@ -100,7 +100,7 @@ if __name__ == "__main__":
                         + i*args.dtmin for i in range(args.niter//args.dtmin)], # frames spaced with dtmin
                     dtype=int)
                 metadata["t"] = np.array([0, args.dtmin])                       # lag times
-        else:                       # LOGARITHMICALLY SPACED FRAMES
+        else:                   # LOGARITHMICALLY SPACED FRAMES
             dtmax = np.min([args.dtmax, args.niter - (args.intmax - 1)])        # maximum lag time
             metadata["t0"] = np.array(                                          # initial times
                 [args.init                                                      # initialisation frames

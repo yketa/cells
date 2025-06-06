@@ -295,7 +295,7 @@ def parse_args(user_args=None, parser=None):
     parser.add_argument("-delta", type=float, default=0.02,
         help="length below which to perform T1")
     parser.add_argument("-epsilon", type=float, default=0.002,
-        help="create junction with length epsilon above threshold after T1")
+        help="create junction with length delta + epsilon above threshold after T1")
     if not(script == "vm.py"):
         parser.add_argument("-iterations", type=int, default=100,
             help="number of iterations between plots")

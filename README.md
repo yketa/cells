@@ -57,7 +57,7 @@ make -f container.makefile
 ```
 then -- after successful completion -- package information should be given by `./container.sif python -m pip show cells`.
 
-This operation is reverted by `rm -iv container.sif`
+This operation is reverted by `rm -iv container.sif`.
 
 Note that package `cells` is then available through the `python` interpreter of the container with `./container.sif python -m cells` or `singularity exec container.sif python -m cells`.
 
