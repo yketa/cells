@@ -252,8 +252,6 @@ if __name__ == "__main__":
     # sigma is defined by {sigma}
     parser.add_argument("-ron", type=float, default=0,
         help="keratin concentration on-rate evolution time rate (= 1/tauon)")
-    parser.add_argument("-fpull", type=float, default=0,
-        help="outer vertices pulling force scale")
 
     args, vm = init_vm(parser=parser, boxLength=5)
     time0 = vm.time
