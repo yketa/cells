@@ -243,6 +243,33 @@ VertexModel::addVertexForce<GrowingAreaPerimeterForce, pybind11::tuple const&>(
 }
 
 /*
+ *  TensionForce
+ *
+ */
+
+// save state
+pybind11::tuple TensionForce::pybind11_getstate() const {
+    return pybind11::make_tuple(
+        // unique identifying string for the force object
+        "TensionForce",
+        // state
+        parameters);
+}
+
+// load state
+template<> void
+VertexModel::addHalfEdgeForce<TensionForce, pybind11::tuple const&>(
+    std::string const& name, pybind11::tuple const& t) {
+    // check
+    checkSize(t, 2);
+    assert(t[0].cast<std::string>() == "TensionForce");
+    // initialise force
+    ParametersType const parameters = t[1].cast<ParametersType>();
+    addHalfEdgeForce<TensionForce, double const&>(
+        name, parameters.at("Lambda"));
+}
+
+/*
  *  BoundaryTension
  *
  */
@@ -724,7 +751,10 @@ pybind11_setstate_force_class_factory<HalfEdgeForce<ForcesType>>(
                 it->first, it->second);
         };
         // --- MANUAL ASSOCIATION TO FORCES ---
-        if (forceName == "OrnsteinUhlenbeckTension") {
+        if (forceName == "TensionForce") {
+            addHalfEdgeForce.template operator()<TensionForce>();
+        }
+        else if (forceName == "OrnsteinUhlenbeckTension") {
             addHalfEdgeForce.template operator()<OrnsteinUhlenbeckTension>();
         }
         else if (forceName == "Model0") {

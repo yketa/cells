@@ -97,6 +97,20 @@ template<> void VertexModel::addVertexForce<
         this, &forces, &vertices);  // VertexModel attributes
 }
 
+template<> void VertexModel::addHalfEdgeForce<
+    // derived force class
+    TensionForce,
+    // argument types
+    double const&>(
+    // user-defined arguments
+    std::string const& name, double const& Lambda) {
+    // set force
+    halfEdgeForces.add<TensionForce>(
+        name,                       // (unique) user-defined name for forces
+        Lambda,                     // user-defined parameters
+        this, &forces, &halfEdges); // VertexModel attributes
+}
+
 template<> void VertexModel::addVertexForce<
     // derived force class
     BoundaryTension,

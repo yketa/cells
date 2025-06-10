@@ -123,6 +123,12 @@ def init_vm(user_args=None, parser=None, **kwargs):
         vm.addLinearVolumeForce("linear_volume",
             K, A0, args.Gamma, args.p0*np.sqrt(A0),
             args.taur, args.h0*np.sqrt(A0), args.taua)
+    if args.fpull != 0:
+        vm.addPressureForce("pull",
+            args.fpull, False)
+    if args.Lambda != 0:
+        vm.addTensionForce("tension",
+            args.Lambda)
     if args.gamma != 0:
         vm.addBoundaryTension("boundary_tension",
             args.gamma)
@@ -235,6 +241,12 @@ def parse_args(user_args=None, parser=None):
         help="add linear volume force")
     parser.add_argument("-taua", type=float, default=1,
         help="alignment time")
+    # pressure force
+    parser.add_argument("-fpull", type=float, default=0,
+        help="pulling force")
+    # constant junction tension
+    parser.add_argument("-Lambda", type=float, default=0,
+        help="constant junction tension")
     # boundary line tension
     parser.add_argument("-gamma", type=float, default=0,
         help="line tension on open boundary")

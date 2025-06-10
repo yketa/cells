@@ -631,6 +631,43 @@ the number of boundary vertices divided by the perimeter of the boundary
         pybind11::tuple pybind11_getstate() const override;
 };
 
+class TensionForce : public HalfEdgeForce<ForcesType> {
+/*
+Constant tension on all junctions.
+*/
+
+    protected:
+
+        Mesh* const mesh;
+
+    public:
+
+        TensionForce(
+            double const& Lambda_,
+            Mesh* const mesh_,
+            ForcesType* forces_, HalfEdgesType* const halfEdges_) :
+            HalfEdgeForce<ForcesType>("junction",   // acts on half-edges of type "junction"
+                {{"Lambda", Lambda_}},
+                forces_, halfEdges_),
+            mesh(mesh_) {}
+
+        void addForce(HalfEdge const& halfEdge) override {
+
+            std::vector<double> const junctionDir = // unit vector in the direction of the junction
+                mesh->getHalfEdgeVector(halfEdge.getIndex(), true);
+
+            for (int dim=0; dim < 2; dim++) {
+                (*forces)[halfEdge.getFromIndex()][dim] +=
+                    parameters.at("Lambda")*junctionDir[dim];
+                (*forces)[halfEdge.getToIndex()][dim] +=
+                    -parameters.at("Lambda")*junctionDir[dim];
+            }
+        }
+
+        pybind11::tuple pybind11_getstate() const override;
+
+};
+
 class BoundaryTension : public VertexForce<ForcesType> {
 /*
 Line tension on open boundaries.
@@ -679,6 +716,7 @@ Line tension on open boundaries.
         }
 
         pybind11::tuple pybind11_getstate() const override;
+
 };
 
 class GrowingAreaPerimeterForce : public VertexForce<ForcesType> {

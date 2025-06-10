@@ -1163,6 +1163,19 @@ PYBIND11_MODULE(bind, m) {
             pybind11::arg("s0"),
             pybind11::arg("A0"),
             pybind11::arg("tauA"))
+        .def("addTensionForce",
+            &VertexModel::addHalfEdgeForce<TensionForce,
+                double const&>,
+            "Add consant tension on all junctions.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "name : str\n"
+            "    Unique name for the force.\n"
+            "Lambda : float\n"
+            "    Junction tension.",
+            pybind11::arg("name"),
+            pybind11::arg("Lambda"))
         .def("addBoundaryTension",
             &VertexModel::addVertexForce<BoundaryTension,
                 double const&>,
