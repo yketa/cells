@@ -280,19 +280,17 @@ template<> void VertexModel::addVertexForce<    // initial time as argument (for
     KeratinModel,
     // argument types
     double const&, double const&, double const&,
-    double const&, double const&,
     double const&, double const&, double const&,
     double const&, double const&, double const&>(
     // user-defined arguments
     std::string const& name,
-    double const& K, double const& A0, double const& taur,
-    double const& Gamma, double const& p0,
+    double const& gamma, double const& A0, double const& taur,
     double const& alpha, double const& beta, double const& kth,
     double const& tau, double const& sigma, double const& ron) {
     // set force
     vertexForces.add<KeratinModel>(
-        name,                                                       // (unique) user-defined name for forces
-        K, A0, taur, Gamma, p0, alpha, beta, kth, tau, sigma, ron,  // user-defined parameters
-        this, &random, &forces, &vertices);                         // VertexModel attributes and initial time
+        name,                                               // (unique) user-defined name for forces
+        gamma, A0, taur, alpha, beta, kth, tau, sigma, ron, // user-defined parameters
+        this, &random, &forces, &vertices);                 // VertexModel attributes and initial time
 }
 

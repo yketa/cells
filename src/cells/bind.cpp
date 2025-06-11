@@ -1334,7 +1334,6 @@ PYBIND11_MODULE(bind, m) {
         .def("addKeratinModel",
             &VertexModel::addVertexForce<KeratinModel,
                 double const&, double const&, double const&,
-                double const&, double const&,
                 double const&, double const&, double const&,
                 double const&, double const&, double const&>,
             "Add keratin model.\n"
@@ -1343,16 +1342,12 @@ PYBIND11_MODULE(bind, m) {
             "----------\n"
             "name : str\n"
             "    Unique name for the force.\n"
-            "K : float\n"
-            "    Area elasticity.\n"
+            "gamma : float\n"
+            "    Surface tension.\n"
             "A0 : float\n"
             "    Minimum target area.\n"
             "taur : float\n"
             "    Target area relaxation time scale.\n"
-            "Gamma : float\n"
-            "    Perimeter elasticity.\n"
-            "p0 : float\n"
-            "    Target shape index.\n"
             "alpha : float\n"
             "    Keratin pressure scale.\n"
             "beta : float\n"
@@ -1367,11 +1362,9 @@ PYBIND11_MODULE(bind, m) {
             "    Keratin concentration on-rate evolution time rate\n"
             "    (=1/tauon).\n",
             pybind11::arg("name"),
-            pybind11::arg("K"),
-            pybind11::arg("A0"),
+            pybind11::arg("gamma"),
+            pybind11::arg("V0"),
             pybind11::arg("taur"),
-            pybind11::arg("Gamma"),
-            pybind11::arg("p0"),
             pybind11::arg("alpha"),
             pybind11::arg("beta"),
             pybind11::arg("kth"),

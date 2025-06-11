@@ -1725,15 +1725,13 @@ Keratin model.
     public:
 
         KeratinModel(
-            double const& K_, double const& A0, double const& taur_,
-            double const& Gamma_, double const& p0_,
+            double const& gamma_, double const& A0_, double const& taur_,
             double const& alpha_, double const& beta_, double const& kth_,
             double const& tau_, double const& sigma_, double const& ron_,
             Mesh* const mesh_, Random* random_,
             ForcesType* forces_, VerticesType* const vertices_) :
             VertexForce<ForcesType>("centre",
-                {{"K", K_}, {"A0", A0}, {"taur", taur_},
-                {"Gamma", Gamma_}, {"p0", p0_},
+                {{"gamma", gamma_}, {"A0", A0_}, {"taur", taur_},
                 {"alpha", alpha_}, {"beta", beta_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
@@ -1799,26 +1797,23 @@ Keratin model.
 
         void addForce(Vertex const& vertex) override {
 
-            // area elasticity
-            double const Kk =                               // keratin-dependent area elastic constant
-                parameters.at("K")*keffect(vertex.getIndex());
+            // surface tension
+            double const gammak =   // keratin-dependent surface tension
+                parameters.at("gamma")*keffect(vertex.getIndex());
+            double const lambdaV0 = // differential surface tension
+                sqrt((2*pow(targetArea.at(vertex.getIndex()), 3))/sqrt(3));
             area.emplace(vertex.getIndex(),
                 mesh->getVertexToNeighboursArea(vertex.getIndex()));
-            double const A0 = targetArea.at(vertex.getIndex());
-            // perimeter elasticity
-            double const Gammak =                           // keratin-dependent perimeter elastic constant
-                parameters.at("Gamma")*keffect(vertex.getIndex());
             double const perimeter =
                 mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
-            double const P0 = parameters.at("p0")*sqrt(A0);
 
             // pressure and tension
             pressure.emplace(vertex.getIndex(),
-                -Kk*(parameters.at("alpha")/parameters.at("A0"))
-                    *(area.at(vertex.getIndex()) - A0)
-                    *area.at(vertex.getIndex()));
+                -4*gammak*parameters.at("alpha")*(
+                    1 - lambdaV0*perimeter/(
+                        4*pow(area.at(vertex.getIndex()), 2))));
             tension.emplace(vertex.getIndex(),
-                Gammak*(perimeter - P0));
+                gammak*lambdaV0/area.at(vertex.getIndex()));
 
             // neighbours
             std::vector<long int> const neighbourVerticesIndices =
@@ -1859,10 +1854,10 @@ Keratin model.
                     + toNextNeighbour[1]*toNextNeighbour[1]);
                 for (int dim=0; dim < 2; dim++) {
                     // area force
-                    force = (Kk/2.)*(
-                        area.at(vertex.getIndex()) - A0)*(
-                            crossToPreviousNeighbour[dim]
-                                - crossToNextNeighbour[dim]);
+                    force = gammak*(2 -
+                        lambdaV0*perimeter/pow(area.at(vertex.getIndex()), 2))
+                            *(crossToPreviousNeighbour[dim]
+                                - crossToNextNeighbour[dim])/2;
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                     // perimeter force
                     force = tension.at(vertex.getIndex())*(

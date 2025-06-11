@@ -126,9 +126,8 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     title = (r"$t=%.3f, N_{\mathrm{T}_1}=%.3e, N_{\mathrm{cells}}=%i$"
         % (vm.time - time0, vm.nT1, len(cells)))
-    title += r"$, \tau_r=%s, p_0=%.2f$" % (
-        "%.2f" % param["taur"] if param["taur"] < np.inf else "\\infty",
-        param["p0"])
+    title += r"$, \tau_r=%s$" % (
+        "%.2f" % param["taur"] if param["taur"] < np.inf else "\\infty")
     title += "\n"
     title += r"$\alpha=%.1e, \beta=%.1e$" % (
         param["alpha"], param["beta"])
@@ -234,13 +233,10 @@ if __name__ == "__main__":
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument("-xi", type=float, default=1,
         help="vertex drag coefficient")
-    parser.add_argument("-K", type=float, default=K,
-        help="area elasticity")
     parser.add_argument("-A0", type=float, default=A0,
         help="minimum target area")
+    # gamma is defined by {gamma}
     # taur is defined by {taur}
-    # Gamma is defined by {Gamma}
-    # p0 is defined by {p0}
     parser.add_argument("-alpha", type=float, default=1,
         help="keratin pressure scale")
     parser.add_argument("-beta", type=float, default=1,
@@ -273,8 +269,7 @@ if __name__ == "__main__":
         vm.setOverdampedIntegrator(
             args.xi)
         vm.addKeratinModel("keratin",
-            args.K, args.A0, args.tau,
-            args.Gamma, args.p0,
+            args.gamma, args.A0, args.tau,
             args.alpha, args.beta, args.kth,
             args.tau, args.sigma, args.ron)
         if args.fpull == 0: break

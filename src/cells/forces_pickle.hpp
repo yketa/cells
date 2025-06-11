@@ -656,12 +656,10 @@ VertexModel::addVertexForce<KeratinModel,
         t[1].cast<ParametersType>();
     addVertexForce<KeratinModel,
         double const&, double const&, double const&,
-        double const&, double const&,
         double const&, double const&, double const&,
         double const&, double const&, double const&>(
         name,
-        parameters.at("K"), parameters.at("A0"), parameters.at("taur"),
-        parameters.at("Gamma"), parameters.at("p0"),
+        parameters.at("gamma"), parameters.at("A0"), parameters.at("taur"),
         parameters.at("alpha"), parameters.at("beta"), parameters.at("kth"),
         parameters.at("tau"), parameters.at("sigma"), parameters.at("ron"));
     // set internal degrees of freedom state
