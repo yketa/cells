@@ -10,6 +10,7 @@ Forces definitions.
 #include <limits>
 #include <numbers>
 
+#include "assert.hpp"
 #include "base_forces.hpp"
 #include "mesh.hpp"
 #include "random.hpp"
