@@ -1363,7 +1363,7 @@ PYBIND11_MODULE(bind, m) {
             "    (=1/tauon).\n",
             pybind11::arg("name"),
             pybind11::arg("gamma"),
-            pybind11::arg("V0"),
+            pybind11::arg("A0"),
             pybind11::arg("taur"),
             pybind11::arg("alpha"),
             pybind11::arg("beta"),

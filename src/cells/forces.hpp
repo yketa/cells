@@ -10,6 +10,7 @@ Forces definitions.
 #include <limits>
 #include <numbers>
 
+#include "assert.hpp"
 #include "base_forces.hpp"
 #include "mesh.hpp"
 #include "random.hpp"
@@ -1809,7 +1810,7 @@ Keratin model.
 
             // pressure and tension
             pressure.emplace(vertex.getIndex(),
-                -4*gammak*parameters.at("alpha")*(
+                -4*gammak*area.at(vertex.getIndex())*parameters.at("alpha")*(
                     1 - lambdaV0*perimeter/(
                         4*pow(area.at(vertex.getIndex()), 2))));
             tension.emplace(vertex.getIndex(),
@@ -1853,19 +1854,19 @@ Keratin model.
                     toNextNeighbour[0]*toNextNeighbour[0]
                     + toNextNeighbour[1]*toNextNeighbour[1]);
                 for (int dim=0; dim < 2; dim++) {
-                    // area force
-                    force = gammak*(2 -
+                    // area-like force
+                    force = gammak*(2 -             // force from surface tension
                         lambdaV0*perimeter/pow(area.at(vertex.getIndex()), 2))
                             *(crossToPreviousNeighbour[dim]
                                 - crossToNextNeighbour[dim])/2;
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
-                    // perimeter force
+                    // perimeter-like force
                     force = tension.at(vertex.getIndex())*(
-                        toPreviousNeighbour[dim]    // force from previous neighbour
+                        toPreviousNeighbour[dim]    // tension force from previous neighbour
                             /distToPreviousNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                     force = tension.at(vertex.getIndex())*(
-                        toNextNeighbour[dim]        // force from next neighbour
+                        toNextNeighbour[dim]        // tension force from next neighbour
                             /distToNextNeighbour);
                     (*forces)[neighbourVerticesIndices[i]][dim] += force;   // force on vertex i
                 }
