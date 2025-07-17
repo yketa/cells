@@ -162,9 +162,10 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
         ax_size, fig_width, fig_height = _measure_fig(ax)       # measure
 
         # tension colourmap
+        tmin = 0 if not("tmin" in kwargs) else kwargs["tmin"]
         tmax = 1 if not("tmax" in kwargs) else kwargs["tmax"]
 #         norm_tension = Normalize(-tmax, tmax)
-        norm_tension = Normalize(0, tmax)
+        norm_tension = Normalize(tmin, tmax)
 #         cmap_tension = plt.cm.Spectral
         cmap_tension = plt.cm.jet
         global scalarMap_tension
@@ -187,8 +188,12 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     # junctions
 
-    tension = np.array(
-        itemgetter(*junctions)(vm.vertexForces["keratin"].tension_junction))
+    tension = np.concatenate(
+        list(map(
+            lambda t: (t, t),
+            itemgetter(*junctions)(
+                vm.vertexForces["keratin"].tension_junction))),
+        axis=0)
     lwmin = 2.5/max(1, np.sqrt(len(vm.vertices))/12)/2
     lwmax = lwmin*30
     linewidths = np.array(list(map(
@@ -196,7 +201,12 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 #             lambda st: st*(lwmax - lwmin) + lwmin)(
 #             min(np.abs(t/scalarMap_tension.norm.vmax), 1)),
             lambda st: (st**2)*(lwmax - lwmin) + lwmin)(
-            min(t/scalarMap_tension.norm.vmax, 1)),
+            min(
+                max(
+                    (t - scalarMap_tension.norm.vmin
+                        )/scalarMap_tension.norm.vmax,
+                    0),
+                1)),
         tension)))
     ax.add_collection(LineCollection(getLinesJunction(vm),
         colors=scalarMap_tension.to_rgba(tension), linewidths=linewidths))
@@ -273,7 +283,7 @@ if __name__ == "__main__":
         vm.setOverdampedIntegrator(
             args.xi)
         vm.addKeratinModel("keratin",
-            args.K, args.A0, args.tau,
+            args.K, args.A0, args.taur,
             args.Gamma, args.p0,
             args.alpha, args.beta, args.kth,
             args.tau, args.sigma, args.ron)
