@@ -1707,6 +1707,7 @@ Keratin model.
 
         Mesh* const mesh;                       // mesh object
         Random* random;                         // random number generator
+        HalfEdgesType const& halfEdges;         // half edges
 
         std::map<long int, double> keratin;     // cell keratin concentration
         std::map<long int, double> targetArea;  // target area
@@ -1738,7 +1739,7 @@ Keratin model.
                 {"alpha", alpha_}, {"beta", beta_}, {"kth", kth_},
                 {"tau", tau_}, {"sigma", sigma_}, {"ron", ron_}},
                 forces_, vertices_),
-            mesh(mesh_), random(random_) {
+            mesh(mesh_), random(random_), halfEdges(mesh->getHalfEdges()) {
 
             for (auto it=vertices->begin(); it != vertices->end(); ++it) {
                 if ((it->second).getType() == "centre") {   // loop over all cell centres
@@ -1813,11 +1814,36 @@ Keratin model.
                 mesh->getVertexToNeighboursPerimeter(vertex.getIndex());
             double const P0 = parameters.at("p0")*sqrt(A0);
 
-            // pressure and tension
+            // area pressure
             pressure.emplace(vertex.getIndex(),
                 -Kk*(parameters.at("alpha")/parameters.at("A0"))
                     *(area.at(vertex.getIndex()) - A0)
                     *area.at(vertex.getIndex()));
+            // perimeter pressure only for non-boundary cells
+            bool isBoundaryCell = false;
+            std::vector<long int> const halfEdgesToNeighbours =
+                mesh->getNeighbourVertices(vertex.getIndex())[1];
+            for (long int index : halfEdgesToNeighbours) {  // loop over half-edges to neighbour vertices
+                long int const neighbourVertexIndex =       // neighbour cell index
+                    halfEdges.at(
+                        halfEdges.at(
+                            halfEdges.at(
+                                halfEdges.at(index).getNextIndex()
+                            ).getPairIndex()
+                        ).getNextIndex()
+                    ).getToIndex();
+                if (vertices->at(neighbourVertexIndex).getBoundary()) {
+                    isBoundaryCell = true;
+                    break;
+                }
+            }
+            if (!isBoundaryCell) {
+                pressure[vertex.getIndex()] +=
+                -Gammak*(parameters.at("alpha")/parameters.at("A0"))
+                    *(perimeter - P0)
+                    *perimeter;
+            }
+            // tension
             tension.emplace(vertex.getIndex(),
                 Gammak*(perimeter - P0));
 
