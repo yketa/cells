@@ -1771,6 +1771,30 @@ Keratin model.
 
         std::map<long int, double> const& getPressure() const
             { return pressure; }
+        std::map<long int, double> getPressureJunction() const {
+            std::map<long int, double> pressure_junction;
+            std::map<long int, HalfEdge> const& halfEdges =
+                mesh->getHalfEdges();
+            std::vector<long int> const halfEdgeIndices =
+                mesh->getHalfEdgeIndicesByType("junction");
+            for (long int halfEdgeIndex : halfEdgeIndices) {
+                pressure_junction.emplace(halfEdgeIndex, 0);
+                for (long int index :
+                    {halfEdgeIndex,
+                        (halfEdges.at(halfEdgeIndex)).getPairIndex()}) {
+                    long int const vertexIndex =
+                        (halfEdges.at(
+                            (halfEdges.at(index)
+                                ).getNextIndex())
+                            ).getToIndex();
+                    if (inMap(pressure, vertexIndex)) {
+                        pressure_junction[halfEdgeIndex] +=
+                            -pressure.at(vertexIndex)/parameters.at("alpha");
+                    }
+                }
+            }
+            return pressure_junction;
+        }
 
         std::map<long int, double> const& getTension() const
             { return tension; }

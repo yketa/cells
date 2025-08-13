@@ -148,7 +148,10 @@ def plot_keratin(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     return fig, ax
 
-def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
+def plot_tension_pressure(vm, time0=0, fig=None, ax=None, update=True,
+    mode=None, **kwargs):
+
+    assert mode == "tension" or mode == "pressure"
 
     assert("keratin" in vm.vertexForces)
     param = vm.vertexForces["keratin"].parameters
@@ -161,22 +164,20 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
         ax_size, fig_width, fig_height = _measure_fig(ax)       # measure
 
-        # tension colourmap
-        tmin = 0 if not("tmin" in kwargs) else kwargs["tmin"]
-        tmax = 1 if not("tmax" in kwargs) else kwargs["tmax"]
-#         norm_tension = Normalize(-tmax, tmax)
-        norm_tension = Normalize(tmin, tmax)
-#         cmap_tension = plt.cm.Spectral
-        cmap_tension = plt.cm.jet
-        global scalarMap_tension
-        scalarMap_tension = ScalarMappable(norm_tension, cmap_tension)
+        # colourmap
+        vmin = 0 if not("vmin" in kwargs) else kwargs["vmin"]
+        vmax = 1 if not("vmax" in kwargs) else kwargs["vmax"]
+        norm = Normalize(vmin, vmax)
+        cmap = plt.cm.jet
+        global scalarMap
+        scalarMap = ScalarMappable(norm, cmap)
 
-        # tension colourbar
-        cbar_tension = fig.colorbar(
-            mappable=scalarMap_tension, ax=ax,
+        # colourbar
+        cbar = fig.colorbar(
+            mappable=scalarMap, ax=ax,
             shrink=0.75, pad=0.01)
-        cbar_tension.set_label(
-            r"$t_i$",
+        cbar.set_label(
+            r"$t_i$" if mode == "tension" else r"$p_i$",
             rotation=270, labelpad=_cbar_labelpad)
         ax_size, fig_width, fig_height = (
             _resize_fig(ax, ax_size, fig_width, fig_height))
@@ -188,28 +189,21 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
 
     # junctions
 
-    tension = np.concatenate(
+    quantity = np.concatenate(
         list(map(
             lambda t: (t, t),
             itemgetter(*junctions)(
-                vm.vertexForces["keratin"].tension_junction))),
+                getattr(vm.vertexForces["keratin"], "%s_junction" % mode)))),
         axis=0)
     lwmin = 2.5/max(1, np.sqrt(len(vm.vertices))/12)/2
     lwmax = lwmin*30
     linewidths = np.array(list(map(
-        lambda t: (
-#             lambda st: st*(lwmax - lwmin) + lwmin)(
-#             min(np.abs(t/scalarMap_tension.norm.vmax), 1)),
-            lambda st: (st**2)*(lwmax - lwmin) + lwmin)(
-            min(
-                max(
-                    (t - scalarMap_tension.norm.vmin
-                        )/scalarMap_tension.norm.vmax,
-                    0),
-                1)),
-        tension)))
+        lambda q: (
+            lambda sq: (sq**2)*(lwmax - lwmin) + lwmin)(
+            min(max((q - scalarMap.norm.vmin)/scalarMap.norm.vmax, 0), 1)),
+        quantity)))
     ax.add_collection(LineCollection(getLinesJunction(vm),
-        colors=scalarMap_tension.to_rgba(tension), linewidths=linewidths))
+        colors=scalarMap.to_rgba(quantity), linewidths=linewidths))
 
     # title
 
@@ -236,6 +230,20 @@ def plot_tension(vm, time0=0, fig=None, ax=None, update=True, **kwargs):
     if update: _update_canvas(fig)
 
     return fig, ax
+
+def plot_tension(*args, **kwargs):
+    for _ in ("min", "max"):
+        if ("t%s" % _) in kwargs:
+            kwargs["v%s" % _] = kwargs["t%s" % _]
+            del kwargs["t%s" % _]
+    return plot_tension_pressure(*args, **kwargs, mode="tension")
+
+def plot_pressure(*args, **kwargs):
+    for _ in ("min", "max"):
+        if ("p%s" % _) in kwargs:
+            kwargs["v%s" % _] = kwargs["p%s" % _]
+            del kwargs["p%s" % _]
+    return plot_tension_pressure(*args, **kwargs, mode="pressure")
 
 if __name__ == "__main__":
 

@@ -333,6 +333,8 @@ PYBIND11_MODULE(bind, m) {
             &KeratinModel::setTargetArea)
         .def_property_readonly("pressure",
             &KeratinModel::getPressure)
+        .def_property_readonly("pressure_junction",
+            &KeratinModel::getPressureJunction)
         .def_property_readonly("area",
             &KeratinModel::getArea)
         .def_property_readonly("tension",
