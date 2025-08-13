@@ -145,12 +145,19 @@ Cell surface minimising force at constant volume.
             VertexForce<ForcesType>("centre",
                 {{"Lambda", Lambda_}, {"V0", V0_}, {"tauV", tauV_}},
                 forces_, vertices_),
-            mesh(mesh_) {}
+            mesh(mesh_) {
+            // initialise volumes
+            for (auto it=vertices->begin(); it != vertices->end(); ++it) {
+                if ((it->second).getType() == type) {
+                    volume.emplace(it->first, parameters.at("V0"));
+                }
+            }
+        }
 
         std::map<long int, double> const& getVolume() const
             { return volume; }
         void setVolume(std::map<long int, double> const& volume_)
-            { if (parameters.at("tauV") == 0) return; volume = volume_; }
+            { volume = volume_; }
 
         std::map<long int, double> getHeight() const {
             std::map<long int, double> height;
@@ -158,12 +165,7 @@ Cell surface minimising force at constant volume.
                 if ((it->second).getType() == type) {
                     double const area =
                         mesh->getVertexToNeighboursArea(it->first);
-                    if (inMap(volume, it->first)) {
-                        height.emplace(it->first, volume.at(it->first)/area);
-                    }
-                    else {
-                        height.emplace(it->first, parameters.at("V0")/area);
-                    }
+                    height.emplace(it->first, volume.at(it->first)/area);
                 }
             }
             return height;
@@ -174,9 +176,7 @@ Cell surface minimising force at constant volume.
                 vertex.getIndex());
             double const perimeter = mesh->getVertexToNeighboursPerimeter(
                 vertex.getIndex());
-            double const V0 =
-                (parameters.at("tauV") == 0) ? parameters.at("V0") :
-                volume.at(vertex.getIndex());
+            double const V0 = volume.at(vertex.getIndex());
             std::vector<long int> neighbourVerticesIndices =
                 mesh->getNeighbourVertices(vertex.getIndex())[0];
             long int const numberNeighbours = neighbourVerticesIndices.size();
@@ -220,8 +220,6 @@ Cell surface minimising force at constant volume.
 
         void integrate(double const& dt) override {
 
-            if (parameters.at("tauV") == 0) return;
-
             // index correspondence between vertices and volumes
             for (auto it=volume.begin(); it != volume.end();) {
                 if (!inMap(*vertices, it->first)) {                     // vertex index not present any more
@@ -241,10 +239,15 @@ Cell surface minimising force at constant volume.
                 }
             }
 
+            if (parameters.at("tauV") == 0) return;
+
             // integrate volume
             for (auto it=volume.begin(); it != volume.end(); ++it) {
-                it->second += (parameters.at("V0") - it->second)
-                    *dt/parameters.at("tauV");
+//                 // exponential relaxation
+//                 it->second += (parameters.at("V0") - it->second)
+//                     *dt/parameters.at("tauV");
+                // linear variation
+                it->second += (parameters.at("V0")/parameters.at("tauV"))*dt;
             }
         }
 

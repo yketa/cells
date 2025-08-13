@@ -1063,7 +1063,8 @@ PYBIND11_MODULE(bind, m) {
             "V0 : float\n"
             "    Cell volume.\n"
             "tauV : float\n"
-            "    Cell volume relaxation time towards V0. (default: 0)\n"
+            "    Sets a cell volume variation rate V0/tauV.\n"
+//             "    Cell volume relaxation time towards V0. (default: 0)\n"
             "    NOTE: if tauV == 0 then volume is always V0.",
             pybind11::arg("name"),
             pybind11::arg("Lambda"),

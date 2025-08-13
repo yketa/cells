@@ -76,16 +76,12 @@ def plot(vm, fig=None, ax=None, update=True,
         A0 = vm.vertexForces["area"].parameters["A0"]
     if "surface" in vm.vertexForces:
         surface_force = vm.vertexForces["surface"]
-        if surface_force.parameters["tauV"] == 0:
-            V0 = surface_force.parameters["V0"]
-            A0 = (np.sqrt(3)*(V0**2)/2)**(1/3)
-            h0 = V0/A0
-        else:
-            V0 = surface_force.volume
-            A0 = dict(map(lambda i: (i, (np.sqrt(3)*(V0[i]**2)/2)**(1/3)), V0))
-            h0 = dict(map(lambda i: (i, V0[i]/A0[i]), V0))
-        del A0
-        A0 = (np.sqrt(3)*(surface_force.parameters["V0"]**2)/2)**(1/3)
+        V0 = surface_force.volume
+        if surface_force.parameters["tauV"] == 0 or True:
+            h0 = dict(map(
+                lambda i: (i, V0[i]/((np.sqrt(3)*(V0[i]**2)/2)**(1/3))),
+                V0))
+            del V0
     if "perimeter" in vm.vertexForces:
         if "area" in vm.vertexForces:
             p0 = vm.vertexForces["perimeter"].parameters["P0"]/np.sqrt(A0)
@@ -179,9 +175,14 @@ def plot(vm, fig=None, ax=None, update=True,
                 cbar_area = fig.colorbar(
                     mappable=scalarMap_area, ax=ax,
                     shrink=0.75, pad=0.01)
-                cbar_area.set_label(
-                    r"$(h_i - h_6^*)/h_6^*$",
-                    rotation=270, labelpad=_cbar_labelpad)
+                if surface_force.parameters["tauV"] == 0 or True:
+                    cbar_area.set_label(
+                        r"$(h_i - h_6^*)/h_6^*$",
+                        rotation=270, labelpad=_cbar_labelpad)
+                else:
+                    cbar_area.set_label(
+                        r"$(V_i - V_0)/V_0$",
+                        rotation=270, labelpad=_cbar_labelpad)
                 # resize
                 ax_size, fig_width, fig_height = (
                     _resize_fig(ax, ax_size, fig_width, fig_height))
@@ -311,33 +312,29 @@ def plot(vm, fig=None, ax=None, update=True,
                 polygons.set_facecolor(list(map(    # colour according to percentage of lost neighbours
                     lambda i: scalarMap_relaxation.to_rgba(1 - pct[i]),
                     cells)))
-        elif "h0" in locals():
+        elif "volume_force" in locals() or "surface_force" in locals():
             if "volume_force" in locals():
-                s_heights = (
-                    lambda height: np.array(list(map(
+                s_val = (                           # colour according to height
+                    lambda height: list(map(
                         lambda i: (height[i] - h0)/h0,
-                        cells))))(
+                        cells)))(
                     volume_force.height)
             elif "surface_force" in locals():
-                heights = surface_force.height
-                if surface_force.parameters["tauV"] == 0:
-                    s_heights = np.array(list(map(
-                        lambda i: (heights[i] - h0)/h0,
-                        cells)))
-                else:
-                    s_heights = np.array(list(map(
+                if surface_force.parameters["tauV"] == 0 or True:
+                    heights = surface_force.height
+                    s_val = list(map(               # colour according to height
                         lambda i: (heights[i] - h0[i])/h0[i],
-                        cells)))
-            polygons.set_facecolor(list(map(        # colour according to height
-                lambda s_height: scalarMap_area.to_rgba(s_height),
-                s_heights)))
-        elif "A0" in locals():
-            areas = np.array(list(map(
-                lambda i: vm.getVertexToNeighboursArea(i),
-                cells)))
-            polygons.set_facecolor(list(map(        # colour according to area
-                lambda s_area: scalarMap_area.to_rgba(s_area),
-                    (areas - A0)/A0)))
+                        cells))
+                else:
+                    s_val = list(map(
+                        lambda i: (V0[i] - surface_force.parameters["V0"]
+                            )/surface_force.parameters["V0"],
+                        cells))
+            elif "A0" in locals():
+                s_val = (areas - A0)/A0             # colour according to area
+            polygons.set_facecolor(list(map(
+                lambda v: scalarMap_area.to_rgba(v),
+                s_val)))
     ax.add_collection(polygons)
 
     # vertex indices
