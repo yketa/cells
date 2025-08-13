@@ -224,13 +224,13 @@ class VertexModel : public Mesh {
         ----------
         cellVertexIndex :
             Vertex index of centre of cell to split.
+        avoidThreeEdgeCells :
+            Ignore divisions which would result in cells with three edges.
 
         Returns
         -------
         newCellVertexIndex :
             Index of newly created cell centre.
-        avoidThreeEdgeCells :
-            Ignore divisions which would result in cells with three edges.
         */
 
         std::tuple<long int, std::vector<long int>> mergeCell(
