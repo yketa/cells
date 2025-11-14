@@ -269,9 +269,9 @@ Two-dimensional ensembles of vertices and edges.
         Parameters
         ----------
         fromPos :
-            Pointer to initial point position.
+            Initial point position.
         toPos :
-            Pointer to final point position.
+            Final point position.
         unit :
             Return unitary vector.
 
