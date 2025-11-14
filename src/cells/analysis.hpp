@@ -108,6 +108,30 @@ Compute vectors to neighbouring cell centres.
     return vectorsToNeighbours;
 }
 
+std::map<long int, std::vector<double>>
+getDisplacements(VertexModel const& vm, VertexModel const& vm0) {
+/*
+Compute displacements of cell centres from vertex model object `vm0' to `vm'.
+*/
+
+    std::vector<long int> const centres =
+        vm.getVertexIndicesByType("centre");
+
+    VerticesType const& vertices0 = vm0.getVertices();
+    VerticesType const& vertices = vm.getVertices();
+
+    std::map<long int, std::vector<double>> displacements;
+    for (long int index : centres) {
+        std::vector<double> const& upos0 = vertices0.at(index).getUPosition();  // initial position
+        std::vector<double> const& upos = vertices.at(index).getUPosition();    // final position
+        displacements.emplace(
+            index,
+            std::vector<double>({upos[0] - upos0[0], upos[1] - upos0[1]}));     // displacement
+    }
+
+    return displacements;
+}
+
 std::map<long int, std::complex<double>>
 getPAticOrderParameters(VertexModel const& vm, int const& p) {
 /*
@@ -333,6 +357,58 @@ maximum Feret diameter of this radius.
     }
 
     return std::make_tuple(feretAxes, angles);
+}
+
+std::map<long int, int> getBoundaryRowIndices(VertexModel const& vm) {
+/*
+Return number of cells between each cell and a boundary.
+*/
+
+    std::map<long int, Vertex> const vertices = vm.getVertices();
+    std::vector<long int> boundaries(0);
+    for (auto it=vertices.begin(); it != vertices.end(); ++it) {
+        if ((it->second).getBoundary()) { boundaries.push_back(it->first); }
+    }
+    assert((int) boundaries.size() == 1);                   // there should be at most 1 boundary vertex
+    long int const boundary = boundaries.at(0);             // boundary vertex index
+    std::vector<long int> const boundaryNeighbourIndices =  // neighbouring cells of the boundary vertex
+        vm.getNeighbouringCellIndices(boundary);
+
+    std::map<long int, int> rowIndices;
+    long int rowIndex = 0;              // first row index is 0
+    for (long int index : boundaryNeighbourIndices) {
+        rowIndices.emplace(index, 0);   // neighbours of the boundary have a cell index of 0
+    }
+
+    std::vector<long int> cells = vm.getVertexIndicesByType("centre");
+    while (true) {
+        //printMap(rowIndices);
+
+        // perform loop until all indices have been computed
+        bool flag = true;
+        for (long int index : cells) {
+            if (!inMap(rowIndices, index)) {
+                flag = false;
+            }
+        }
+        if (flag) { break; }
+
+        // compute next row index
+        rowIndex++;
+        for (auto it=rowIndices.begin(); it != rowIndices.end(); ++it) {
+            if (it->second == rowIndex - 1) {                           // loop over last computed row
+                std::vector<long int> const neighbourIndices =
+                    vm.getNeighbouringCellIndices(it->first);
+                for (long int neighbourIndex : neighbourIndices) {
+                    if (!inMap(rowIndices, neighbourIndex)) {
+                        rowIndices.emplace(neighbourIndex, rowIndex);   // cell belongs to new row
+                    }
+                }
+            }
+        }
+    }
+
+    return rowIndices;
 }
 
 /*

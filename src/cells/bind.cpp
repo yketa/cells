@@ -1474,6 +1474,19 @@ PYBIND11_MODULE(bind, m) {
             "vectorsToNeighbours : {int: list} dict\n"
             "    Dictionary which associates cell centre vertex indices to\n"
             "    list of vectors to neighbouring cells.")
+        .def("getDisplacements", &getDisplacements,
+            "Compute displacements of cell centres.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "vm0 : VertexModel\n"
+            "    Initial vertex model object to compute displacements from.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "displacements : {int: list} dict\n"
+            "    Dictionary which associates cell centre vertex indices to\n"
+            "    their displacement.")
         .def("getPAticOrderParameters", &getPAticOrderParameters,
             "Compute p-atic order parameters of cell centres.\n"
             "\n"
@@ -1574,6 +1587,21 @@ PYBIND11_MODULE(bind, m) {
         "    Vector of tuple of norm of the radius between the cell centre\n"
         "    and the centre of boundary vertices, and angle between the\n"
         "    maximum Feret diameter and this radius.\n",
+        pybind11::arg("vm"));
+
+    m.def("getBoundaryRowIndices", &getBoundaryRowIndices,
+        "Return number of cells between each cell and a boundary.\n"
+        "\n"
+        "Parameters\n"
+        "----------\n"
+        "vm : VertexModel\n"
+        "    Vertex model object in which rows are computed.\n"
+        "\n"
+        "Returns\n"
+        "-------\n"
+        "rowIndices : {int: int} dict\n"
+        "    Dictionary which associates cell centre vertex indices to the\n"
+        "    index of its row from the boundary, starting from 0.",
         pybind11::arg("vm"));
 
     m.def("getAllWaveVectors2D", &getAllWaveVectors2D,
