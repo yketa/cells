@@ -521,6 +521,20 @@ PYBIND11_MODULE(bind, m) {
             "    Index of half-edge.",
             pybind11::arg("vertexIndex0"),
             pybind11::arg("vertexIndex1"))
+        .def("getEdgeLength",
+            &VertexModel::getEdgeLength,
+            "Length of edge.\n"
+            "\n"
+            "Parameters\n"
+            "----------\n"
+            "halfEdgeIndex : int\n"
+            "    Index of the half-edge.\n"
+            "\n"
+            "Returns\n"
+            "-------\n"
+            "edgeLength : double\n"
+            "    Length of edge.\n",
+            pybind11::arg("halfEdgeIndex"))
         .def("getNeighbourVertices",
             [](VertexModel const& self, long int const& vertexIndex) {
                 std::vector<std::vector<long int>> neighbours =
