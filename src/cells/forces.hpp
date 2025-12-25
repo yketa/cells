@@ -1720,6 +1720,9 @@ Keratin model.
         std::map<long int, double> pressure;    // cell pressure
         std::map<long int, double> tension;     // cell tension
 
+        // hot fix: alpha is cell-dependent
+        std::map<long int, double> alpha;       // keratin pressure scale
+
         double keffect(long int const& index) const {
             // keratin effect on area elastic constant and target area relaxation time
             return 1 +
@@ -1755,6 +1758,13 @@ Keratin model.
                         std::max(
                             parameters.at("A0"),
                             mesh->getVertexToNeighboursArea(it->first)));
+                    // hot fix: alpha is cell-dependent
+                    alpha.emplace(it->first,
+                        std::max(
+                            0.,
+                            parameters.at("alpha")
+//                                 + 0.2*parameters.at("alpha")*random->gauss()));
+                                 + 0*parameters.at("alpha")*random->gauss()));
                 }
             }
         }
@@ -1792,7 +1802,7 @@ Keratin model.
                             ).getToIndex();
                     if (inMap(pressure, vertexIndex)) {
                         pressure_junction[halfEdgeIndex] +=
-                            -pressure.at(vertexIndex)/parameters.at("alpha");
+                            -pressure.at(vertexIndex)/alpha.at(index);
                     }
                 }
             }
@@ -1843,7 +1853,7 @@ Keratin model.
 
             // area pressure
             pressure.emplace(vertex.getIndex(),
-                -Kk*(parameters.at("alpha")/parameters.at("A0"))
+                -Kk*(alpha.at(vertex.getIndex())/parameters.at("A0"))
                     *(area.at(vertex.getIndex()) - A0)
                     *area.at(vertex.getIndex()));
             // perimeter pressure only for non-boundary cells
@@ -1866,7 +1876,7 @@ Keratin model.
             }
             if (!isBoundaryCell) {
                 pressure[vertex.getIndex()] +=
-                -Gammak*(parameters.at("alpha")/parameters.at("A0"))
+                -Gammak*(alpha.at(vertex.getIndex())/parameters.at("A0"))
                     *(perimeter - P0)
                     *perimeter;
             }
